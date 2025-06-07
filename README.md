@@ -16,7 +16,7 @@
 - **框架**：[UniBest](https://github.com/codercup/unibest) - 基于 uni-app 的最佳实践模板
 - **构建工具**：Vite
 - **语言**：TypeScript
-- **UI框架**：UnoCSS
+- **UI框架**：Wot Design Uni
 
 ### 后端
 - **框架**：FastAPI (Python)
