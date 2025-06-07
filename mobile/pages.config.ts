@@ -35,10 +35,22 @@ export default defineUniPages({
         text: '首页',
       },
       {
+        iconPath: 'static/tabbar/home.png',
+        selectedIconPath: 'static/tabbar/homeHL.png',
+        pagePath: 'pages/cards/index',
+        text: '卡片',
+      },
+      {
         iconPath: 'static/tabbar/example.png',
         selectedIconPath: 'static/tabbar/exampleHL.png',
-        pagePath: 'pages/about/about',
-        text: '关于',
+        pagePath: 'pages/transactions/index',
+        text: '消费',
+      },
+      {
+        iconPath: 'static/tabbar/example.png',
+        selectedIconPath: 'static/tabbar/exampleHL.png',
+        pagePath: 'pages/fees/index',
+        text: '费用',
       },
       {
         iconPath: 'static/tabbar/personal.png',

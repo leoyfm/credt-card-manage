@@ -164,7 +164,7 @@
 
 <script lang="ts" setup>
 import { cardApi, notificationApi } from '@/service/api'
-import '@/service/mock' // 引入Mock数据
+import '@/mock' // 引入Mock数据
 
 defineOptions({
   name: 'HomePage',
@@ -219,22 +219,31 @@ const loadData = async () => {
   try {
     loading.value = true
     
+    console.log('🔍 开始加载数据...')
+    console.log('🌐 当前环境:', import.meta.env.MODE)
+    console.log('🎯 Mock 是否可用:', typeof window !== 'undefined' && (window as any).Mock ? '✅ 可用' : '❌ 不可用')
+    
     // 并行请求数据
     const [cardsRes, notificationsRes] = await Promise.all([
       cardApi.getCards(),
       notificationApi.getNotifications()
     ])
 
+    console.log('📊 Cards API 响应:', cardsRes)
+    console.log('🔔 Notifications API 响应:', notificationsRes)
+
     if (cardsRes.code === 200) {
       cardList.value = cardsRes.data.list
       summary.value = cardsRes.data.summary
+      console.log('✅ 信用卡数据加载成功:', cardList.value.length, '张卡片')
     }
 
     if (notificationsRes.code === 200) {
       notificationCount.value = notificationsRes.data.unreadCount
+      console.log('✅ 通知数据加载成功:', notificationCount.value, '条未读')
     }
   } catch (error) {
-    console.error('加载数据失败:', error)
+    console.error('❌ 加载数据失败:', error)
     uni.showToast({
       title: '数据加载失败',
       icon: 'none'

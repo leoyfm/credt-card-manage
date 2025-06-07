@@ -198,7 +198,7 @@
 
 <script lang="ts" setup>
 import { transactionApi, cardApi } from '@/service/api'
-import '@/service/mock'
+import '@/mock'
 
 defineOptions({
   name: 'TransactionsPage',

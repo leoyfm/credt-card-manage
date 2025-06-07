@@ -220,7 +220,7 @@
 
 <script lang="ts" setup>
 import { feeApi } from '@/service/api'
-import '@/service/mock'
+import '@/mock'
 
 defineOptions({
   name: 'FeesPage',

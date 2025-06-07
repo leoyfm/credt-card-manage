@@ -153,7 +153,7 @@
 
 <script lang="ts" setup>
 import { userApi, notificationApi, statisticsApi } from '@/service/api'
-import '@/service/mock'
+import '@/mock'
 
 defineOptions({
   name: 'MinePage',

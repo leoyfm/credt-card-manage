@@ -192,7 +192,7 @@
 
 <script lang="ts" setup>
 import { cardApi } from '@/service/api'
-import '@/service/mock'
+import '@/mock'
 
 defineOptions({
   name: 'CardsPage',
