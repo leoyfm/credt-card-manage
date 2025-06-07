@@ -9,166 +9,118 @@
 </route>
 
 <template>
-  <view class="home-page">
-    <!-- 状态栏占位 -->
-    <view :style="{ height: safeAreaInsets?.top + 'px' }" class="bg-gradient-to-r from-blue-500 to-purple-600"></view>
-    
-    <!-- 顶部导航栏 -->
-    <view class="navbar bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3">
-      <view class="flex items-center justify-between">
-        <view class="flex items-center">
-          <text class="text-lg font-bold">信用卡管家</text>
-          <text class="text-sm ml-2 opacity-80">智能管理您的信用卡</text>
-        </view>
-        <view class="flex items-center space-x-3">
-          <view class="relative" @click="goToNotifications">
-            <text class="iconfont icon-notification text-xl"></text>
-            <view v-if="notificationCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              {{ notificationCount > 9 ? '9+' : notificationCount }}
+  <view class="index-container safe-area bg-gray-50 min-h-screen">
+    <!-- 顶部个人信息区域 -->
+    <view class="header-section bg-gradient-to-br from-purple-600 to-purple-700 text-white relative overflow-hidden">
+      <view class="p-6 pb-8 relative z-10">
+        <view class="flex items-center justify-between mb-4">
+          <view class="flex items-center">
+            <image class="w-12 h-12 rounded-full mr-3 bg-white bg-opacity-20" src="/static/images/avatar.png" mode="aspectFill" />
+            <view>
+              <text class="text-lg font-semibold">LEO</text>
+              <text class="text-sm opacity-80 block">信用卡管家</text>
             </view>
           </view>
-          <text class="iconfont icon-setting text-xl" @click="goToSettings"></text>
+          <view class="flex items-center space-x-3">
+            <text class="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">🔔</text>
+            <text class="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">⚙️</text>
+          </view>
+        </view>
+        <view class="grid grid-cols-3 gap-4">
+          <view class="text-center">
+            <text class="text-2xl font-bold">{{ summary.activeCards }}</text>
+            <text class="text-sm opacity-80">活跃卡片</text>
+          </view>
+          <view class="text-center">
+            <text class="text-2xl font-bold">{{ formatMoney(summary.totalCredit) }}</text>
+            <text class="text-sm opacity-80">可用额度</text>
+          </view>
+          <view class="text-center">
+            <text class="text-2xl font-bold">{{ summary.averageInterestFree }}</text>
+            <text class="text-sm opacity-80">免息天数</text>
+          </view>
+        </view>
+      </view>
+      <!-- 装饰性背景 -->
+      <view class="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full transform translate-x-16 -translate-y-16"></view>
+      <view class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full transform -translate-x-12 translate-y-12"></view>
+    </view>
+
+    <!-- 年费提醒卡片 -->
+    <view class="p-4 -mt-4">
+      <view class="reminder-card bg-gradient-to-r from-pink-400 to-purple-500 text-white rounded-xl p-4 shadow-lg">
+        <view class="flex items-center justify-between">
+          <view class="flex-1">
+            <text class="text-lg font-semibold mb-1">年费提醒</text>
+            <text class="text-sm opacity-90">{{ pendingFeeCards }}张卡片待处理年费</text>
+          </view>
+          <view class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+            <text class="text-2xl">💳</text>
+          </view>
+        </view>
+        <view class="flex items-center mt-3">
+          <text class="text-sm opacity-90 mr-2">查看详情</text>
+          <text class="text-white">→</text>
         </view>
       </view>
     </view>
 
-    <!-- 统计卡片 -->
-    <view class="stats-section px-4 -mt-6 mb-4">
-      <view class="bg-white rounded-xl shadow-lg p-4">
-        <view class="flex justify-around">
-          <view class="text-center">
-            <text class="text-2xl font-bold text-blue-600">{{ summary.activeCards }}</text>
-            <text class="text-xs text-gray-500 block mt-1">活跃卡片</text>
+    <!-- 年费概览 -->
+    <view class="p-4 pt-2">
+      <view class="bg-white rounded-xl p-4 shadow-sm">
+        <text class="text-lg font-semibold text-gray-800 mb-3">年费概览</text>
+        <view class="grid grid-cols-2 gap-4">
+          <view class="text-center p-3 bg-green-50 rounded-lg">
+            <text class="text-2xl font-bold text-green-600">{{ feeStats.waived }}</text>
+            <text class="text-sm text-gray-600 mt-1">已减免</text>
           </view>
-          <view class="text-center">
-            <text class="text-2xl font-bold text-green-600">¥{{ formatMoney(summary.totalAvailableAmount) }}</text>
-            <text class="text-xs text-gray-500 block mt-1">可用额度</text>
+          <view class="text-center p-3 bg-orange-50 rounded-lg">
+            <text class="text-2xl font-bold text-orange-600">{{ feeStats.pending }}</text>
+            <text class="text-sm text-gray-600 mt-1">待缴费</text>
           </view>
-          <view class="text-center">
-            <text class="text-2xl font-bold text-orange-600">{{ summary.freeDays }}</text>
-            <text class="text-xs text-gray-500 block mt-1">免息天数</text>
+        </view>
+        <view class="grid grid-cols-2 gap-4 mt-3">
+          <view class="text-center p-3 bg-blue-50 rounded-lg">
+            <text class="text-2xl font-bold text-blue-600">{{ feeStats.paid }}</text>
+            <text class="text-sm text-gray-600 mt-1">已缴费</text>
+          </view>
+          <view class="text-center p-3 bg-red-50 rounded-lg">
+            <text class="text-2xl font-bold text-red-600">{{ feeStats.overdue }}</text>
+            <text class="text-sm text-gray-600 mt-1">已逾期</text>
           </view>
         </view>
       </view>
     </view>
 
-    <!-- 功能菜单 -->
-    <view class="function-menu px-4 mb-6">
-      <view class="flex justify-around bg-white rounded-xl py-4 shadow-sm">
-        <view class="text-center" @click="addCard">
-          <view class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <text class="iconfont icon-add text-blue-600 text-xl"></text>
-          </view>
-          <text class="text-xs text-gray-600">添加卡片</text>
-        </view>
-        <view class="text-center" @click="goToTransactions">
-          <view class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <text class="iconfont icon-transaction text-green-600 text-xl"></text>
-          </view>
-          <text class="text-xs text-gray-600">添加消费</text>
-        </view>
-        <view class="text-center" @click="goToStatistics">
-          <view class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <text class="iconfont icon-chart text-purple-600 text-xl"></text>
-          </view>
-          <text class="text-xs text-gray-600">统计分析</text>
-        </view>
-        <view class="text-center" @click="goToReminders">
-          <view class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <text class="iconfont icon-remind text-orange-600 text-xl"></text>
-          </view>
-          <text class="text-xs text-gray-600">还款提醒</text>
-        </view>
+    <!-- 添加信用卡按钮 -->
+    <view class="px-4 pb-4">
+      <view class="add-card-btn bg-black text-white rounded-xl p-4 text-center" @click="handleAddCard">
+        <text class="text-lg font-semibold">+ 添加信用卡</text>
       </view>
     </view>
 
     <!-- 信用卡列表 -->
-    <view class="card-list px-4">
+    <view class="px-4 pb-32">
       <view class="flex items-center justify-between mb-4">
         <text class="text-lg font-semibold text-gray-800">我的信用卡</text>
-        <text class="text-sm text-gray-500" @click="goToCardList">查看全部</text>
+        <text class="text-sm text-blue-600" @click="handleViewAll">查看全部</text>
       </view>
-      
-      <view class="space-y-4">
-        <view 
-          v-for="card in displayCards" 
+      <view class="space-y-3">
+        <CreditCard 
+          v-for="card in creditCards" 
           :key="card.id" 
-          class="card-item bg-white rounded-xl p-4 shadow-sm"
-          @click="goToCardDetail(card.id)"
-        >
-          <!-- 银行信息 -->
-          <view class="flex items-center justify-between mb-3">
-            <view class="flex items-center">
-              <view 
-                class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3"
-                :style="{ backgroundColor: card.bankColor }"
-              >
-                {{ card.bankCode }}
-              </view>
-              <view>
-                <text class="font-semibold text-gray-800">{{ card.bankName }}{{ card.cardName }}</text>
-                <text class="text-xs text-gray-500 block">**** {{ card.cardNumberLast4 }}</text>
-              </view>
-            </view>
-            <view class="text-right">
-              <text class="text-sm font-semibold" :class="getCardStatusClass(card.isActive)">
-                {{ card.isActive ? '正常' : '停用' }}
-              </text>
-            </view>
-          </view>
-
-          <!-- 额度信息 -->
-          <view class="mb-3">
-            <view class="flex justify-between items-center mb-1">
-              <text class="text-sm text-gray-600">可用额度</text>
-              <text class="text-sm font-semibold text-green-600">¥{{ formatMoney(card.availableAmount) }}</text>
-            </view>
-            <view class="bg-gray-200 rounded-full h-2">
-              <view 
-                class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300"
-                :style="{ width: (card.availableAmount / card.creditLimit * 100) + '%' }"
-              ></view>
-            </view>
-            <view class="flex justify-between text-xs text-gray-500 mt-1">
-              <text>总额度 ¥{{ formatMoney(card.creditLimit) }}</text>
-              <text>已用 ¥{{ formatMoney(card.usedAmount) }}</text>
-            </view>
-          </view>
-
-          <!-- 年费信息 -->
-          <view class="flex items-center justify-between">
-            <view class="flex items-center">
-              <text class="text-sm text-gray-600">年费状态:</text>
-              <text class="text-sm ml-1" :class="getFeeStatusClass(card.annualFeeStatus)">
-                {{ getFeeStatusText(card.annualFeeStatus) }}
-              </text>
-            </view>
-            <view v-if="card.feeType !== 'rigid'" class="text-right">
-              <text class="text-xs text-gray-500">减免进度</text>
-              <text class="text-sm font-semibold text-blue-600 ml-1">{{ card.waiverProgress }}%</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <!-- 查看更多 -->
-      <view v-if="cardList.length > 3" class="text-center mt-4">
-        <text class="text-sm text-blue-600" @click="goToCardList">查看全部 {{ cardList.length }} 张卡片</text>
+          :card="card"
+          @cardClick="handleCardClick"
+        />
       </view>
     </view>
-
-    <!-- 底部安全区域 -->
-    <view class="h-20"></view>
   </view>
 </template>
 
 <script lang="ts" setup>
-import { cardApi, notificationApi } from '@/service/api'
-import '@/mock' // 引入Mock数据
-
-defineOptions({
-  name: 'HomePage',
-})
+import { ref, computed, onMounted } from 'vue'
+import CreditCard from '@/components/CreditCard.vue'
+import type { CreditCard as CreditCardType } from '@/types/card'
 
 // 获取屏幕边界到安全区域距离
 let safeAreaInsets: any = null
@@ -190,68 +142,117 @@ try {
 }
 // #endif
 
-// 响应式数据
-const cardList = ref([])
-const summary = ref({
-  activeCards: 0,
-  totalAvailableAmount: 0,
-  freeDays: 0
-})
-const notificationCount = ref(0)
-const loading = ref(false)
+// 演示数据
+const creditCards = ref<CreditCardType[]>([
+  {
+    id: '1',
+    bankName: '招商银行',
+    bankCode: '招',
+    bankColor: '#DC2626',
+    cardName: '全币种国际卡',
+    cardNumberLast4: '8888',
+    creditLimit: 500000,
+    usedAmount: 125000,
+    availableAmount: 375000,
+    isActive: true,
+    annualFeeStatus: 'paid',
+    feeType: 'waivable',
+    waiverProgress: 75
+  },
+  {
+    id: '2',
+    bankName: '工商银行',
+    bankCode: '工',
+    bankColor: '#DC2626',
+    cardName: '宇宙星座卡',
+    cardNumberLast4: '6666',
+    creditLimit: 300000,
+    usedAmount: 45000,
+    availableAmount: 255000,
+    isActive: true,
+    annualFeeStatus: 'waived',
+    feeType: 'waivable',
+    waiverProgress: 100
+  },
+  {
+    id: '3',
+    bankName: '建设银行',
+    bankCode: '建',
+    bankColor: '#2563EB',
+    cardName: '龙卡信用卡',
+    cardNumberLast4: '9999',
+    creditLimit: 200000,
+    usedAmount: 110000,
+    availableAmount: 90000,
+    isActive: true,
+    annualFeeStatus: 'pending',
+    feeType: 'waivable',
+    waiverProgress: 45
+  },
+  {
+    id: '4',
+    bankName: '中国银行',
+    bankCode: '中',
+    bankColor: '#DC2626',
+    cardName: '长城环球通卡',
+    cardNumberLast4: '7777',
+    creditLimit: 150000,
+    usedAmount: 30000,
+    availableAmount: 120000,
+    isActive: true,
+    annualFeeStatus: 'waived',
+    feeType: 'waivable',
+    waiverProgress: 100
+  },
+  {
+    id: '5',
+    bankName: '交通银行',
+    bankCode: '交',
+    bankColor: '#2563EB',
+    cardName: '沃尔玛信用卡',
+    cardNumberLast4: '5555',
+    creditLimit: 100000,
+    usedAmount: 80000,
+    availableAmount: 20000,
+    isActive: true,
+    annualFeeStatus: 'overdue',
+    feeType: 'rigid',
+    waiverProgress: 0
+  },
+  {
+    id: '6',
+    bankName: '光大银行',
+    bankCode: '光',
+    bankColor: '#7C3AED',
+    cardName: '阳光信用卡',
+    cardNumberLast4: '4444',
+    creditLimit: 80000,
+    usedAmount: 26400,
+    availableAmount: 53600,
+    isActive: true,
+    annualFeeStatus: 'pending',
+    feeType: 'waivable',
+    waiverProgress: 67
+  }
+])
 
 // 计算属性
-const displayCards = computed(() => cardList.value.slice(0, 3))
+const summary = computed(() => ({
+  activeCards: creditCards.value.filter(card => card.isActive).length,
+  totalCredit: creditCards.value.reduce((sum, card) => sum + card.availableAmount, 0),
+  averageInterestFree: 45
+}))
 
-// 页面加载时获取数据
-onLoad(async () => {
-  await loadData()
-})
+const pendingFeeCards = computed(() => 
+  creditCards.value.filter(card => card.annualFeeStatus === 'pending' || card.annualFeeStatus === 'overdue').length
+)
 
-// 下拉刷新
-onPullDownRefresh(async () => {
-  await loadData()
-  uni.stopPullDownRefresh()
-})
-
-// 数据加载函数
-const loadData = async () => {
-  try {
-    loading.value = true
-    
-    console.log('🔍 开始加载数据...')
-    console.log('🌐 当前环境:', import.meta.env.MODE)
-    console.log('🎯 Mock 是否可用:', typeof window !== 'undefined' && (window as any).Mock ? '✅ 可用' : '❌ 不可用')
-    
-    // 并行请求数据
-    const [cardsRes, notificationsRes] = await Promise.all([
-      cardApi.getCards(),
-      notificationApi.getNotifications()
-    ])
-
-    console.log('📊 Cards API 响应:', cardsRes)
-    console.log('🔔 Notifications API 响应:', notificationsRes)
-
-    if (cardsRes.code === 200) {
-      cardList.value = cardsRes.data.list
-      summary.value = cardsRes.data.summary
-      console.log('✅ 信用卡数据加载成功:', cardList.value.length, '张卡片')
-    }
-
-    if (notificationsRes.code === 200) {
-      notificationCount.value = notificationsRes.data.unreadCount
-      console.log('✅ 通知数据加载成功:', notificationCount.value, '条未读')
-    }
-  } catch (error) {
-    console.error('❌ 加载数据失败:', error)
-    uni.showToast({
-      title: '数据加载失败',
-      icon: 'none'
-    })
-  } finally {
-    loading.value = false
-  }
-}
+const feeStats = computed(() => ({
+  waived: creditCards.value.filter(card => card.annualFeeStatus === 'waived').length,
+  pending: creditCards.value.filter(card => card.annualFeeStatus === 'pending').length,
+  paid: creditCards.value.filter(card => card.annualFeeStatus === 'paid').length,
+  overdue: creditCards.value.filter(card => card.annualFeeStatus === 'overdue').length,
+}))
 
 // 工具函数
 const formatMoney = (amount: number) => {
@@ -259,62 +260,44 @@ const formatMoney = (amount: number) => {
   return (amount / 10000).toFixed(1) + '万'
 }
 
-const getCardStatusClass = (isActive: boolean) => {
-  return isActive ? 'text-green-600' : 'text-red-600'
+// 事件处理
+const handleCardClick = (cardId: string) => {
+  console.log('Card clicked:', cardId)
+  // 可以导航到卡片详情页
 }
 
-const getFeeStatusClass = (status: string) => {
-  const classes = {
-    pending: 'text-orange-600',
-    waived: 'text-green-600',
-    paid: 'text-blue-600',
-    overdue: 'text-red-600'
+const handleAddCard = () => {
+  console.log('Add card clicked')
+  // 可以导航到添加卡片页面
+}
+
+const handleViewAll = () => {
+  console.log('View all clicked')
+  uni.navigateTo({
+    url: '/pages/cards/index'
+  })
+}
+
+const handleTabClick = (tab: string) => {
+  console.log('Tab clicked:', tab)
+  const routes = {
+    home: '/pages/index/index',
+    cards: '/pages/cards/index',
+    transactions: '/pages/transactions/index',
+    fees: '/pages/fees/index',
+    mine: '/pages/mine/index'
   }
-  return classes[status] || 'text-gray-600'
-}
-
-const getFeeStatusText = (status: string) => {
-  const texts = {
-    pending: '待缴费',
-    waived: '已减免',
-    paid: '已缴费',
-    overdue: '已逾期'
+  
+  if (routes[tab] && routes[tab] !== '/pages/index/index') {
+    uni.navigateTo({
+      url: routes[tab]
+    })
   }
-  return texts[status] || '未知'
 }
 
-// 导航函数
-const goToCardList = () => {
-  uni.navigateTo({ url: '/pages/cards/index' })
-}
-
-const goToCardDetail = (cardId: string) => {
-  uni.navigateTo({ url: `/pages/cards/detail?id=${cardId}` })
-}
-
-const goToTransactions = () => {
-  uni.navigateTo({ url: '/pages/transactions/index' })
-}
-
-const goToNotifications = () => {
-  uni.navigateTo({ url: '/pages/notifications/index' })
-}
-
-const goToSettings = () => {
-  uni.navigateTo({ url: '/pages/mine/index' })
-}
-
-const goToStatistics = () => {
-  uni.navigateTo({ url: '/pages/statistics/index' })
-}
-
-const goToReminders = () => {
-  uni.navigateTo({ url: '/pages/reminders/index' })
-}
-
-const addCard = () => {
-  uni.navigateTo({ url: '/pages/cards/add' })
-}
+onMounted(() => {
+  console.log('首页加载完成')
+})
 </script>
 
 <style lang="scss">
