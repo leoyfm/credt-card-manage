@@ -24,7 +24,10 @@
     
         <!-- 信用卡预览 -->
         <view class="mx-4 mt-4 mb-6">
-          <view class="card-preview relative bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+          <view 
+            class="card-preview relative rounded-xl p-6 text-white"
+            :style="{ background: getCardGradient(formData.bankColor) }"
+          >
             <view class="flex justify-between items-start mb-4">
               <view>
                 <text class="text-lg font-medium">{{ formData.bankName || '招商银行' }}</text>
@@ -52,6 +55,37 @@
         </view>
     
         <scroll-view scroll-y class="flex-1">
+
+          <!-- 个性化设置 -->
+          <view class="form-section">
+            <view class="section-title">
+              <text>个性化设置</text>
+            </view>
+            
+            <view class="form-item">
+              <text class="label">卡片颜色</text>
+              <view class="color-picker">
+                <view class="color-grid">
+                  <view 
+                    v-for="(color, index) in cardColors" 
+                    :key="index"
+                    :class="['color-item', formData.bankColor === color ? 'selected' : '']"
+                    :style="{ backgroundColor: color }"
+                    @click="selectColor(color)"
+                  ></view>
+                </view>
+                <view class="mt-3 flex items-center">
+                  <text class="text-sm text-gray-600 mr-2">启用此卡片</text>
+                  <switch 
+                    :checked="formData.isEnabled"
+                    @change="onIsEnabledChange"
+                    color="#007AFF"
+                  />
+                </view>
+              </view>
+            </view>
+          </view>
+
           <!-- 基本信息 -->
           <view class="form-section">
             <view class="section-title">
@@ -74,15 +108,15 @@
                 class="input"
                 v-model="formData.cardNumber"
                 placeholder="请输入完整卡号"
-                maxlength="19"
+                :maxlength="19"
               />
             </view>
             
             <view class="form-item">
-              <text class="label">生效期限</text>
-              <picker mode="date" :value="formData.effectiveDate" @change="onEffectiveDateChange">
+              <text class="label">有效期至</text>
+              <picker mode="date" :value="formData.expiryDate" @change="onExpiryDateChange">
                 <view class="picker-view">
-                  <text>{{ formData.effectiveDate || '请选择' }}</text>
+                  <text>{{ formData.expiryDate || '请选择' }}</text>
                   <text class="arrow">></text>
                 </view>
               </picker>
@@ -125,71 +159,42 @@
                 type="number"
               />
             </view>
-            
-            <view class="form-item">
-              <text class="label">最低还款额度 (¥)</text>
-              <input 
-                class="input"
-                v-model.number="formData.minimumPayment"
-                placeholder="0"
-                type="number"
-              />
-            </view>
           </view>
     
-          <!-- 还款信息 -->
+          <!-- 账单设置 -->
           <view class="form-section">
             <view class="section-title">
-              <text>还款信息</text>
+              <text>账单设置</text>
             </view>
             
             <view class="form-item">
-              <text class="label">主体类型 (期数)</text>
-              <picker mode="selector" :range="repaymentTerms" :value="repaymentTermIndex" @change="onRepaymentTermChange">
+              <text class="label">账单日</text>
+              <picker mode="selector" :range="billDays" :value="billDayIndex" @change="onBillDayChange">
                 <view class="picker-view">
-                  <text>{{ repaymentTerms[repaymentTermIndex] }}</text>
+                  <text>{{ billDays[billDayIndex] }}</text>
                   <text class="arrow">></text>
                 </view>
               </picker>
             </view>
             
             <view class="form-item">
-              <text class="label">还款日 (%)</text>
-              <input 
-                class="input"
-                v-model.number="formData.dueDate"
-                placeholder="0"
-                type="number"
-              />
-            </view>
-            
-            <view class="form-item">
-              <text class="label">上次还款日</text>
-              <picker mode="date" :value="formData.lastPaymentDate" @change="onLastPaymentDateChange">
+              <text class="label">还款日</text>
+              <picker mode="selector" :range="dueDays" :value="dueDayIndex" @change="onDueDayChange">
                 <view class="picker-view">
-                  <text>{{ formData.lastPaymentDate || '2024/06/07' }}</text>
+                  <text>{{ dueDays[dueDayIndex] }}</text>
                   <text class="arrow">></text>
                 </view>
               </picker>
             </view>
+        
           </view>
     
-          <!-- 费用信息 -->
+                    <!-- 年费信息 -->
           <view class="form-section">
             <view class="section-title">
-              <text>费用信息</text>
+              <text>年费信息</text>
             </view>
-            
-            <view class="form-item">
-              <text class="label">免费期 (期数)</text>
-              <picker mode="selector" :range="gracePeriods" :value="gracePeriodIndex" @change="onGracePeriodChange">
-                <view class="picker-view">
-                  <text>{{ gracePeriods[gracePeriodIndex] }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-            </view>
-            
+      
             <view class="form-item">
               <text class="label">年费金额 (¥)</text>
               <view class="flex justify-between items-center">
@@ -204,203 +209,95 @@
             </view>
             
             <view class="form-item">
-              <text class="label">还款方式</text>
-              <picker mode="selector" :range="paymentMethods" :value="paymentMethodIndex" @change="onPaymentMethodChange">
+              <text class="label">年费类型</text>
+              <picker mode="selector" :range="annualFeeTypes" :value="annualFeeTypeIndex" @change="onAnnualFeeTypeChange">
                 <view class="picker-view">
-                  <text>{{ paymentMethods[paymentMethodIndex] }}</text>
+                  <text>{{ annualFeeTypes[annualFeeTypeIndex] }}</text>
                   <text class="arrow">></text>
                 </view>
               </picker>
             </view>
-            
-            <view class="form-item">
-              <text class="label">所属机构</text>
+
+            <!-- 条件字段根据年费类型显示 -->
+            <view v-if="formData.annualFeeType === '刷卡次数达标'" class="form-item">
+              <text class="label">所需刷卡次数</text>
               <input 
                 class="input"
-                v-model="formData.institution"
-                placeholder="请输入所属机构"
-              />
-            </view>
-          </view>
-    
-          <!-- 手续设置 -->
-          <view class="form-section">
-            <view class="section-title">
-              <text>手续设置</text>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">手续费 (¥)</text>
-              <input 
-                class="input"
-                v-model.number="formData.serviceFee"
-                placeholder="0"
+                v-model.number="formData.requiredSwipeCount"
+                placeholder="请输入所需刷卡次数"
                 type="number"
               />
             </view>
-            
+
+            <view v-if="formData.annualFeeType === '刷卡金额达标'" class="form-item">
+              <text class="label">所需刷卡金额 (¥)</text>
+              <input 
+                class="input"
+                v-model.number="formData.requiredSwipeAmount"
+                placeholder="请输入所需刷卡金额"
+                type="number"
+              />
+            </view>
+
+            <view v-if="formData.annualFeeType === '积分兑换'" class="form-item">
+              <text class="label">所需积分</text>
+              <input 
+                class="input"
+                v-model.number="formData.requiredPoints"
+                placeholder="请输入所需积分"
+                type="number"
+              />
+            </view>
+
+            <view v-if="formData.annualFeeType === '积分兑换'" class="form-item">
+              <text class="label">积分兑换比率</text>
+              <view class="flex items-center gap-2">
+                <text class="text-sm text-gray-600">1元 = </text>
+                <input 
+                  class="input"
+                  style="flex: 0 0 80px;"
+                  v-model.number="formData.pointsPerYuan"
+                  placeholder="1"
+                  type="number"
+                />
+                <text class="text-sm text-gray-600">积分</text>
+              </view>
+            </view>
+
+            <view v-if="formData.annualFeeType === '积分兑换'" class="form-item">
+              <text class="label">积分价值</text>
+              <view class="flex items-center gap-2">
+                <text class="text-sm text-gray-600">1积分 = </text>
+                <input 
+                  class="input"
+                  style="flex: 0 0 80px;"
+                  v-model.number="formData.yuanPerPoint"
+                  placeholder="1"
+                  type="number"
+                  step="0.01"
+                />
+                <text class="text-sm text-gray-600">元</text>
+              </view>
+            </view>
+
             <view class="form-item">
-              <text class="label">手续费类别</text>
-              <picker mode="selector" :range="feeCategories" :value="feeCategoryIndex" @change="onFeeCategoryChange">
+              <text class="label">年费开始时间</text>
+              <picker mode="date" :value="formData.annualFeeStartDate" @change="onAnnualFeeStartDateChange">
                 <view class="picker-view">
-                  <text>{{ feeCategories[feeCategoryIndex] }}</text>
+                  <text>{{ formData.annualFeeStartDate || '请选择' }}</text>
                   <text class="arrow">></text>
                 </view>
               </picker>
             </view>
-            
+
             <view class="form-item">
-              <text class="label">收费方式</text>
-              <input 
-                class="input"
-                v-model="formData.chargeMethod"
-                placeholder="请输入收费方式"
-              />
-            </view>
-            
-            <view class="form-item">
-              <text class="label">上次手续费日期</text>
-              <view class="flex gap-4">
-                <picker mode="date" :value="formData.lastFeeDate1" @change="onLastFeeDate1Change">
-                  <view class="picker-view flex-1">
-                    <text>{{ formData.lastFeeDate1 || 'yyyy/mm/dd' }}</text>
-                    <text class="arrow">></text>
-                  </view>
+                <text class="label">年费结束时间</text>
+                <picker mode="date" :value="formData.annualFeeEndDate" @change="onAnnualFeeEndDateChange">
+                    <view class="picker-view">
+                        <text>{{ formData.annualFeeEndDate || '请选择' }}</text>
+                        <text class="arrow">></text>
+                    </view>
                 </picker>
-                <picker mode="date" :value="formData.lastFeeDate2" @change="onLastFeeDate2Change">
-                  <view class="picker-view flex-1">
-                    <text>{{ formData.lastFeeDate2 || 'yyyy/mm/dd' }}</text>
-                    <text class="arrow">></text>
-                  </view>
-                </picker>
-              </view>
-            </view>
-          </view>
-    
-          <!-- 手费设置 -->
-          <view class="form-section">
-            <view class="section-title">
-              <text>手费设置</text>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">手续费收费费率 (%)</text>
-              <view class="flex gap-4">
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.feeRate1"
-                  placeholder="1"
-                  type="number"
-                />
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.feeRate2"
-                  placeholder="0"
-                  type="number"
-                />
-              </view>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">手续费条件费率 (%)</text>
-              <view class="flex gap-4">
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.conditionalRate1"
-                  placeholder="1"
-                  type="number"
-                />
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.conditionalRate2"
-                  placeholder="0"
-                  type="number"
-                />
-              </view>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">逾期费 (¥)</text>
-              <view class="flex gap-4">
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.lateFee1"
-                  placeholder="0"
-                  type="number"
-                />
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.lateFee2"
-                  placeholder="60"
-                  type="number"
-                />
-              </view>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">违约费 (¥)</text>
-              <view class="flex gap-4">
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.penaltyFee1"
-                  placeholder="60"
-                  type="number"
-                />
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.penaltyFee2"
-                  placeholder="3"
-                  type="number"
-                />
-              </view>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">年费 (¥)</text>
-              <view class="flex gap-4">
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.annualFeeAmount1"
-                  placeholder="90"
-                  type="number"
-                />
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.annualFeeAmount2"
-                  placeholder="90"
-                  type="number"
-                />
-              </view>
-            </view>
-          </view>
-    
-          <!-- 其他设置 -->
-          <view class="form-section">
-            <view class="section-title">
-              <text>其他设置</text>
-            </view>
-            
-            <view class="form-item">
-              <text class="label">卡片颜色</text>
-              <view class="color-picker">
-                <view class="flex flex-wrap gap-3 mt-2">
-                  <view 
-                    v-for="(color, index) in cardColors" 
-                    :key="index"
-                    :class="['color-item', formData.bankColor === color ? 'selected' : '']"
-                    :style="{ backgroundColor: color }"
-                    @click="selectColor(color)"
-                  ></view>
-                </view>
-                <view class="mt-3 flex items-center">
-                  <text class="text-sm text-gray-600 mr-2">按标准方式</text>
-                  <switch 
-                    :checked="formData.useStandardStyle"
-                    @change="onUseStandardStyleChange"
-                    color="#007AFF"
-                  />
-                </view>
-              </view>
             </view>
           </view>
     
@@ -420,48 +317,38 @@
       cardName: '全币种国际卡',
       cardNumber: '',
       cardType: 'visa',
-      effectiveDate: '',
       expiryDate: '12/25',
       creditLimit: 0,
       usedAmount: 0,
-      minimumPayment: 0,
-      dueDate: 0,
-      lastPaymentDate: '',
+      billDay: 1,
+      dueDate: 1,
       annualFee: 0,
-      institution: '',
-      serviceFee: 0,
-      chargeMethod: '',
-      lastFeeDate1: '',
-      lastFeeDate2: '',
-      feeRate1: 1,
-      feeRate2: 0,
-      conditionalRate1: 1,
-      conditionalRate2: 0,
-      lateFee1: 0,
-      lateFee2: 60,
-      penaltyFee1: 60,
-      penaltyFee2: 3,
-      annualFeeAmount1: 90,
-      annualFeeAmount2: 90,
+      annualFeeType: '刚性年费',
+      annualFeeStartDate: '',
+      annualFeeEndDate: '',
+      // 年费达标条件
+      requiredSwipeCount: 0,
+      requiredSwipeAmount: 0,
+      requiredPoints: 0,
+      // 积分兑换比率
+      pointsPerYuan: 1,        // 每元对应积分数
+      yuanPerPoint: 1,         // 每积分对应金额
       bankColor: '#3B82F6',
-      useStandardStyle: true
+      isEnabled: true
     })
     
     // 选择器数据
-    const cardTypes = ref(['Visa', 'MasterCard', 'UnionPay', 'American Express'])
+    const cardTypes = ref(['Visa', 'MasterCard', '银联', 'American Express'])
     const cardTypeIndex = ref(0)
     
-    const repaymentTerms = ref(['1期', '3期', '6期', '12期', '24期'])
-    const repaymentTermIndex = ref(0)
+    const billDays = ref(Array.from({length: 31}, (_, i) => `${i + 1}日`))
+    const billDayIndex = ref(0)
     
-    const gracePeriods = ref(['20天', '25天', '50天', '56天'])
-    const gracePeriodIndex = ref(0)
+    const dueDays = ref(Array.from({length: 31}, (_, i) => `${i + 1}日`))
+    const dueDayIndex = ref(0)
     
-    const paymentMethods = ref(['自动扣款', '主动还款', '银行转账'])
-    const paymentMethodIndex = ref(0)
-    
-    const feeCategories = ref(['取现手续费', '分期手续费', '其他费用'])
-    const feeCategoryIndex = ref(0)
+    const annualFeeTypes = ref(['刚性年费', '刷卡次数达标', '刷卡金额达标', '积分兑换'])
+    const annualFeeTypeIndex = ref(0)
     
     // 卡片颜色选项
     const cardColors = ref([
@@ -477,6 +364,31 @@
         case 'unionpay': return 'U'
         default: return 'C'
       }
+    }
+    
+    // 获取卡片渐变背景
+    const getCardGradient = (color: string) => {
+      // 创建渐变效果，从选择的颜色到稍深的版本
+      const baseColor = color
+      const darkerColor = darkenColor(color, 20)
+      return `linear-gradient(135deg, ${baseColor} 0%, ${darkerColor} 100%)`
+    }
+    
+    // 颜色加深函数
+    const darkenColor = (color: string, percent: number) => {
+      // 将十六进制颜色转换为RGB
+      const hex = color.replace('#', '')
+      const r = parseInt(hex.substr(0, 2), 16)
+      const g = parseInt(hex.substr(2, 2), 16)
+      const b = parseInt(hex.substr(4, 2), 16)
+      
+      // 减少亮度
+      const newR = Math.max(0, Math.floor(r * (100 - percent) / 100))
+      const newG = Math.max(0, Math.floor(g * (100 - percent) / 100))
+      const newB = Math.max(0, Math.floor(b * (100 - percent) / 100))
+      
+      // 转换回十六进制
+      return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
     }
     
     // 事件处理
@@ -504,7 +416,7 @@
         creditLimit: formData.creditLimit,
         usedAmount: formData.usedAmount,
         availableAmount: formData.creditLimit - formData.usedAmount,
-        isActive: true,
+        isActive: formData.isEnabled,
         annualFeeStatus: 'pending',
         feeType: 'waivable',
         waiverProgress: 0,
@@ -535,8 +447,8 @@
     }
     
     // 选择器变化事件
-    const onEffectiveDateChange = (e: any) => {
-      formData.effectiveDate = e.detail.value
+    const onExpiryDateChange = (e: any) => {
+      formData.expiryDate = e.detail.value
     }
     
     const onCardTypeChange = (e: any) => {
@@ -544,36 +456,31 @@
       formData.cardType = cardTypes.value[e.detail.value].toLowerCase()
     }
     
-    const onRepaymentTermChange = (e: any) => {
-      repaymentTermIndex.value = e.detail.value
+    const onBillDayChange = (e: any) => {
+      billDayIndex.value = e.detail.value
+      formData.billDay = e.detail.value + 1
     }
     
-    const onLastPaymentDateChange = (e: any) => {
-      formData.lastPaymentDate = e.detail.value
+    const onDueDayChange = (e: any) => {
+      dueDayIndex.value = e.detail.value
+      formData.dueDate = e.detail.value + 1
     }
     
-    const onGracePeriodChange = (e: any) => {
-      gracePeriodIndex.value = e.detail.value
+    const onAnnualFeeTypeChange = (e: any) => {
+      annualFeeTypeIndex.value = e.detail.value
+      formData.annualFeeType = annualFeeTypes.value[e.detail.value]
     }
     
-    const onPaymentMethodChange = (e: any) => {
-      paymentMethodIndex.value = e.detail.value
+    const onAnnualFeeStartDateChange = (e: any) => {
+      formData.annualFeeStartDate = e.detail.value
     }
     
-    const onFeeCategoryChange = (e: any) => {
-      feeCategoryIndex.value = e.detail.value
+    const onAnnualFeeEndDateChange = (e: any) => {
+      formData.annualFeeEndDate = e.detail.value
     }
     
-    const onLastFeeDate1Change = (e: any) => {
-      formData.lastFeeDate1 = e.detail.value
-    }
-    
-    const onLastFeeDate2Change = (e: any) => {
-      formData.lastFeeDate2 = e.detail.value
-    }
-    
-    const onUseStandardStyleChange = (e: any) => {
-      formData.useStandardStyle = e.detail.value
+    const onIsEnabledChange = (e: any) => {
+      formData.isEnabled = e.detail.value
     }
     
     // 颜色选择
@@ -592,8 +499,7 @@
     }
     
     .card-preview {
-      background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
     
     .form-section {
@@ -666,11 +572,24 @@
       flex: 1;
     }
     
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    
     .color-item {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       position: relative;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      
+      &:active {
+        transform: scale(0.95);
+      }
       
       &.selected::after {
         content: '✓';
@@ -679,7 +598,7 @@
         left: 50%;
         transform: translate(-50%, -50%);
         color: white;
-        font-size: 16px;
+        font-size: 20px;
         font-weight: bold;
       }
     }
@@ -708,6 +627,14 @@
       gap: 0.75rem;
     }
     
+    .gap-2 {
+      gap: 0.5rem;
+    }
+    
+    .gap-3 {
+      gap: 0.75rem;
+    }
+    
     .gap-4 {
       gap: 1rem;
     }
@@ -730,6 +657,10 @@
     
     .h-20 {
       height: 5rem;
+    }
+    
+    .text-gray-600 {
+      color: #4b5563;
     }
     
     switch {
