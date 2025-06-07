@@ -10,40 +10,19 @@
 
 <template>
   <view class="index-container safe-area bg-gray-50 min-h-screen">
-    <!-- 顶部个人信息区域 -->
-    <view class="header-section bg-gradient-to-br from-purple-600 to-purple-700 text-white relative overflow-hidden">
-      <view class="p-6 pb-8 relative z-10">
-        <view class="flex items-center justify-between mb-4">
-          <view class="flex items-center">
-            <image class="w-12 h-12 rounded-full mr-3 bg-white bg-opacity-20" src="/static/images/avatar.png" mode="aspectFill" />
-            <view>
-              <text class="text-lg font-semibold">LEO</text>
-              <text class="text-sm opacity-80 block">信用卡管家</text>
-            </view>
-          </view>
-          <view class="flex items-center space-x-3">
-            <text class="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">🔔</text>
-            <text class="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">⚙️</text>
-          </view>
-        </view>
-        <view class="grid grid-cols-3 gap-4">
-          <view class="text-center">
-            <text class="text-2xl font-bold">{{ summary.activeCards }}</text>
-            <text class="text-sm opacity-80">活跃卡片</text>
-          </view>
-          <view class="text-center">
-            <text class="text-2xl font-bold">{{ formatMoney(summary.totalCredit) }}</text>
-            <text class="text-sm opacity-80">可用额度</text>
-          </view>
-          <view class="text-center">
-            <text class="text-2xl font-bold">{{ summary.averageInterestFree }}</text>
-            <text class="text-sm opacity-80">免息天数</text>
-          </view>
-        </view>
-      </view>
-      <!-- 装饰性背景 -->
-      <view class="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full transform translate-x-16 -translate-y-16"></view>
-      <view class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full transform -translate-x-12 translate-y-12"></view>
+    <!-- 顶部状态栏区域 -->
+    <HeaderSection 
+      :cards="creditCards"
+      @notificationClick="handleNotificationClick"
+      @settingsClick="handleSettingsClick"
+    />
+
+    <!-- 今日推荐 -->
+    <view class="p-4 pt-2">
+      <TodayRecommendation 
+        :cards="creditCards"
+        @recommendationClick="handleRecommendationClick"
+      />
     </view>
 
     <!-- 年费概览 -->
@@ -90,6 +69,8 @@
 import { ref, computed, onMounted } from 'vue'
 import CreditCard from '@/components/CreditCard.vue'
 import FeeOverview from '@/components/FeeOverview.vue'
+import TodayRecommendation from '@/components/TodayRecommendation.vue'
+import HeaderSection from '@/components/HeaderSection.vue'
 import type { CreditCard as CreditCardType } from '@/types/card'
 
 // 获取屏幕边界到安全区域距离
@@ -225,21 +206,9 @@ const creditCards = ref<CreditCardType[]>([
 ])
 
 // 计算属性
-const summary = computed(() => ({
-  activeCards: creditCards.value.filter(card => card.isActive).length,
-  totalCredit: creditCards.value.reduce((sum, card) => sum + card.availableAmount, 0),
-  averageInterestFree: 45
-}))
-
 const pendingFeeCards = computed(() => 
   creditCards.value.filter(card => card.annualFeeStatus === 'pending' || card.annualFeeStatus === 'overdue').length
 )
-
-// 工具函数
-const formatMoney = (amount: number) => {
-  if (!amount) return '0.00'
-  return (amount / 10000).toFixed(1) + '万'
-}
 
 // 事件处理
 const handleCardClick = (cardId: string) => {
@@ -313,6 +282,32 @@ const handleManageWaiver = () => {
   uni.showToast({
     title: '减免管理功能开发中',
     icon: 'none'
+  })
+}
+
+const handleRecommendationClick = (card: CreditCardType) => {
+  console.log('Recommendation clicked:', card)
+  // 可以跳转到推荐卡片的详情页面或使用建议
+  uni.showToast({
+    title: `推荐使用${card.bankName}${card.cardName}`,
+    icon: 'success'
+  })
+}
+
+const handleNotificationClick = () => {
+  console.log('Notification clicked')
+  // 可以导航到通知页面
+  uni.showToast({
+    title: '通知功能开发中',
+    icon: 'none'
+  })
+}
+
+const handleSettingsClick = () => {
+  console.log('Settings clicked')
+  // 可以导航到设置页面
+  uni.navigateTo({
+    url: '/pages/mine/index'
   })
 }
 
