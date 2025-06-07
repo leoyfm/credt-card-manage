@@ -50,7 +50,7 @@
       "type": "home",
       "style": {
         "navigationStyle": "custom",
-        "navigationBarTitleText": "首页"
+        "navigationBarTitleText": "信用卡管家"
       }
     },
     {
@@ -59,6 +59,22 @@
       "style": {
         "navigationBarTitleText": "关于",
         "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/cards/index",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "我的卡片",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/fees/index",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "费用管理",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -73,7 +89,16 @@
       "path": "pages/mine/index",
       "type": "page",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/transactions/index",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "消费记录",
+        "enablePullDownRefresh": true
       }
     },
     {
