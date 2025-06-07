@@ -106,6 +106,14 @@
       }
     },
     {
+      "path": "pages/notifications/index",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通知中心"
+      }
+    },
+    {
       "path": "pages/test-mock/index",
       "type": "page",
       "style": {

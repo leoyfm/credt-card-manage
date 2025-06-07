@@ -140,8 +140,10 @@ const getBestCardInterestFreeDays = () => {
 // 事件处理
 const handleNotificationClick = () => {
   console.log('Notification clicked')
-  // 清除未读通知数量
-  unreadNotifications.value = 0
+  // 跳转到通知中心页面
+  uni.navigateTo({
+    url: '/pages/notifications/index'
+  })
   // 发送事件到父组件
   emit('notificationClick')
 }
