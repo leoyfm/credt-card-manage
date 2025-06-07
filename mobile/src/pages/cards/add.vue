@@ -7,8 +7,8 @@
     }
     </route>
     
-    <template>
-      <view class="add-card-page bg-gray-50 min-h-screen">
+        <template>
+      <view class="add-card-page">
         <!-- 顶部导航栏 -->
         <view class="top-nav bg-white">
           <view class="px-4 py-4 flex items-center justify-between">
@@ -51,8 +51,9 @@
             </view>
           </view>
         </view>
-    
-        <scroll-view scroll-y class="flex-1">
+
+        <!-- 可滚动表单内容 -->
+        <scroll-view scroll-y class="form-scroll-container">
 
           <!-- 个性化设置 -->
           <view class="form-section">
@@ -447,7 +448,15 @@
     </script>
     
     <style lang="scss" scoped>
+    page {
+      height: 100%;
+    }
+    
     .add-card-page {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-color: #f8fafc;
       padding-top: env(safe-area-inset-top);
     }
     
@@ -457,6 +466,11 @@
     
     .card-preview {
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .form-scroll-container {
+      flex: 1;
+      height: 0; /* 关键：设置高度为0，让flex布局分配高度 */
     }
     
     .form-section {
