@@ -74,6 +74,14 @@
       }
     },
     {
+      "path": "pages/cards/add",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "添加信用卡"
+      }
+    },
+    {
       "path": "pages/cards/index",
       "type": "page",
       "style": {
@@ -115,7 +123,11 @@
     },
     {
       "path": "pages/notifications/settings",
-      "type": "page"
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通知设置"
+      }
     },
     {
       "path": "pages/test-mock/index",

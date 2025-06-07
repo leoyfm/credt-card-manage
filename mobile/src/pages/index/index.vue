@@ -257,7 +257,10 @@ const handleToggleActiveCard = (cardId: string) => {
 
 const handleAddCard = () => {
   console.log('Add card clicked')
-  // 可以导航到添加卡片页面
+  // 跳转到添加卡片页面
+  uni.navigateTo({
+    url: '/pages/cards/add'
+  })
 }
 
 const handleViewAll = () => {
