@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库 (开发环境)
+  postgres:
+    image: postgres:15-alpine
+    container_name: credit-card-postgres-dev
+    environment:
+      POSTGRES_DB: credit_card_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"  # 避免与生产环境端口冲突
+    networks:
+      - credit-card-dev-network
+
+  # Redis缓存 (开发环境)
+  redis:
+    image: redis:7-alpine
+    container_name: credit-card-redis-dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6380:6379"  # 避免与生产环境端口冲突
+    networks:
+      - credit-card-dev-network
+
+  # FastAPI后端 (开发环境 - 支持热重载)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: credit-card-backend-dev
+    environment:
+      - DATABASE_URL=postgresql://dev_user:dev_password@postgres:5432/credit_card_dev
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - DEBUG=True
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8001:8000"  # 开发环境使用不同端口
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - credit-card-dev-network
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Adminer数据库管理工具
+  adminer:
+    image: adminer:latest
+    container_name: credit-card-adminer-dev
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - credit-card-dev-network
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  credit-card-dev-network:
+    driver: bridge 

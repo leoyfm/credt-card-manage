@@ -75,9 +75,14 @@ credit-card-manage/
 
 ### 环境要求
 
+**传统部署：**
 - Node.js >= 16.0.0
 - Python >= 3.8
 - PostgreSQL >= 12.0
+
+**Docker部署（推荐）：**
+- Docker >= 20.0.0
+- Docker Compose >= 2.0.0
 
 ### 前端安装运行
 
@@ -117,10 +122,42 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-### 数据库配置
+### Docker 一键部署（推荐）
 
+**Windows 用户：**
+```powershell
+# 交互式部署菜单
+.\deploy.ps1
+
+# 或直接命令行部署
+.\deploy.ps1 prod    # 生产环境
+.\deploy.ps1 dev     # 开发环境
+```
+
+**Linux/Mac 用户：**
+```bash
+# 交互式部署菜单
+./deploy.sh
+
+# 或直接命令行部署
+./deploy.sh prod     # 生产环境
+./deploy.sh dev      # 开发环境
+```
+
+**手动 Docker 部署：**
+```bash
+# 生产环境
+docker-compose up -d --build
+
+# 开发环境
+docker-compose -f docker-compose.dev.yml up -d --build
+```
+
+### 传统部署方式
+
+**数据库配置：**
 1. 创建 PostgreSQL 数据库
-2. 配置环境变量或修改配置文件
+2. 复制 `env.example` 为 `.env` 并配置环境变量
 3. 运行数据库迁移
 
 ```bash
@@ -128,11 +165,25 @@ uvicorn main:app --reload
 alembic upgrade head
 ```
 
+## 🐳 Docker 服务
+
+部署后可以访问以下服务：
+
+**生产环境：**
+- 🌐 **前端应用**：http://localhost
+- 🔗 **后端API**：http://localhost:8000
+- 🗄️ **数据库管理**：http://localhost:8080 (Adminer)
+
+**开发环境：**
+- 🔗 **后端API**：http://localhost:8001 (热重载)
+- 🗄️ **数据库管理**：http://localhost:8081 (Adminer)
+
 ## 📱 支持平台
 
 - 📱 **移动端**：iOS、Android
 - 🌐 **Web端**：现代浏览器
 - 🖥️ **桌面端**：Electron (计划中)
+- 🐳 **容器化**：Docker 支持
 
 ## 🔧 开发说明
 
