@@ -13,8 +13,6 @@
     <!-- 顶部状态栏区域 -->
     <HeaderSection 
       :cards="creditCards"
-      @notificationClick="handleNotificationClick"
-      @settingsClick="handleSettingsClick"
     />
 
     <!-- 今日推荐 -->
@@ -294,22 +292,7 @@ const handleRecommendationClick = (card: CreditCardType) => {
   })
 }
 
-const handleNotificationClick = () => {
-  console.log('Notification clicked')
-  // 可以导航到通知页面
-  uni.showToast({
-    title: '通知功能开发中',
-    icon: 'none'
-  })
-}
-
-const handleSettingsClick = () => {
-  console.log('Settings clicked')
-  // 可以导航到设置页面
-  uni.navigateTo({
-    url: '/pages/mine/index'
-  })
-}
+// HeaderSection 组件已经内部处理导航，移除了这两个方法
 
 const handleTabClick = (tab: string) => {
   console.log('Tab clicked:', tab)

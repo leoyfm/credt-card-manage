@@ -61,10 +61,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
-  notificationClick: []
-  settingsClick: []
-}>()
+// 移除emit定义，组件内部直接处理导航
 
 // 通知相关数据
 const unreadNotifications = ref(3) // 演示数据
@@ -144,14 +141,14 @@ const handleNotificationClick = () => {
   uni.navigateTo({
     url: '/pages/notifications/index'
   })
-  // 发送事件到父组件
-  emit('notificationClick')
 }
 
 const handleSettingsClick = () => {
   console.log('Settings clicked')
-  // 发送事件到父组件
-  emit('settingsClick')
+  // 跳转到通知设置页面
+  uni.navigateTo({
+    url: '/pages/notifications/settings'
+  })
 }
 </script>
 

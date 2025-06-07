@@ -32,9 +32,15 @@
             <text class="text-white text-xs font-medium">{{ unreadCount }}</text>
           </view>
         </view>
-        <view class="flex items-center" @click="handleClearAll">
-          <text class="text-lg mr-1">🗑️</text>
-          <text class="text-gray-600">清空</text>
+        <view class="flex items-center gap-4">
+          <view class="flex items-center" @click="handleSettings">
+            <text class="text-lg mr-1">⚙️</text>
+            <text class="text-gray-600">设置</text>
+          </view>
+          <view class="flex items-center" @click="handleClearAll">
+            <text class="text-lg mr-1">🗑️</text>
+            <text class="text-gray-600">清空</text>
+          </view>
         </view>
       </view>
     </view>
@@ -292,6 +298,12 @@ const getIconText = (type: string) => {
 // 事件处理
 const handleClose = () => {
   uni.navigateBack()
+}
+
+const handleSettings = () => {
+  uni.navigateTo({
+    url: '/pages/notifications/settings'
+  })
 }
 
 const handleClearAll = () => {

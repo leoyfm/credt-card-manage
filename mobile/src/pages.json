@@ -114,6 +114,10 @@
       }
     },
     {
+      "path": "pages/notifications/settings",
+      "type": "page"
+    },
+    {
       "path": "pages/test-mock/index",
       "type": "page",
       "style": {
