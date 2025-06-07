@@ -46,50 +46,15 @@
       <view class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full transform -translate-x-12 translate-y-12"></view>
     </view>
 
-    <!-- 年费提醒卡片 -->
-    <view class="p-4 -mt-4">
-      <view class="reminder-card bg-gradient-to-r from-pink-400 to-purple-500 text-white rounded-xl p-4 shadow-lg">
-        <view class="flex items-center justify-between">
-          <view class="flex-1">
-            <text class="text-lg font-semibold mb-1">年费提醒</text>
-            <text class="text-sm opacity-90">{{ pendingFeeCards }}张卡片待处理年费</text>
-          </view>
-          <view class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <text class="text-2xl">💳</text>
-          </view>
-        </view>
-        <view class="flex items-center mt-3">
-          <text class="text-sm opacity-90 mr-2">查看详情</text>
-          <text class="text-white">→</text>
-        </view>
-      </view>
-    </view>
-
     <!-- 年费概览 -->
     <view class="p-4 pt-2">
-      <view class="bg-white rounded-xl p-4 shadow-sm">
-        <text class="text-lg font-semibold text-gray-800 mb-3">年费概览</text>
-        <view class="grid grid-cols-2 gap-4">
-          <view class="text-center p-3 bg-green-50 rounded-lg">
-            <text class="text-2xl font-bold text-green-600">{{ feeStats.waived }}</text>
-            <text class="text-sm text-gray-600 mt-1">已减免</text>
-          </view>
-          <view class="text-center p-3 bg-orange-50 rounded-lg">
-            <text class="text-2xl font-bold text-orange-600">{{ feeStats.pending }}</text>
-            <text class="text-sm text-gray-600 mt-1">待缴费</text>
-          </view>
-        </view>
-        <view class="grid grid-cols-2 gap-4 mt-3">
-          <view class="text-center p-3 bg-blue-50 rounded-lg">
-            <text class="text-2xl font-bold text-blue-600">{{ feeStats.paid }}</text>
-            <text class="text-sm text-gray-600 mt-1">已缴费</text>
-          </view>
-          <view class="text-center p-3 bg-red-50 rounded-lg">
-            <text class="text-2xl font-bold text-red-600">{{ feeStats.overdue }}</text>
-            <text class="text-sm text-gray-600 mt-1">已逾期</text>
-          </view>
-        </view>
-      </view>
+      <FeeOverview 
+        :cards="creditCards"
+        :showDetail="true"
+        :showActions="true"
+        @viewDetail="handleViewFeeDetail"
+        @manageWaiver="handleManageWaiver"
+      />
     </view>
 
     <!-- 添加信用卡按钮 -->
@@ -107,10 +72,14 @@
       </view>
       <view class="space-y-3">
         <CreditCard 
-          v-for="card in creditCards" 
+          v-for="(card, index) in creditCards" 
           :key="card.id" 
           :card="card"
+          :isBestCard="index === 0"
           @cardClick="handleCardClick"
+          @edit="handleEditCard"
+          @delete="handleDeleteCard"
+          @toggleActive="handleToggleActiveCard"
         />
       </view>
     </view>
@@ -120,6 +89,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 import CreditCard from '@/components/CreditCard.vue'
+import FeeOverview from '@/components/FeeOverview.vue'
 import type { CreditCard as CreditCardType } from '@/types/card'
 
 // 获取屏幕边界到安全区域距离
@@ -150,6 +120,7 @@ const creditCards = ref<CreditCardType[]>([
     bankCode: '招',
     bankColor: '#DC2626',
     cardName: '全币种国际卡',
+    cardType: 'visa',
     cardNumberLast4: '8888',
     creditLimit: 500000,
     usedAmount: 125000,
@@ -157,7 +128,9 @@ const creditCards = ref<CreditCardType[]>([
     isActive: true,
     annualFeeStatus: 'paid',
     feeType: 'waivable',
-    waiverProgress: 75
+    waiverProgress: 75,
+    annualFee: 680,
+    dueDate: 15
   },
   {
     id: '2',
@@ -165,6 +138,7 @@ const creditCards = ref<CreditCardType[]>([
     bankCode: '工',
     bankColor: '#DC2626',
     cardName: '宇宙星座卡',
+    cardType: 'mastercard',
     cardNumberLast4: '6666',
     creditLimit: 300000,
     usedAmount: 45000,
@@ -172,7 +146,9 @@ const creditCards = ref<CreditCardType[]>([
     isActive: true,
     annualFeeStatus: 'waived',
     feeType: 'waivable',
-    waiverProgress: 100
+    waiverProgress: 100,
+    annualFee: 580,
+    dueDate: 8
   },
   {
     id: '3',
@@ -180,6 +156,7 @@ const creditCards = ref<CreditCardType[]>([
     bankCode: '建',
     bankColor: '#2563EB',
     cardName: '龙卡信用卡',
+    cardType: 'unionpay',
     cardNumberLast4: '9999',
     creditLimit: 200000,
     usedAmount: 110000,
@@ -187,7 +164,9 @@ const creditCards = ref<CreditCardType[]>([
     isActive: true,
     annualFeeStatus: 'pending',
     feeType: 'waivable',
-    waiverProgress: 45
+    waiverProgress: 45,
+    annualFee: 480,
+    dueDate: 20
   },
   {
     id: '4',
@@ -195,6 +174,7 @@ const creditCards = ref<CreditCardType[]>([
     bankCode: '中',
     bankColor: '#DC2626',
     cardName: '长城环球通卡',
+    cardType: 'visa',
     cardNumberLast4: '7777',
     creditLimit: 150000,
     usedAmount: 30000,
@@ -202,7 +182,9 @@ const creditCards = ref<CreditCardType[]>([
     isActive: true,
     annualFeeStatus: 'waived',
     feeType: 'waivable',
-    waiverProgress: 100
+    waiverProgress: 100,
+    annualFee: 360,
+    dueDate: 25
   },
   {
     id: '5',
@@ -210,6 +192,7 @@ const creditCards = ref<CreditCardType[]>([
     bankCode: '交',
     bankColor: '#2563EB',
     cardName: '沃尔玛信用卡',
+    cardType: 'mastercard',
     cardNumberLast4: '5555',
     creditLimit: 100000,
     usedAmount: 80000,
@@ -217,7 +200,9 @@ const creditCards = ref<CreditCardType[]>([
     isActive: true,
     annualFeeStatus: 'overdue',
     feeType: 'rigid',
-    waiverProgress: 0
+    waiverProgress: 0,
+    annualFee: 200,
+    dueDate: 10
   },
   {
     id: '6',
@@ -225,6 +210,7 @@ const creditCards = ref<CreditCardType[]>([
     bankCode: '光',
     bankColor: '#7C3AED',
     cardName: '阳光信用卡',
+    cardType: 'unionpay',
     cardNumberLast4: '4444',
     creditLimit: 80000,
     usedAmount: 26400,
@@ -232,7 +218,9 @@ const creditCards = ref<CreditCardType[]>([
     isActive: true,
     annualFeeStatus: 'pending',
     feeType: 'waivable',
-    waiverProgress: 67
+    waiverProgress: 67,
+    annualFee: 300,
+    dueDate: 18
   }
 ])
 
@@ -247,13 +235,6 @@ const pendingFeeCards = computed(() =>
   creditCards.value.filter(card => card.annualFeeStatus === 'pending' || card.annualFeeStatus === 'overdue').length
 )
 
-const feeStats = computed(() => ({
-  waived: creditCards.value.filter(card => card.annualFeeStatus === 'waived').length,
-  pending: creditCards.value.filter(card => card.annualFeeStatus === 'pending').length,
-  paid: creditCards.value.filter(card => card.annualFeeStatus === 'paid').length,
-  overdue: creditCards.value.filter(card => card.annualFeeStatus === 'overdue').length,
-}))
-
 // 工具函数
 const formatMoney = (amount: number) => {
   if (!amount) return '0.00'
@@ -266,6 +247,47 @@ const handleCardClick = (cardId: string) => {
   // 可以导航到卡片详情页
 }
 
+const handleEditCard = (card: CreditCardType) => {
+  console.log('Edit card:', card)
+  // 可以导航到编辑页面
+  uni.showToast({
+    title: '编辑功能开发中',
+    icon: 'none'
+  })
+}
+
+const handleDeleteCard = (cardId: string) => {
+  console.log('Delete card:', cardId)
+  uni.showModal({
+    title: '确认删除',
+    content: '确定要删除这张信用卡吗？',
+    success: (res) => {
+      if (res.confirm) {
+        const index = creditCards.value.findIndex(card => card.id === cardId)
+        if (index > -1) {
+          creditCards.value.splice(index, 1)
+          uni.showToast({
+            title: '删除成功',
+            icon: 'success'
+          })
+        }
+      }
+    }
+  })
+}
+
+const handleToggleActiveCard = (cardId: string) => {
+  console.log('Toggle active card:', cardId)
+  const card = creditCards.value.find(card => card.id === cardId)
+  if (card) {
+    card.isActive = !card.isActive
+    uni.showToast({
+      title: card.isActive ? '已启用' : '已停用',
+      icon: 'success'
+    })
+  }
+}
+
 const handleAddCard = () => {
   console.log('Add card clicked')
   // 可以导航到添加卡片页面
@@ -275,6 +297,22 @@ const handleViewAll = () => {
   console.log('View all clicked')
   uni.navigateTo({
     url: '/pages/cards/index'
+  })
+}
+
+const handleViewFeeDetail = () => {
+  console.log('View fee detail clicked')
+  uni.navigateTo({
+    url: '/pages/fees/index'
+  })
+}
+
+const handleManageWaiver = () => {
+  console.log('Manage waiver clicked')
+  // 可以导航到年费减免管理页面
+  uni.showToast({
+    title: '减免管理功能开发中',
+    icon: 'none'
   })
 }
 
