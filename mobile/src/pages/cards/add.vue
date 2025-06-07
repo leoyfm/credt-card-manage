@@ -10,15 +10,17 @@
         <template>
       <view class="add-card-page">
         <!-- 顶部导航栏 -->
-        <view class="top-nav bg-white">
-          <view class="px-4 py-4 flex items-center justify-between">
-            <view class="flex items-center" @click="handleBack">
-              <text class="text-lg mr-2">←</text>
-              <text class="text-lg font-semibold text-gray-900">添加信用卡</text>
-            </view>
-            <wd-button type="primary" size="small" @click="handleSave">保存</wd-button>
-          </view>
-        </view>
+        <wd-navbar 
+          title="添加信用卡"
+          left-text="返回"
+          left-arrow
+          right-text="保存"
+          fixed
+          placeholder
+          safe-area-inset-top
+          @click-left="handleBack"
+          @click-right="handleSave"
+        />
     
         <!-- 信用卡预览 -->
         <view class="mx-4 mt-4 mb-6">
@@ -52,8 +54,8 @@
           </view>
         </view>
 
-        <!-- 可滚动表单内容 -->
-        <scroll-view scroll-y class="form-scroll-container">
+        <!-- 表单内容 -->
+        <view class="form-content">
 
           <!-- 个性化设置 -->
           <view class="form-section">
@@ -267,7 +269,7 @@
     
                   <!-- 底部间距 -->
         <view class="h-20"></view>
-      </scroll-view>
+      </view>
     </view>
     
     <!-- Toast 组件 -->
@@ -277,6 +279,7 @@
     <script lang="ts" setup>
     import { ref, reactive } from 'vue'
     import { useToast } from 'wot-design-uni'
+    import { smartGoBack } from '@/utils'
     import type { CreditCard } from '@/types/card'
     
     const toast = useToast()
@@ -376,7 +379,7 @@
     
     // 事件处理
     const handleBack = () => {
-      uni.navigateBack()
+      smartGoBack()
     }
     
     const handleSave = () => {
@@ -453,24 +456,16 @@
     }
     
     .add-card-page {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+      min-height: 100vh;
       background-color: #f8fafc;
-      padding-top: env(safe-area-inset-top);
-    }
-    
-    .top-nav {
-      padding-top: env(safe-area-inset-top);
     }
     
     .card-preview {
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
     
-    .form-scroll-container {
-      flex: 1;
-      height: 0; /* 关键：设置高度为0，让flex布局分配高度 */
+    .form-content {
+      padding-bottom: env(safe-area-inset-bottom);
     }
     
     .form-section {

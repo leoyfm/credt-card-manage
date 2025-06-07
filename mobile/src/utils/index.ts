@@ -198,3 +198,6 @@ export const getEnvBaseUploadUrl = () => {
 
   return baseUploadUrl
 }
+
+// 导出导航工具函数
+export * from './navigation'
