@@ -58,7 +58,8 @@ credit-card-manage/
 │   │   ├── store/         # 状态管理
 │   │   └── utils/         # 工具函数
 │   ├── package.json
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── Dockerfile         # 前端构建配置
 ├── backend/               # 后端项目 (FastAPI)
 │   ├── app/
 │   │   ├── api/          # API 路由
@@ -67,7 +68,19 @@ credit-card-manage/
 │   │   ├── schemas/      # Pydantic 模型
 │   │   └── services/     # 业务逻辑
 │   ├── requirements.txt
-│   └── main.py
+│   ├── main.py
+│   └── Dockerfile         # 后端容器配置
+├── nginx/                 # Nginx 配置
+│   ├── nginx.conf         # Nginx 主配置
+│   └── Dockerfile         # Nginx 容器配置
+├── postgresql/            # PostgreSQL 配置
+│   ├── init.sql          # 数据库初始化脚本
+│   └── postgresql.conf   # PostgreSQL 配置文件
+├── docker-compose.yml     # 生产环境编排
+├── docker-compose.dev.yml # 开发环境编排
+├── deploy.sh             # Linux/Mac 部署脚本
+├── deploy.ps1            # Windows 部署脚本
+├── env.example           # 环境变量模板
 └── README.md
 ```
 

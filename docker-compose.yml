@@ -11,12 +11,14 @@ services:
       POSTGRES_PASSWORD: credit_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "5432:5432"
     networks:
       - credit-card-network
     restart: unless-stopped
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
 
   # Redis缓存
   redis:
@@ -59,16 +61,30 @@ services:
       timeout: 10s
       retries: 3
 
-  # 前端Web应用
+  # 前端构建
   frontend:
     build:
       context: ./mobile
       dockerfile: Dockerfile
-    container_name: credit-card-frontend
+    container_name: credit-card-frontend-build
+    volumes:
+      - frontend_dist:/usr/share/nginx/html
+    networks:
+      - credit-card-network
+
+  # Nginx Web服务器
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: credit-card-nginx
     ports:
       - "80:80"
+    volumes:
+      - frontend_dist:/usr/share/nginx/html:ro
     depends_on:
       - backend
+      - frontend
     networks:
       - credit-card-network
     restart: unless-stopped
@@ -88,6 +104,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  frontend_dist:
 
 networks:
   credit-card-network:
