@@ -84,7 +84,7 @@
           </view>
         </view>
       </view>
-    </view>
+      </view>
 
     <!-- 工具菜单 -->
     <view class="menu-section bg-white mx-4 rounded-xl shadow-sm mb-4">
@@ -111,7 +111,7 @@
           <text class="text-gray-400 text-sm">›</text>
         </view>
       </view>
-    </view>
+      </view>
 
     <!-- 设置菜单 -->
     <view class="menu-section bg-white mx-4 rounded-xl shadow-sm mb-4">

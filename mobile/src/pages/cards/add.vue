@@ -16,9 +16,7 @@
               <text class="text-lg mr-2">←</text>
               <text class="text-lg font-semibold text-gray-900">添加信用卡</text>
             </view>
-            <view class="p-2" @click="handleSave">
-              <text class="text-blue-600 font-medium">保存</text>
-            </view>
+            <wd-button type="primary" size="small" @click="handleSave">保存</wd-button>
           </view>
         </view>
     
@@ -62,28 +60,24 @@
               <text>个性化设置</text>
             </view>
             
-            <view class="form-item">
-              <text class="label">卡片颜色</text>
-              <view class="color-picker">
-                <view class="color-grid">
-                  <view 
-                    v-for="(color, index) in cardColors" 
-                    :key="index"
-                    :class="['color-item', formData.bankColor === color ? 'selected' : '']"
-                    :style="{ backgroundColor: color }"
-                    @click="selectColor(color)"
-                  ></view>
-                </view>
-                <view class="mt-3 flex items-center">
-                  <text class="text-sm text-gray-600 mr-2">启用此卡片</text>
-                  <switch 
-                    :checked="formData.isEnabled"
-                    @change="onIsEnabledChange"
-                    color="#007AFF"
-                  />
-                </view>
+            <wd-cell title="卡片颜色" custom>
+              <view class="color-grid">
+                <view 
+                  v-for="(color, index) in cardColors" 
+                  :key="index"
+                  :class="['color-item', formData.bankColor === color ? 'selected' : '']"
+                  :style="{ backgroundColor: color }"
+                  @click="selectColor(color)"
+                ></view>
               </view>
-            </view>
+            </wd-cell>
+            
+            <wd-cell title="启用此卡片">
+              <wd-switch 
+                v-model="formData.isEnabled"
+                size="small"
+              />
+            </wd-cell>
           </view>
 
           <!-- 基本信息 -->
@@ -92,46 +86,37 @@
               <text>基本信息</text>
             </view>
             
-            <view class="form-item">
-              <text class="label">卡片名称</text>
-              <input 
-                class="input"
-                v-model="formData.cardName"
-                placeholder="请输入卡片名称"
-              />
-              <text class="required">*</text>
-            </view>
+            <wd-input
+              label="卡片名称"
+              v-model="formData.cardName"
+              placeholder="请输入卡片名称"
+              required
+              clearable
+            />
             
-            <view class="form-item">
-              <text class="label">卡号</text>
-              <input 
-                class="input"
-                v-model="formData.cardNumber"
-                placeholder="请输入完整卡号"
-                :maxlength="19"
-              />
-            </view>
+            <wd-input
+              label="卡号"
+              v-model="formData.cardNumber"
+              placeholder="请输入完整卡号"
+              clearable
+              :maxlength="19"
+            />
             
-            <view class="form-item">
-              <text class="label">有效期至</text>
-              <picker mode="date" :value="formData.expiryDate" @change="onExpiryDateChange">
-                <view class="picker-view">
-                  <text>{{ formData.expiryDate || '请选择' }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-            </view>
+            <wd-datetime-picker
+              label="有效期至"
+              v-model="formData.expiryDate"
+              placeholder="请选择有效期"
+              type="date"
+            />
             
-            <view class="form-item">
-              <text class="label">卡片类型</text>
-              <picker mode="selector" :range="cardTypes" :value="cardTypeIndex" @change="onCardTypeChange">
-                <view class="picker-view">
-                  <text>{{ cardTypes[cardTypeIndex] }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-              <text class="required">*</text>
-            </view>
+            <wd-select-picker
+              label="卡片类型"
+              v-model="formData.cardType"
+              :columns="cardTypeColumns"
+              type="radio"
+              required
+              @change="onCardTypeChange"
+            />
           </view>
     
           <!-- 额度信息 -->
@@ -140,25 +125,19 @@
               <text>额度信息</text>
             </view>
             
-            <view class="form-item">
-              <text class="label">授信额度 (¥)</text>
-              <input 
-                class="input"
-                v-model.number="formData.creditLimit"
-                placeholder="0"
-                type="number"
-              />
-            </view>
+            <wd-input
+              label="授信额度 (¥)"
+              v-model.number="formData.creditLimit"
+              placeholder="0"
+              type="number"
+            />
             
-            <view class="form-item">
-              <text class="label">已用额度 (¥)</text>
-              <input 
-                class="input"
-                v-model.number="formData.usedAmount"
-                placeholder="0"
-                type="number"
-              />
-            </view>
+            <wd-input
+              label="已用额度 (¥)"
+              v-model.number="formData.usedAmount"
+              placeholder="0"
+              type="number"
+            />
           </view>
     
           <!-- 账单设置 -->
@@ -167,149 +146,139 @@
               <text>账单设置</text>
             </view>
             
-            <view class="form-item">
-              <text class="label">账单日</text>
-              <picker mode="selector" :range="billDays" :value="billDayIndex" @change="onBillDayChange">
-                <view class="picker-view">
-                  <text>{{ billDays[billDayIndex] }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-            </view>
+            <wd-select-picker
+              label="账单日"
+              v-model="formData.billDay"
+              :columns="billDayColumns"
+              type="radio"
+              @change="onBillDayChange"
+            />
             
-            <view class="form-item">
-              <text class="label">还款日</text>
-              <picker mode="selector" :range="dueDays" :value="dueDayIndex" @change="onDueDayChange">
-                <view class="picker-view">
-                  <text>{{ dueDays[dueDayIndex] }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-            </view>
-        
+            <wd-select-picker
+              label="还款日"
+              v-model="formData.dueDate"
+              :columns="dueDayColumns"
+              type="radio"
+              @change="onDueDayChange"
+            />
           </view>
     
-                    <!-- 年费信息 -->
+          <!-- 年费信息 -->
           <view class="form-section">
             <view class="section-title">
               <text>年费信息</text>
             </view>
       
-            <view class="form-item">
-              <text class="label">年费金额 (¥)</text>
-              <view class="flex justify-between items-center">
-                <input 
-                  class="input flex-1"
-                  v-model.number="formData.annualFee"
-                  placeholder="0"
-                  type="number"
-                />
-                <text class="text-sm text-gray-500 ml-2">免首年年费</text>
-              </view>
-            </view>
+            <wd-input
+              label="年费金额 (¥)"
+              v-model.number="formData.annualFee"
+              placeholder="0"
+              type="number"
+            >
+              <template #suffix>
+                <text class="text-sm text-gray-500">免首年年费</text>
+              </template>
+            </wd-input>
             
-            <view class="form-item">
-              <text class="label">年费类型</text>
-              <picker mode="selector" :range="annualFeeTypes" :value="annualFeeTypeIndex" @change="onAnnualFeeTypeChange">
-                <view class="picker-view">
-                  <text>{{ annualFeeTypes[annualFeeTypeIndex] }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-            </view>
+            <wd-select-picker
+              label="年费类型"
+              v-model="formData.annualFeeType"
+              :columns="annualFeeTypeColumns"
+              type="radio"
+              @change="onAnnualFeeTypeChange"
+            />
 
             <!-- 条件字段根据年费类型显示 -->
-            <view v-if="formData.annualFeeType === '刷卡次数达标'" class="form-item">
-              <text class="label">所需刷卡次数</text>
-              <input 
-                class="input"
-                v-model.number="formData.requiredSwipeCount"
-                placeholder="请输入所需刷卡次数"
-                type="number"
-              />
-            </view>
+            <wd-input
+              v-if="formData.annualFeeType === '刷卡次数达标'"
+              label="所需刷卡次数"
+              v-model.number="formData.requiredSwipeCount"
+              placeholder="请输入所需刷卡次数"
+              type="number"
+            />
 
-            <view v-if="formData.annualFeeType === '刷卡金额达标'" class="form-item">
-              <text class="label">所需刷卡金额 (¥)</text>
-              <input 
-                class="input"
-                v-model.number="formData.requiredSwipeAmount"
-                placeholder="请输入所需刷卡金额"
-                type="number"
-              />
-            </view>
+            <wd-input
+              v-if="formData.annualFeeType === '刷卡金额达标'"
+              label="所需刷卡金额 (¥)"
+              v-model.number="formData.requiredSwipeAmount"
+              placeholder="请输入所需刷卡金额"
+              type="number"
+            />
 
-            <view v-if="formData.annualFeeType === '积分兑换'" class="form-item">
-              <text class="label">所需积分</text>
-              <input 
-                class="input"
-                v-model.number="formData.requiredPoints"
-                placeholder="请输入所需积分"
-                type="number"
-              />
-            </view>
+            <wd-input
+              v-if="formData.annualFeeType === '积分兑换'"
+              label="所需积分"
+              v-model.number="formData.requiredPoints"
+              placeholder="请输入所需积分"
+              type="number"
+            />
 
-            <view v-if="formData.annualFeeType === '积分兑换'" class="form-item">
-              <text class="label">积分兑换比率</text>
+            <wd-cell 
+              v-if="formData.annualFeeType === '积分兑换'"
+              title="积分兑换比率"
+              custom
+            >
               <view class="flex items-center gap-2">
                 <text class="text-sm text-gray-600">1元 = </text>
-                <input 
-                  class="input"
-                  style="flex: 0 0 80px;"
+                <wd-input
                   v-model.number="formData.pointsPerYuan"
                   placeholder="1"
                   type="number"
+                  style="width: 80px;"
+                  no-border
                 />
                 <text class="text-sm text-gray-600">积分</text>
               </view>
-            </view>
+            </wd-cell>
 
-            <view v-if="formData.annualFeeType === '积分兑换'" class="form-item">
-              <text class="label">积分价值</text>
+            <wd-cell 
+              v-if="formData.annualFeeType === '积分兑换'"
+              title="积分价值"
+              custom
+            >
               <view class="flex items-center gap-2">
                 <text class="text-sm text-gray-600">1积分 = </text>
-                <input 
-                  class="input"
-                  style="flex: 0 0 80px;"
+                <wd-input
                   v-model.number="formData.yuanPerPoint"
                   placeholder="1"
                   type="number"
-                  step="0.01"
+                  style="width: 80px;"
+                  no-border
                 />
                 <text class="text-sm text-gray-600">元</text>
               </view>
-            </view>
+            </wd-cell>
 
-            <view class="form-item">
-              <text class="label">年费开始时间</text>
-              <picker mode="date" :value="formData.annualFeeStartDate" @change="onAnnualFeeStartDateChange">
-                <view class="picker-view">
-                  <text>{{ formData.annualFeeStartDate || '请选择' }}</text>
-                  <text class="arrow">></text>
-                </view>
-              </picker>
-            </view>
+            <wd-datetime-picker
+              label="年费开始时间"
+              v-model="formData.annualFeeStartDate"
+              placeholder="请选择年费开始时间"
+              type="date"
+            />
 
-            <view class="form-item">
-                <text class="label">年费结束时间</text>
-                <picker mode="date" :value="formData.annualFeeEndDate" @change="onAnnualFeeEndDateChange">
-                    <view class="picker-view">
-                        <text>{{ formData.annualFeeEndDate || '请选择' }}</text>
-                        <text class="arrow">></text>
-                    </view>
-                </picker>
-            </view>
+            <wd-datetime-picker
+              label="年费结束时间"
+              v-model="formData.annualFeeEndDate"
+              placeholder="请选择年费结束时间"
+              type="date"
+            />
           </view>
     
-          <!-- 底部间距 -->
-          <view class="h-20"></view>
-        </scroll-view>
-      </view>
-    </template>
+                  <!-- 底部间距 -->
+        <view class="h-20"></view>
+      </scroll-view>
+    </view>
+    
+    <!-- Toast 组件 -->
+    <wd-toast />
+  </template>
     
     <script lang="ts" setup>
     import { ref, reactive } from 'vue'
+    import { useToast } from 'wot-design-uni'
     import type { CreditCard } from '@/types/card'
+    
+    const toast = useToast()
     
     // 表单数据
     const formData = reactive({
@@ -317,7 +286,7 @@
       cardName: '全币种国际卡',
       cardNumber: '',
       cardType: 'visa',
-      expiryDate: '12/25',
+      expiryDate: '',
       creditLimit: 0,
       usedAmount: 0,
       billDay: 1,
@@ -337,23 +306,39 @@
       isEnabled: true
     })
     
-    // 选择器数据
-    const cardTypes = ref(['Visa', 'MasterCard', '银联', 'American Express'])
-    const cardTypeIndex = ref(0)
-    
-    const billDays = ref(Array.from({length: 31}, (_, i) => `${i + 1}日`))
-    const billDayIndex = ref(0)
-    
-    const dueDays = ref(Array.from({length: 31}, (_, i) => `${i + 1}日`))
-    const dueDayIndex = ref(0)
-    
-    const annualFeeTypes = ref(['刚性年费', '刷卡次数达标', '刷卡金额达标', '积分兑换'])
-    const annualFeeTypeIndex = ref(0)
-    
     // 卡片颜色选项
     const cardColors = ref([
       '#3B82F6', '#EF4444', '#10B981', '#F59E0B',
       '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'
+    ])
+    
+    // 选择器数据 - 正确的格式
+    const cardTypeColumns = ref([
+      { value: 'visa', label: 'Visa' },
+      { value: 'mastercard', label: 'MasterCard' },
+      { value: 'unionpay', label: '银联' },
+      { value: 'americanexpress', label: 'American Express' }
+    ])
+    
+    const billDayColumns = ref(
+      Array.from({length: 31}, (_, i) => ({
+        value: i + 1,
+        label: `${i + 1}日`
+      }))
+    )
+    
+    const dueDayColumns = ref(
+      Array.from({length: 31}, (_, i) => ({
+        value: i + 1,
+        label: `${i + 1}日`
+      }))
+    )
+    
+    const annualFeeTypeColumns = ref([
+      { value: '刚性年费', label: '刚性年费' },
+      { value: '刷卡次数达标', label: '刷卡次数达标' },
+      { value: '刷卡金额达标', label: '刷卡金额达标' },
+      { value: '积分兑换', label: '积分兑换' }
     ])
     
     // 获取卡片类型图标
@@ -362,13 +347,13 @@
         case 'visa': return 'V'
         case 'mastercard': return 'M'
         case 'unionpay': return 'U'
+        case 'americanexpress': return 'A'
         default: return 'C'
       }
     }
     
     // 获取卡片渐变背景
     const getCardGradient = (color: string) => {
-      // 创建渐变效果，从选择的颜色到稍深的版本
       const baseColor = color
       const darkerColor = darkenColor(color, 20)
       return `linear-gradient(135deg, ${baseColor} 0%, ${darkerColor} 100%)`
@@ -376,18 +361,15 @@
     
     // 颜色加深函数
     const darkenColor = (color: string, percent: number) => {
-      // 将十六进制颜色转换为RGB
       const hex = color.replace('#', '')
       const r = parseInt(hex.substr(0, 2), 16)
       const g = parseInt(hex.substr(2, 2), 16)
       const b = parseInt(hex.substr(4, 2), 16)
       
-      // 减少亮度
       const newR = Math.max(0, Math.floor(r * (100 - percent) / 100))
       const newG = Math.max(0, Math.floor(g * (100 - percent) / 100))
       const newB = Math.max(0, Math.floor(b * (100 - percent) / 100))
       
-      // 转换回十六进制
       return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
     }
     
@@ -398,11 +380,13 @@
     
     const handleSave = () => {
       // 验证必填字段
-      if (!formData.cardName || !formData.cardNumber) {
-        uni.showToast({
-          title: '请填写必填信息',
-          icon: 'none'
-        })
+      if (!formData.cardName) {
+        toast.error('请填写卡片名称')
+        return
+      }
+      
+      if (!formData.cardNumber) {
+        toast.error('请填写卡号')
         return
       }
       
@@ -426,13 +410,9 @@
         bankCode: formData.bankName.charAt(0)
       }
       
-      // 这里应该调用API保存数据
       console.log('Saving card:', newCard)
       
-      uni.showToast({
-        title: '保存成功',
-        icon: 'success'
-      })
+      toast.success('保存成功')
       
       setTimeout(() => {
         uni.navigateBack()
@@ -440,47 +420,24 @@
     }
     
     const handleEditCard = () => {
-      uni.showToast({
-        title: '编辑卡片样式',
-        icon: 'none'
-      })
+      toast.show('编辑卡片样式')
     }
     
-    // 选择器变化事件
-    const onExpiryDateChange = (e: any) => {
-      formData.expiryDate = e.detail.value
+    // 选择器事件处理
+    const onCardTypeChange = ({ value }: any) => {
+      formData.cardType = value
     }
     
-    const onCardTypeChange = (e: any) => {
-      cardTypeIndex.value = e.detail.value
-      formData.cardType = cardTypes.value[e.detail.value].toLowerCase()
+    const onBillDayChange = ({ value }: any) => {
+      formData.billDay = typeof value === 'number' ? value : parseInt(value)
     }
     
-    const onBillDayChange = (e: any) => {
-      billDayIndex.value = e.detail.value
-      formData.billDay = e.detail.value + 1
+    const onDueDayChange = ({ value }: any) => {
+      formData.dueDate = typeof value === 'number' ? value : parseInt(value)
     }
     
-    const onDueDayChange = (e: any) => {
-      dueDayIndex.value = e.detail.value
-      formData.dueDate = e.detail.value + 1
-    }
-    
-    const onAnnualFeeTypeChange = (e: any) => {
-      annualFeeTypeIndex.value = e.detail.value
-      formData.annualFeeType = annualFeeTypes.value[e.detail.value]
-    }
-    
-    const onAnnualFeeStartDateChange = (e: any) => {
-      formData.annualFeeStartDate = e.detail.value
-    }
-    
-    const onAnnualFeeEndDateChange = (e: any) => {
-      formData.annualFeeEndDate = e.detail.value
-    }
-    
-    const onIsEnabledChange = (e: any) => {
-      formData.isEnabled = e.detail.value
+    const onAnnualFeeTypeChange = ({ value }: any) => {
+      formData.annualFeeType = value
     }
     
     // 颜色选择
@@ -503,80 +460,28 @@
     }
     
     .form-section {
-      margin: 0 1rem 1rem;
-      background: white;
-      border-radius: 0.75rem;
-      overflow: hidden;
-    }
-    
-    .section-title {
-      padding: 1rem;
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-      
-      text {
-        font-weight: 600;
-        color: #374151;
-      }
-    }
-    
-    .form-item {
-      display: flex;
-      align-items: center;
-      padding: 1rem;
-      border-bottom: 1px solid #f1f5f9;
-      
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-    
-    .label {
-      width: 120px;
-      color: #374151;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-    
-    .input {
-      flex: 1;
-      padding: 0.5rem 0;
-      font-size: 14px;
-      color: #111827;
-      
-      &::placeholder {
-        color: #9ca3af;
-      }
-    }
-    
-    .picker-view {
-      flex: 1;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 0;
-      color: #374151;
-      
-      .arrow {
-        color: #9ca3af;
-        font-size: 12px;
-      }
-    }
-    
-    .required {
-      color: #ef4444;
-      margin-left: 4px;
-    }
-    
-    .color-picker {
-      flex: 1;
-    }
+  margin: 0 1rem 1rem;
+  background: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.section-title {
+  padding: 1rem;
+//   background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  
+  text {
+    font-weight: 600;
+    color: #374151;
+  }
+}
     
     .color-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 1rem;
-      margin-top: 0.5rem;
+      padding: 0.5rem 0;
     }
     
     .color-item {
@@ -607,14 +512,6 @@
       display: flex;
     }
     
-    .flex-1 {
-      flex: 1;
-    }
-    
-    .flex-wrap {
-      flex-wrap: wrap;
-    }
-    
     .items-center {
       align-items: center;
     }
@@ -623,36 +520,8 @@
       justify-content: space-between;
     }
     
-    .gap-3 {
-      gap: 0.75rem;
-    }
-    
     .gap-2 {
       gap: 0.5rem;
-    }
-    
-    .gap-3 {
-      gap: 0.75rem;
-    }
-    
-    .gap-4 {
-      gap: 1rem;
-    }
-    
-    .mt-2 {
-      margin-top: 0.5rem;
-    }
-    
-    .mt-3 {
-      margin-top: 0.75rem;
-    }
-    
-    .ml-2 {
-      margin-left: 0.5rem;
-    }
-    
-    .mr-2 {
-      margin-right: 0.5rem;
     }
     
     .h-20 {
@@ -663,9 +532,11 @@
       color: #4b5563;
     }
     
-    switch {
-      transform: scale(0.8);
-    }
+    .text-gray-500 {
+  color: #6b7280;
+}
+
+// form-section 的 overflow: hidden 和 border-radius 会自动处理所有子元素的圆角
     
     @media (max-width: 640px) {
       .px-4 {
