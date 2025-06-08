@@ -56,7 +56,7 @@ class PaginationInfo(BaseModel):
         description="每页大小，即当前页实际返回的记录数",
         example=20
     )
-    pages: int = Field(
+    total_pages: int = Field(
         ..., 
         description="总页数，根据总记录数和每页大小计算得出",
         example=8

@@ -10,7 +10,7 @@ from decimal import Decimal
 from typing import List, Optional, Tuple
 from uuid import UUID
 
-from sqlalchemy import and_, or_, func, extract, desc
+from sqlalchemy import and_, or_, func, extract, desc, literal_column, case
 from sqlalchemy.orm import Session, joinedload
 
 from models.transactions import (
@@ -487,29 +487,25 @@ class TransactionsService:
             query = self.db.query(
                 extract('month', self._get_transaction_model().transaction_date).label('month'),
                 func.count().label('transaction_count'),
-                func.sum(
-                    func.case(
-                        [
-                            (self._get_transaction_model().transaction_type.in_([
-                                TransactionType.EXPENSE, 
-                                TransactionType.WITHDRAWAL, 
-                                TransactionType.FEE
-                            ]), self._get_transaction_model().amount)
-                        ],
+                func.coalesce(func.sum(
+                    case(
+                        (self._get_transaction_model().transaction_type.in_([
+                            TransactionType.EXPENSE, 
+                            TransactionType.WITHDRAWAL, 
+                            TransactionType.FEE
+                        ]), self._get_transaction_model().amount),
                         else_=0
                     )
-                ).label('expense_amount'),
-                func.sum(
-                    func.case(
-                        [
-                            (self._get_transaction_model().transaction_type.in_([
-                                TransactionType.PAYMENT, 
-                                TransactionType.REFUND
-                            ]), self._get_transaction_model().amount)
-                        ],
+                ), 0).label('expense_amount'),
+                func.coalesce(func.sum(
+                    case(
+                        (self._get_transaction_model().transaction_type.in_([
+                            TransactionType.PAYMENT, 
+                            TransactionType.REFUND
+                        ]), self._get_transaction_model().amount),
                         else_=0
                     )
-                ).label('income_amount'),
+                ), 0).label('income_amount'),
                 func.sum(self._get_transaction_model().amount).label('total_amount')
             ).filter(
                 and_(

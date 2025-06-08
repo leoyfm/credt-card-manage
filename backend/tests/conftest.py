@@ -172,27 +172,32 @@ def create_test_transaction(
     transaction_data: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """创建测试交易记录的辅助函数"""
-    if transaction_data is None:
-        transaction_data = {
-            "transaction_type": "expense",
-            "amount": 100.00,
-            "transaction_date": "2024-06-08T14:30:00+08:00",  # 添加时区信息
-            "merchant_name": "测试商户",
-            "description": "测试交易",
-            "category": "other",
-            "status": "completed",
-            "points_earned": 10.0,  # 添加必需字段
-            "points_rate": 1.0,     # 添加必需字段
-            "reference_number": f"TEST{uuid4().hex[:8]}",  # 添加唯一的参考号
-            "location": "测试地点",
-            "is_installment": False
-        }
+    # 设置默认值
+    default_data = {
+        "transaction_type": "expense",
+        "amount": 100.00,
+        "transaction_date": "2024-06-08T14:30:00",
+        "merchant_name": "测试商户",
+        "description": "测试交易",
+        "category": "other",
+        "status": "completed",
+        "points_earned": 10.0,
+        "points_rate": 1.0,
+        "reference_number": f"TEST{uuid4().hex[:8]}",
+        "location": "测试地点",
+        "is_installment": False
+    }
     
-    transaction_data["card_id"] = card_id
+    # 合并默认值和传入的数据
+    if transaction_data is not None:
+        default_data.update(transaction_data)
+    
+    # 设置信用卡ID
+    default_data["card_id"] = card_id
     
     response = client.post(
         "/api/transactions/",
-        json=transaction_data,
+        json=default_data,
         headers=headers
     )
     assert response.status_code == 200  # 修复：创建交易接口实际返回200

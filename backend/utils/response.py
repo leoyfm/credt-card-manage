@@ -136,7 +136,7 @@ class ResponseUtil:
             total=total,
             page=page,
             size=page_size,
-            pages=pages
+            total_pages=pages
         )
         
         paged_data = PagedResponse(
