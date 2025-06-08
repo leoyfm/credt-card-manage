@@ -114,6 +114,7 @@ class User(BaseModel):
     # 关联关系
     verification_codes = relationship("VerificationCode", back_populates="user")
     wechat_bindings = relationship("WechatBinding", back_populates="user")
+    transactions = relationship("Transaction", back_populates="user")
 
     # 索引
     __table_args__ = (

@@ -19,11 +19,13 @@ sys.path.insert(0, str(project_root))
 from config import settings, validate_config
 from database import create_database, check_database_connection
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# 配置日志（仅用于start.py脚本）
+# 如果还没有配置过日志处理器，则进行基础配置
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 logger = logging.getLogger(__name__)
 
 

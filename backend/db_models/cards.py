@@ -137,6 +137,7 @@ class CreditCard(BaseModel):
     annual_fee_rule = relationship("AnnualFeeRule", back_populates="cards")
     annual_fee_records = relationship("AnnualFeeRecord", back_populates="card")
     reminders = relationship("Reminder", back_populates="card")
+    transactions = relationship("Transaction", back_populates="card")
 
     # 索引定义
     __table_args__ = (

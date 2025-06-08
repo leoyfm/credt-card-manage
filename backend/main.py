@@ -1,26 +1,22 @@
 import logging
 import pytz
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from utils.response import ResponseUtil
 from models.response import ApiResponse
-from routers import annual_fee, cards, reminders, recommendations, auth
+from routers import annual_fee, cards, reminders, recommendations, auth, transactions
 from database import create_database, get_db_health
 from config import settings, validate_config, get_environment_info
 
 # 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/app.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+from utils.logger import init_logging, LogConfig
+
+# 初始化日志系统
+init_logging()
+logger = LogConfig.get_logger(__name__)
 
 # 配置时区
 TIMEZONE = pytz.timezone('Asia/Shanghai')
@@ -35,7 +31,8 @@ app = FastAPI(
 - 💳 **信用卡管理**：完整的信用卡信息管理和额度监控
 - 🔔 **还款提醒**：智能还款提醒和账单管理
 - 🎯 **智能推荐**：基于用户行为的个性化信用卡推荐
-- 📈 **数据统计**：详细的消费分析和年费统计
+- 💰 **交易记录**：完整的交易记录管理和多维度查询分析
+- 📈 **数据统计**：详细的消费分析、年费统计和交易趋势
 
 ### API特点
 - 统一的响应格式，包含success、code、message、data字段
@@ -79,6 +76,14 @@ app = FastAPI(
         {
             "name": "用户认证",
             "description": "用户注册、登录、密码管理、微信登录、验证码等认证功能"
+        },
+        {
+            "name": "交易记录",
+            "description": "交易记录管理、CRUD操作、交易查询和筛选等功能"
+        },
+        {
+            "name": "交易统计",
+            "description": "交易数据统计分析、分类统计、月度趋势、消费概览等功能"
         }
     ]
 )
@@ -91,6 +96,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 添加请求日志中间件
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """
+    请求日志中间件
+    
+    记录所有HTTP请求的详细信息
+    """
+    start_time = datetime.now()
+    
+    # 记录请求开始
+    LogConfig.log_request(
+        method=request.method,
+        url=str(request.url),
+        status_code=0,  # 请求开始时还没有状态码
+    )
+    
+    try:
+        # 处理请求
+        response = await call_next(request)
+        
+        # 计算处理时间
+        duration = (datetime.now() - start_time).total_seconds()
+        
+        # 记录请求完成
+        LogConfig.log_request(
+            method=request.method,
+            url=str(request.url),
+            status_code=response.status_code,
+            duration=duration
+        )
+        
+        return response
+        
+    except Exception as e:
+        # 记录请求异常
+        duration = (datetime.now() - start_time).total_seconds()
+        LogConfig.log_error(e, f"处理请求时发生异常: {request.method} {request.url}")
+        LogConfig.log_request(
+            method=request.method,
+            url=str(request.url),
+            status_code=500,
+            duration=duration
+        )
+        raise
 
 # 应用启动事件
 @app.on_event("startup")
@@ -126,12 +177,28 @@ async def shutdown_event():
     """
     logger.info("信用卡管理系统正在关闭...")
 
+# 全局异常处理器
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    全局异常处理器
+    
+    捕获所有未处理的异常并记录到日志中
+    """
+    LogConfig.log_error(exc, f"全局异常处理器: {request.method} {request.url}")
+    
+    return ResponseUtil.error(
+        message="服务器内部错误",
+        code=500
+    )
+
 # 挂载路由模块
 app.include_router(auth.router, prefix="/api")
 app.include_router(annual_fee.router, prefix="/api")
 app.include_router(cards.router, prefix="/api")
 app.include_router(reminders.router, prefix="/api")
 app.include_router(recommendations.router, prefix="/api")
+app.include_router(transactions.router, prefix="/api/transactions")
 
 @app.get(
     "/", 
