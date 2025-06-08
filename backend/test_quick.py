@@ -11,9 +11,9 @@ import sys
 
 def main():
     """运行快速测试"""
-    # 设置测试环境
+    # 设置测试环境 - 必须在导入前设置
     os.environ["TESTING"] = "true"
-    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+    os.environ["DATABASE_URL"] = "postgresql://credit_user:credit_password@localhost:5432/test"
     os.environ["DEBUG"] = "true"
     os.environ["JWT_SECRET_KEY"] = "test-secret-key"
     

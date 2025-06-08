@@ -137,6 +137,11 @@ def test_get_transactions(token):
             if result.get("success"):
                 transactions = result["data"]["items"]
                 print(f"✅ 获取到 {len(transactions)} 条交易记录")
+                # 显示分页信息
+                if 'pagination' in result['data']:
+                    print(f"分页信息: {result['data']['pagination']}")
+                else:
+                    print("⚠️  响应中没有分页信息")
                 return True
             else:
                 print(f"❌ 获取交易列表失败: {result.get('message', '未知错误')}")
