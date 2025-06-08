@@ -60,7 +60,6 @@ class AnnualFeeService:
         if keyword:
             keyword_filter = f"%{keyword}%"
             query = query.filter(
-                self._get_annual_fee_rule_model().rule_name.ilike(keyword_filter) |
                 self._get_annual_fee_rule_model().description.ilike(keyword_filter)
             )
         
@@ -352,27 +351,25 @@ class AnnualFeeService:
 
     def _create_annual_fee_rule_db(self, rule_data: AnnualFeeRuleCreate):
         """创建数据库年费规则对象"""
-        # 这里需要根据实际的SQLAlchemy模型创建
-        # 暂时返回字典，需要替换为实际的模型类
-        return type('AnnualFeeRuleDB', (), rule_data.dict())()
+        from db_models.annual_fee import AnnualFeeRule as AnnualFeeRuleDB
+        return AnnualFeeRuleDB(**rule_data.dict())
 
     def _create_annual_fee_record_db(self, record_data: AnnualFeeRecordCreate):
         """创建数据库年费记录对象"""
-        # 这里需要根据实际的SQLAlchemy模型创建
-        # 暂时返回字典，需要替换为实际的模型类
-        return type('AnnualFeeRecordDB', (), record_data.dict())()
+        from db_models.annual_fee import AnnualFeeRecord as AnnualFeeRecordDB
+        return AnnualFeeRecordDB(**record_data.dict())
 
     def _get_annual_fee_rule_model(self):
         """获取年费规则数据库模型"""
-        # 这里需要返回实际的SQLAlchemy模型类
-        pass
+        from db_models.annual_fee import AnnualFeeRule as AnnualFeeRuleDB
+        return AnnualFeeRuleDB
 
     def _get_annual_fee_record_model(self):
         """获取年费记录数据库模型"""
-        # 这里需要返回实际的SQLAlchemy模型类
-        pass
+        from db_models.annual_fee import AnnualFeeRecord as AnnualFeeRecordDB
+        return AnnualFeeRecordDB
 
     def _get_credit_card_model(self):
         """获取信用卡数据库模型"""
-        # 这里需要返回实际的SQLAlchemy模型类
-        pass 
+        from db_models.cards import CreditCard
+        return CreditCard 

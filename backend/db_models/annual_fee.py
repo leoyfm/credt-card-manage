@@ -20,12 +20,6 @@ class AnnualFeeRule(BaseModel):
     定义annual_fee_rules表结构，存储年费规则配置信息。
     """
     __tablename__ = "annual_fee_rules"
-
-    rule_name = Column(
-        String(100), 
-        nullable=False, 
-        comment="规则名称，如：刷卡次数减免-标准"
-    )
     
     fee_type = Column(
         SQLEnum(FeeType), 
@@ -45,10 +39,23 @@ class AnnualFeeRule(BaseModel):
         comment="减免条件数值，如刷卡次数12或消费金额50000"
     )
     
-    waiver_period_months = Column(
+    # 积分兑换相关字段
+    points_per_yuan = Column(
+        Numeric(6, 4), 
+        comment="积分兑换比例：1元对应的积分数，如1元=0.1积分则填0.1"
+    )
+    
+    # 年费扣除周期：每年的具体月日
+    annual_fee_month = Column(
         Integer, 
-        default=12, 
-        comment="考核周期（月），通常为12个月"
+        comment="年费扣除月份，1-12",
+        nullable=True
+    )
+    
+    annual_fee_day = Column(
+        Integer, 
+        comment="年费扣除日期，1-31",
+        nullable=True
     )
     
     description = Column(
@@ -63,11 +70,11 @@ class AnnualFeeRule(BaseModel):
     # 索引定义
     __table_args__ = (
         Index("idx_annual_fee_rules_fee_type", "fee_type"),
-        Index("idx_annual_fee_rules_rule_name", "rule_name"),
+        Index("idx_annual_fee_rules_annual_month_day", "annual_fee_month", "annual_fee_day"),
     )
 
     def __repr__(self):
-        return f"<AnnualFeeRule(id={self.id}, rule_name='{self.rule_name}', fee_type='{self.fee_type}')>"
+        return f"<AnnualFeeRule(id={self.id}, fee_type='{self.fee_type}', base_fee={self.base_fee})>"
 
 
 class AnnualFeeRecord(BaseModel):

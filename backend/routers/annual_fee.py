@@ -56,7 +56,7 @@ async def create_annual_fee_rule(
     参数:
     - rule_data: 年费规则创建数据
     """
-    logger.info(f"创建年费规则请求 - rule_name: {rule_data.rule_name}, fee_type: {rule_data.fee_type}")
+    logger.info(f"创建年费规则请求 - fee_type: {rule_data.fee_type}, base_fee: {rule_data.base_fee}")
     
     try:
         rule = service.create_annual_fee_rule(rule_data)

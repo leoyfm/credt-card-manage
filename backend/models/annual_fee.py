@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class FeeType(str, Enum):
@@ -43,14 +43,9 @@ class AnnualFeeRuleBase(BaseModel):
     """
     年费规则基础模型
     
-    定义年费规则的基础字段，包括规则名称、类型、金额、减免条件等。
+    定义年费规则的基础字段，包括类型、金额、减免条件、扣费周期等。
     所有年费规则相关的模型都继承此基础模型。
     """
-    rule_name: str = Field(
-        ..., 
-        description="规则名称，如：刷卡次数减免-标准",
-        example="刷卡次数减免-标准"
-    )
     fee_type: FeeType = Field(
         ..., 
         description="年费类型，决定减免条件的计算方式",
@@ -67,18 +62,56 @@ class AnnualFeeRuleBase(BaseModel):
         description="减免条件数值，如刷卡次数12或消费金额50000",
         example=12
     )
-    waiver_period_months: int = Field(
-        12, 
-        description="考核周期（月），通常为12个月", 
-        ge=1, 
-        le=36,
-        example=12
+    points_per_yuan: Optional[Decimal] = Field(
+        None, 
+        description="积分兑换比例：1元对应的积分数，如1元=0.1积分。仅当fee_type为points_exchange时有效",
+        example=0.1,
+        ge=0
+    )
+    annual_fee_month: Optional[int] = Field(
+        None, 
+        description="年费扣除月份，1-12月。如每年2月扣费则填2",
+        example=2,
+        ge=1,
+        le=12
+    )
+    annual_fee_day: Optional[int] = Field(
+        None, 
+        description="年费扣除日期，1-31日。如每年2月18日扣费则填18",
+        example=18,
+        ge=1,
+        le=31
     )
     description: Optional[str] = Field(
         None, 
         description="规则描述，详细说明减免条件",
-        example="年内刷卡满12次可减免年费"
+        example="年内刷卡满12次可减免年费，每年2月18日扣除"
     )
+
+    @field_validator('points_per_yuan')
+    @classmethod
+    def validate_points_per_yuan(cls, v, info):
+        """验证积分兑换比例"""
+        if info.data and 'fee_type' in info.data:
+            fee_type = info.data.get('fee_type')
+            if fee_type == FeeType.POINTS_EXCHANGE and v is None:
+                raise ValueError('积分兑换类型的年费规则必须设置积分兑换比例')
+        return v
+
+    @field_validator('annual_fee_day')
+    @classmethod
+    def validate_annual_fee_day(cls, v, info):
+        """验证年费扣除日期的合理性"""
+        if v is not None and info.data and 'annual_fee_month' in info.data:
+            month = info.data.get('annual_fee_month')
+            if month is not None:
+                # 验证2月份不超过29日
+                if month == 2 and v > 29:
+                    raise ValueError('2月份的日期不能超过29日')
+                # 验证30天月份不超过30日
+                elif month in [4, 6, 9, 11] and v > 30:
+                    raise ValueError('4、6、9、11月份的日期不能超过30日')
+        return v
 
 
 class AnnualFeeRuleCreate(AnnualFeeRuleBase):
@@ -97,11 +130,6 @@ class AnnualFeeRuleUpdate(BaseModel):
     用于接收更新年费规则的请求数据，所有字段均为可选，
     只更新提供的字段，未提供的字段保持原值不变。
     """
-    rule_name: Optional[str] = Field(
-        None, 
-        description="规则名称",
-        example="刷卡次数减免-高级"
-    )
     fee_type: Optional[FeeType] = Field(
         None, 
         description="年费类型",
@@ -118,17 +146,30 @@ class AnnualFeeRuleUpdate(BaseModel):
         description="减免条件数值",
         example=50000
     )
-    waiver_period_months: Optional[int] = Field(
+    points_per_yuan: Optional[Decimal] = Field(
         None, 
-        description="考核周期（月）", 
+        description="积分兑换比例",
+        example=0.05,
+        ge=0
+    )
+    annual_fee_month: Optional[int] = Field(
+        None, 
+        description="年费扣除月份", 
         ge=1, 
-        le=36,
-        example=12
+        le=12,
+        example=3
+    )
+    annual_fee_day: Optional[int] = Field(
+        None, 
+        description="年费扣除日期", 
+        ge=1, 
+        le=31,
+        example=15
     )
     description: Optional[str] = Field(
         None, 
         description="规则描述",
-        example="年内刷卡满5万元可减免年费"
+        example="年内刷卡满5万元可减免年费，每年3月15日扣除"
     )
 
 
@@ -143,6 +184,51 @@ class AnnualFeeRule(AnnualFeeRuleBase):
 
     class Config:
         from_attributes = True
+
+    def calculate_points_required(self, fee_amount: Decimal) -> Optional[Decimal]:
+        """
+        计算减免年费所需的积分数量
+        
+        参数:
+        - fee_amount: 年费金额
+        
+        返回:
+        - 所需积分数量，如果不是积分兑换类型则返回None
+        """
+        if self.fee_type == FeeType.POINTS_EXCHANGE and self.points_per_yuan:
+            return fee_amount * self.points_per_yuan
+        return None
+
+    def get_annual_due_date(self, year: int) -> Optional[date]:
+        """
+        获取指定年份的年费到期日期
+        
+        参数:
+        - year: 年份
+        
+        返回:
+        - 年费到期日期，如果未设置扣费月日则返回None
+        """
+        if self.annual_fee_month and self.annual_fee_day:
+            try:
+                return date(year, self.annual_fee_month, self.annual_fee_day)
+            except ValueError:
+                # 处理2月29日等无效日期
+                if self.annual_fee_month == 2 and self.annual_fee_day == 29:
+                    # 非闰年时使用2月28日
+                    return date(year, 2, 28)
+                return None
+        return None
+
+    def get_fee_type_display(self) -> str:
+        """获取年费类型的中文显示名称"""
+        type_display = {
+            FeeType.RIGID: "刚性年费",
+            FeeType.TRANSACTION_COUNT: "刷卡次数减免",
+            FeeType.TRANSACTION_AMOUNT: "刷卡金额减免",
+            FeeType.POINTS_EXCHANGE: "积分兑换减免"
+        }
+        return type_display.get(self.fee_type, "未知类型")
 
 
 class AnnualFeeRecordBase(BaseModel):
