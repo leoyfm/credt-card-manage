@@ -6,6 +6,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
+# 导入年费相关模型
+from .annual_fee import FeeType, AnnualFeeRule, AnnualFeeRuleCreate
+
 
 class CardType(str, Enum):
     """
@@ -186,11 +189,97 @@ class CardBase(BaseModel):
         return v
 
 
+class CardWithAnnualFeeCreate(CardBase):
+    """
+    创建信用卡请求模型（集成年费信息）
+    
+    用于接收创建新信用卡的请求数据，支持同时创建年费规则。
+    如果提供了年费信息，将自动创建对应的年费规则。
+    """
+    # 年费规则相关字段（可选）
+    annual_fee_enabled: bool = Field(
+        False,
+        description="是否启用年费管理",
+        example=True
+    )
+    
+    fee_type: Optional[FeeType] = Field(
+        None, 
+        description="年费类型，启用年费管理时必填",
+        example=FeeType.TRANSACTION_COUNT
+    )
+    
+    base_fee: Optional[Decimal] = Field(
+        None, 
+        description="基础年费金额，启用年费管理时必填", 
+        ge=0,
+        example=200.00
+    )
+    
+    waiver_condition_value: Optional[Decimal] = Field(
+        None, 
+        description="减免条件数值，如刷卡次数12或消费金额50000",
+        example=12
+    )
+    
+    points_per_yuan: Optional[Decimal] = Field(
+        None, 
+        description="积分兑换比例：1元对应的积分数，如1元=0.1积分。仅当fee_type为points_exchange时有效",
+        example=0.1,
+        ge=0
+    )
+    
+    annual_fee_month: Optional[int] = Field(
+        None, 
+        description="年费扣除月份，1-12月。如每年2月扣费则填2",
+        example=2,
+        ge=1,
+        le=12
+    )
+    
+    annual_fee_day: Optional[int] = Field(
+        None, 
+        description="年费扣除日期，1-31日。如每年2月18日扣费则填18",
+        example=18,
+        ge=1,
+        le=31
+    )
+    
+    fee_description: Optional[str] = Field(
+        None, 
+        description="年费规则描述，详细说明减免条件",
+        example="年内刷卡满12次可减免年费，每年2月18日扣除"
+    )
+
+    @validator('points_per_yuan')  
+    def validate_annual_fee_required_fields(cls, v, values):
+        """验证启用年费管理时的必填字段"""
+        annual_fee_enabled = values.get('annual_fee_enabled', False)
+        
+        if annual_fee_enabled:
+            fee_type = values.get('fee_type')
+            base_fee = values.get('base_fee')
+            
+            if not fee_type:
+                raise ValueError('启用年费管理时，年费类型为必填字段')
+                
+            if not base_fee or base_fee <= 0:
+                raise ValueError('启用年费管理时，基础年费金额必须大于0')
+                
+            # 积分兑换类型必须提供积分比例
+            if fee_type == FeeType.POINTS_EXCHANGE:
+                if not v or v <= 0:
+                    raise ValueError('积分兑换类型的年费规则必须设置积分兑换比例')
+        
+        return v
+
+
 class CardCreate(CardBase):
     """
-    创建信用卡请求模型
+    创建信用卡请求模型（基础版本）
     
     用于接收创建新信用卡的请求数据，继承基础模型的所有字段。
+    不包含年费管理功能，保持向后兼容。
     """
     pass
 
@@ -218,6 +307,60 @@ class CardUpdate(BaseModel):
     notes: Optional[str] = Field(None, max_length=500, description="备注信息")
 
 
+class CardWithAnnualFeeUpdate(CardUpdate):
+    """
+    更新信用卡请求模型（集成年费信息）
+    
+    支持同时更新信用卡基本信息和年费规则。
+    """
+    # 年费规则更新字段
+    annual_fee_enabled: Optional[bool] = Field(
+        None,
+        description="是否启用年费管理。设为False将删除现有年费规则"
+    )
+    
+    fee_type: Optional[FeeType] = Field(
+        None, 
+        description="年费类型"
+    )
+    
+    base_fee: Optional[Decimal] = Field(
+        None, 
+        description="基础年费金额", 
+        ge=0
+    )
+    
+    waiver_condition_value: Optional[Decimal] = Field(
+        None, 
+        description="减免条件数值"
+    )
+    
+    points_per_yuan: Optional[Decimal] = Field(
+        None, 
+        description="积分兑换比例",
+        ge=0
+    )
+    
+    annual_fee_month: Optional[int] = Field(
+        None, 
+        description="年费扣除月份", 
+        ge=1, 
+        le=12
+    )
+    
+    annual_fee_day: Optional[int] = Field(
+        None, 
+        description="年费扣除日期", 
+        ge=1, 
+        le=31
+    )
+    
+    fee_description: Optional[str] = Field(
+        None, 
+        description="年费规则描述"
+    )
+
+
 class Card(CardBase):
     """
     信用卡响应模型
@@ -232,9 +375,45 @@ class Card(CardBase):
     class Config:
         from_attributes = True
         json_encoders = {
-            datetime: lambda v: v.isoformat(),
+            Decimal: lambda v: float(v),
             date: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
+            datetime: lambda v: v.isoformat()
+        }
+
+
+class CardWithAnnualFee(Card):
+    """
+    信用卡响应模型（包含年费信息）
+    
+    用于返回包含年费规则信息的完整信用卡数据。
+    """
+    annual_fee_rule: Optional[AnnualFeeRule] = Field(
+        None,
+        description="年费规则信息，如果卡片设置了年费规则则包含完整信息"
+    )
+    
+    # 年费便捷信息字段
+    has_annual_fee: bool = Field(
+        ...,
+        description="是否设置了年费规则"
+    )
+    
+    current_year_fee_status: Optional[str] = Field(
+        None,
+        description="当前年份年费状态：pending/waived/paid/overdue"
+    )
+    
+    next_fee_due_date: Optional[date] = Field(
+        None,
+        description="下一次年费到期日期"
+    )
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v),
+            date: lambda v: v.isoformat(),
+            datetime: lambda v: v.isoformat()
         }
 
 
@@ -253,6 +432,21 @@ class CardSummary(BaseModel):
     available_amount: Decimal = Field(..., description="可用额度")
     status: CardStatus = Field(..., description="卡片状态")
     card_color: str = Field(..., description="卡片颜色")
+
+    class Config:
+        from_attributes = True
+
+
+class CardSummaryWithAnnualFee(CardSummary):
+    """
+    信用卡摘要信息模型（包含年费信息）
+    
+    用于列表显示时的简化信息，包含年费相关的关键字段。
+    """
+    has_annual_fee: bool = Field(..., description="是否设置了年费规则")
+    annual_fee_amount: Optional[Decimal] = Field(None, description="年费金额")
+    fee_type_display: Optional[str] = Field(None, description="年费类型显示名称")
+    current_year_fee_status: Optional[str] = Field(None, description="当前年费状态")
 
     class Config:
         from_attributes = True 
