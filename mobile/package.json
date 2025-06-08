@@ -141,7 +141,6 @@
     "autoprefixer": "^10.4.20",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
-    "mockjs": "^1.1.0",
     "openapi-ts-request": "^1.1.2",
     "oxlint": "^0.1.0",
     "postcss": "^8.4.49",
