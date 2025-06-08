@@ -48,6 +48,8 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(scope="session")
 def test_db():
     """创建测试数据库表"""
+    # 先删除所有表，然后重新创建
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
@@ -84,6 +86,43 @@ def test_user_data() -> Dict[str, Any]:
         "nickname": "测试用户",
         "phone": f"138{int(unique_id[:7], 16) % 100000000:08d}"  # 使用唯一的11位数字手机号
     }
+
+
+@pytest.fixture
+def test_user(client: TestClient, test_user_data: Dict[str, Any], test_db) -> Dict[str, Any]:
+    """创建测试用户（注册但不登录）"""
+    response = client.post("/api/auth/register", json=test_user_data)
+    assert response.status_code == 200
+    
+    # 返回包含密码的用户数据（用于登录测试）
+    result = response.json()
+    user_info = result["data"]
+    user_info["password"] = test_user_data["password"]  # 添加密码用于登录测试
+    return user_info
+
+
+@pytest.fixture
+def test_user_with_phone(client: TestClient, test_db) -> Dict[str, Any]:
+    """创建带手机号的测试用户"""
+    unique_id = uuid4().hex[:8]
+    # 先不带手机号注册，避免验证码问题
+    user_data = {
+        "username": f"phoneuser_{unique_id}",
+        "email": f"phone_{unique_id}@example.com",
+        "password": "TestPass123456"
+    }
+    
+    response = client.post("/api/auth/register", json=user_data)
+    if response.status_code != 200 or not response.json().get("success"):
+        # 如果注册失败，返回用户数据但加上电话信息（用于测试）
+        user_data["phone"] = f"139{int(unique_id[:7], 16) % 100000000:08d}"
+        return user_data
+    
+    result = response.json()
+    user_info = result["data"]
+    user_info["password"] = user_data["password"]
+    user_info["phone"] = f"139{int(unique_id[:7], 16) % 100000000:08d}"  # 模拟手机号
+    return user_info
 
 
 @pytest.fixture
@@ -149,7 +188,8 @@ def authenticated_user(client: TestClient, test_user_data: Dict[str, Any], test_
     return {
         "user": result["data"]["user"],
         "token": result["data"]["access_token"],
-        "headers": {"Authorization": f"Bearer {result['data']['access_token']}"}
+        "headers": {"Authorization": f"Bearer {result['data']['access_token']}"},
+        "password": test_user_data["password"]  # 添加密码字段用于密码修改测试
     }
 
 
