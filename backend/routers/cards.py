@@ -76,6 +76,83 @@ async def get_cards(
         return ResponseUtil.server_error(message="获取信用卡列表失败")
 
 
+# 保留基础版本接口用于兼容性（放在参数路由之前）
+@router.get(
+    "/basic", 
+    response_model=ApiPagedResponse[Card],
+    summary="获取信用卡列表（基础版本）",
+    response_description="返回分页的信用卡列表数据，不包含年费信息"
+)
+async def get_cards_basic(
+    page: int = Query(1, ge=1, description="页码，从1开始"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量，最大100"),
+    keyword: str = Query("", description="模糊搜索关键词，支持银行名称、卡片名称搜索"),
+    current_user: UserProfile = Depends(get_current_user),
+    service: CardsService = Depends(get_cards_service)
+):
+    """
+    获取信用卡列表（基础版本，不包含年费信息）
+    
+    支持分页和模糊搜索功能。可以根据银行名称、卡片名称等关键词进行搜索。
+    """
+    logger.info(f"获取信用卡列表（基础版）请求 - page: {page}, page_size: {page_size}, keyword: {keyword}")
+    
+    try:
+        # 计算跳过的记录数
+        skip = (page - 1) * page_size
+        
+        # 调用服务层获取数据
+        cards, total = service.get_cards(
+            user_id=current_user.id,
+            skip=skip,
+            limit=page_size,
+            keyword=keyword
+        )
+        
+        logger.info(f"获取信用卡列表（基础版）成功 - total: {total}")
+        return ResponseUtil.paginated(
+            items=cards,
+            total=total,
+            page=page,
+            page_size=page_size,
+            message="获取信用卡列表成功"
+        )
+    except Exception as e:
+        logger.error(f"获取信用卡列表（基础版）失败: {str(e)}")
+        return ResponseUtil.server_error(message="获取信用卡列表失败")
+
+
+@router.post(
+    "/basic", 
+    response_model=ApiResponse[Card],
+    summary="创建信用卡（基础版本）",
+    response_description="返回创建的信用卡信息，不含年费管理"
+)
+async def create_card_basic(
+    card_data: CardCreate,
+    current_user: UserProfile = Depends(get_current_user),
+    service: CardsService = Depends(get_cards_service)
+):
+    """
+    创建新的信用卡（基础版本，不含年费管理）
+    
+    添加新的信用卡到系统中，包括基本信息、额度设置等。
+    """
+    logger.info(f"创建信用卡（基础版）请求 - bank_name: {card_data.bank_name}")
+    
+    try:
+        # 调用服务层创建信用卡
+        card = service.create_card(card_data, current_user.id)
+        logger.info("信用卡（基础版）创建成功")
+        return ResponseUtil.created(data=card, message="创建信用卡成功")
+    except ValueError as e:
+        logger.warning(f"创建信用卡（基础版）参数错误: {str(e)}")
+        return ResponseUtil.validation_error(message=str(e))
+    except Exception as e:
+        logger.error(f"创建信用卡（基础版）失败: {str(e)}")
+        return ResponseUtil.server_error(message="创建信用卡失败")
+
+
 @router.post(
     "/", 
     response_model=ApiResponse[CardWithAnnualFee],
@@ -216,78 +293,4 @@ async def delete_card(
         return ResponseUtil.server_error(message="删除信用卡失败")
 
 
-# 保留基础版本接口用于兼容性（可选）
-@router.get(
-    "/basic", 
-    response_model=ApiPagedResponse[Card],
-    summary="获取信用卡列表（基础版本）",
-    response_description="返回分页的信用卡列表数据，不包含年费信息"
-)
-async def get_cards_basic(
-    page: int = Query(1, ge=1, description="页码，从1开始"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量，最大100"),
-    keyword: str = Query("", description="模糊搜索关键词，支持银行名称、卡片名称搜索"),
-    current_user: UserProfile = Depends(get_current_user),
-    service: CardsService = Depends(get_cards_service)
-):
-    """
-    获取信用卡列表（基础版本，不包含年费信息）
-    
-    支持分页和模糊搜索功能。可以根据银行名称、卡片名称等关键词进行搜索。
-    """
-    logger.info(f"获取信用卡列表（基础版）请求 - page: {page}, page_size: {page_size}, keyword: {keyword}")
-    
-    try:
-        # 计算跳过的记录数
-        skip = (page - 1) * page_size
-        
-        # 调用服务层获取数据
-        cards, total = service.get_cards(
-            user_id=current_user.id,
-            skip=skip,
-            limit=page_size,
-            keyword=keyword
-        )
-        
-        logger.info(f"获取信用卡列表（基础版）成功 - total: {total}")
-        return ResponseUtil.paginated(
-            items=cards,
-            total=total,
-            page=page,
-            page_size=page_size,
-            message="获取信用卡列表成功"
-        )
-    except Exception as e:
-        logger.error(f"获取信用卡列表（基础版）失败: {str(e)}")
-        return ResponseUtil.server_error(message="获取信用卡列表失败")
-
-
-@router.post(
-    "/basic", 
-    response_model=ApiResponse[Card],
-    summary="创建信用卡（基础版本）",
-    response_description="返回创建的信用卡信息，不含年费管理"
-)
-async def create_card_basic(
-    card_data: CardCreate,
-    current_user: UserProfile = Depends(get_current_user),
-    service: CardsService = Depends(get_cards_service)
-):
-    """
-    创建新的信用卡（基础版本，不含年费管理）
-    
-    添加新的信用卡到系统中，包括基本信息、额度设置等。
-    """
-    logger.info(f"创建信用卡（基础版）请求 - bank_name: {card_data.bank_name}")
-    
-    try:
-        # 调用服务层创建信用卡
-        card = service.create_card(card_data, current_user.id)
-        logger.info("信用卡（基础版）创建成功")
-        return ResponseUtil.created(data=card, message="创建信用卡成功")
-    except ValueError as e:
-        logger.warning(f"创建信用卡（基础版）参数错误: {str(e)}")
-        return ResponseUtil.validation_error(message=str(e))
-    except Exception as e:
-        logger.error(f"创建信用卡（基础版）失败: {str(e)}")
-        return ResponseUtil.server_error(message="创建信用卡失败") 
+ 

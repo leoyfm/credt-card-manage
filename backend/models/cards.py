@@ -202,12 +202,13 @@ class CardBase(BaseModel):
 
     @field_validator('due_day')
     @classmethod
-    def validate_due_day_after_billing_day(cls, v, info):
-        """验证还款日应在账单日之后"""
-        data = info.data if hasattr(info, 'data') else {}
-        billing_day = data.get('billing_day')
-        if billing_day and v <= billing_day:
-            raise ValueError('还款日应在账单日之后')
+    def validate_due_day(cls, v, info):
+        """验证还款日格式"""
+        # 还款日可以是1-31之间的任何一天
+        # 在信用卡业务中，还款日通常是下个月的某一天
+        # 例如：账单日25日，还款日次月2日，这是完全正常的
+        if not (1 <= v <= 31):
+            raise ValueError('还款日必须在1-31之间')
         return v
 
 
