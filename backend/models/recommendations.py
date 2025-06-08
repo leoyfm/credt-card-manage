@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class RecommendationType(str, Enum):
@@ -54,7 +54,7 @@ class RecommendationBase(BaseModel):
         min_length=2, 
         max_length=50,
         description="银行名称",
-        example="招商银行"
+        json_schema_extra={"example": "招商银行"}
     )
     
     card_name: str = Field(
@@ -62,13 +62,13 @@ class RecommendationBase(BaseModel):
         min_length=2, 
         max_length=100,
         description="信用卡名称",
-        example="招商银行经典白金卡"
+        json_schema_extra={"example": "招商银行经典白金卡"}
     )
     
     recommendation_type: RecommendationType = Field(
         ...,
         description="推荐类型",
-        example=RecommendationType.CASHBACK
+        json_schema_extra={"example": RecommendationType.CASHBACK}
     )
     
     title: str = Field(
@@ -76,7 +76,7 @@ class RecommendationBase(BaseModel):
         min_length=1, 
         max_length=100,
         description="推荐标题",
-        example="高现金回馈信用卡推荐"
+        json_schema_extra={"example": "高现金回馈信用卡推荐"}
     )
     
     description: str = Field(
@@ -84,13 +84,13 @@ class RecommendationBase(BaseModel):
         min_length=1, 
         max_length=1000,
         description="推荐描述",
-        example="基于您的消费习惯，这张卡在餐饮和超市消费有高额回馈"
+        json_schema_extra={"example": "基于您的消费习惯，这张卡在餐饮和超市消费有高额回馈"}
     )
     
     features: List[str] = Field(
         [],
         description="卡片特色功能列表",
-        example=["餐饮5%回馈", "超市3%回馈", "免年费政策"]
+        json_schema_extra={"example": ["餐饮5%回馈", "超市3%回馈", "免年费政策"]}
     )
     
     annual_fee: Decimal = Field(
@@ -98,14 +98,14 @@ class RecommendationBase(BaseModel):
         ge=0, 
         le=99999.99,
         description="年费金额，单位：元",
-        example=200.00
+        json_schema_extra={"example": 200.00}
     )
     
     credit_limit_range: str = Field(
         ...,
         max_length=50,
         description="额度范围",
-        example="5万-50万"
+        json_schema_extra={"example": "5万-50万"}
     )
     
     approval_difficulty: int = Field(
@@ -113,7 +113,7 @@ class RecommendationBase(BaseModel):
         ge=1, 
         le=5,
         description="申请难度等级，1-5分",
-        example=3
+        json_schema_extra={"example": 3}
     )
     
     recommendation_score: Decimal = Field(
@@ -121,50 +121,50 @@ class RecommendationBase(BaseModel):
         ge=0, 
         le=100,
         description="推荐分数，0-100分",
-        example=85.5
+        json_schema_extra={"example": 85.5}
     )
     
     match_reasons: List[str] = Field(
         [],
         description="匹配原因列表",
-        example=["消费类型匹配", "收入水平适合", "优惠活动丰富"]
+        json_schema_extra={"example": ["消费类型匹配", "收入水平适合", "优惠活动丰富"]}
     )
     
     pros: List[str] = Field(
         [],
         description="优点列表",
-        example=["回馈率高", "优惠活动多", "服务质量好"]
+        json_schema_extra={"example": ["回馈率高", "优惠活动多", "服务质量好"]}
     )
     
     cons: List[str] = Field(
         [],
         description="缺点列表",
-        example=["年费较高", "申请门槛高"]
+        json_schema_extra={"example": ["年费较高", "申请门槛高"]}
     )
     
     apply_url: Optional[str] = Field(
         None,
         max_length=500,
         description="申请链接",
-        example="https://bank.example.com/apply/card123"
+        json_schema_extra={"example": "https://bank.example.com/apply/card123"}
     )
     
     status: RecommendationStatus = Field(
         RecommendationStatus.ACTIVE,
         description="推荐状态",
-        example=RecommendationStatus.ACTIVE
+        json_schema_extra={"example": RecommendationStatus.ACTIVE}
     )
     
     expires_at: Optional[datetime] = Field(
         None,
         description="推荐过期时间",
-        example="2024-12-31T23:59:59"
+        json_schema_extra={"example": "2024-12-31T23:59:59"}
     )
     
     is_featured: bool = Field(
         False,
         description="是否为精选推荐",
-        example=False
+        json_schema_extra={"example": False}
     )
 
 
@@ -177,7 +177,7 @@ class RecommendationCreate(RecommendationBase):
     user_id: UUID = Field(
         ..., 
         description="用户ID，推荐的目标用户",
-        example="12345678-1234-1234-1234-123456789012"
+        json_schema_extra={"example": "12345678-1234-1234-1234-123456789012"}
     )
 
 
@@ -192,82 +192,82 @@ class RecommendationUpdate(BaseModel):
         min_length=1, 
         max_length=100, 
         description="推荐标题",
-        example="超值积分奖励信用卡推荐"
+        json_schema_extra={"example": "超值积分奖励信用卡推荐"}
     )
     description: Optional[str] = Field(
         None, 
         min_length=1, 
         max_length=1000, 
         description="推荐描述",
-        example="基于您的积分偏好，这张卡在多个类别有丰厚积分奖励"
+        json_schema_extra={"example": "基于您的积分偏好，这张卡在多个类别有丰厚积分奖励"}
     )
     features: Optional[List[str]] = Field(
         None, 
         description="卡片特色功能列表",
-        example=["超市10倍积分", "加油5倍积分", "生日月双倍积分"]
+        json_schema_extra={"example": ["超市10倍积分", "加油5倍积分", "生日月双倍积分"]}
     )
     annual_fee: Optional[Decimal] = Field(
         None, 
         ge=0, 
         le=99999.99, 
         description="年费金额",
-        example=300.00
+        json_schema_extra={"example": 300.00}
     )
     credit_limit_range: Optional[str] = Field(
         None, 
         max_length=50, 
         description="额度范围",
-        example="3万-30万"
+        json_schema_extra={"example": "3万-30万"}
     )
     approval_difficulty: Optional[int] = Field(
         None, 
         ge=1, 
         le=5, 
         description="申请难度等级",
-        example=2
+        json_schema_extra={"example": 2}
     )
     recommendation_score: Optional[Decimal] = Field(
         None, 
         ge=0, 
         le=100, 
         description="推荐分数",
-        example=92.0
+        json_schema_extra={"example": 92.0}
     )
     match_reasons: Optional[List[str]] = Field(
         None, 
         description="匹配原因列表",
-        example=["积分需求匹配", "消费类型符合", "优惠活动丰富"]
+        json_schema_extra={"example": ["积分需求匹配", "消费类型符合", "优惠活动丰富"]}
     )
     pros: Optional[List[str]] = Field(
         None, 
         description="优点列表",
-        example=["积分奖励丰厚", "兑换选择多样", "有效期较长"]
+        json_schema_extra={"example": ["积分奖励丰厚", "兑换选择多样", "有效期较长"]}
     )
     cons: Optional[List[str]] = Field(
         None, 
         description="缺点列表",
-        example=["年费稍高", "积分有效期限制"]
+        json_schema_extra={"example": ["年费稍高", "积分有效期限制"]}
     )
     apply_url: Optional[str] = Field(
         None, 
         max_length=500, 
         description="申请链接",
-        example="https://bank.example.com/apply/points-card"
+        json_schema_extra={"example": "https://bank.example.com/apply/points-card"}
     )
     status: Optional[RecommendationStatus] = Field(
         None, 
         description="推荐状态",
-        example=RecommendationStatus.ACTIVE
+        json_schema_extra={"example": RecommendationStatus.ACTIVE}
     )
     expires_at: Optional[datetime] = Field(
         None, 
         description="推荐过期时间",
-        example="2024-06-30T23:59:59"
+        json_schema_extra={"example": "2024-06-30T23:59:59"}
     )
     is_featured: Optional[bool] = Field(
         None, 
         description="是否为精选推荐",
-        example=True
+        json_schema_extra={"example": True}
     )
 
 
@@ -277,6 +277,8 @@ class Recommendation(RecommendationBase):
     
     用于返回推荐数据，包含完整的推荐信息和系统生成的字段。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(..., description="推荐ID，系统自动生成的唯一标识")
     user_id: UUID = Field(..., description="用户ID，推荐的目标用户")
     created_at: datetime = Field(..., description="创建时间")
@@ -284,12 +286,15 @@ class Recommendation(RecommendationBase):
     view_count: int = Field(0, description="查看次数")
     last_viewed_at: Optional[datetime] = Field(None, description="最后查看时间")
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        }
+    @field_serializer('created_at', 'updated_at', 'last_viewed_at')
+    def serialize_datetime(self, value: Optional[datetime]) -> Optional[str]:
+        """序列化datetime为ISO格式字符串"""
+        return value.isoformat() if value is not None else None
+
+    @field_serializer('annual_fee', 'recommendation_score')
+    def serialize_decimal(self, value: Decimal) -> float:
+        """序列化Decimal为float"""
+        return float(value)
 
 
 class RecommendationFeedback(BaseModel):
@@ -298,29 +303,28 @@ class RecommendationFeedback(BaseModel):
     
     用于收集用户对推荐的反馈信息。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     recommendation_id: UUID = Field(
         ..., 
         description="推荐ID",
-        example="87654321-4321-4321-4321-210987654321"
+        json_schema_extra={"example": "87654321-4321-4321-4321-210987654321"}
     )
     feedback_type: str = Field(
         ...,
         description="反馈类型，如：interested、not_interested、applied、too_expensive",
-        example="interested"
+        json_schema_extra={"example": "interested"}
     )
     rating: Optional[int] = Field(
         None, 
         ge=1, 
         le=5,
         description="用户评分，1-5分",
-        example=4
+        json_schema_extra={"example": 4}
     )
     comment: Optional[str] = Field(
         None,
         max_length=500,
         description="用户评论",
-        example="这张卡的回馈率确实不错，考虑申请"
-    )
-
-    class Config:
-        from_attributes = True 
+        json_schema_extra={"example": "这张卡的回馈率确实不错，考虑申请"}
+    ) 

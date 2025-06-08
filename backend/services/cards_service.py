@@ -5,16 +5,17 @@
 """
 
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from datetime import date, datetime
+from decimal import Decimal
 
 from models.cards import (
     Card, CardCreate, CardUpdate, 
     CardWithAnnualFeeCreate, CardWithAnnualFeeUpdate, CardWithAnnualFee,
-    CardSummary, CardSummaryWithAnnualFee
+    CardSummary, CardSummaryWithAnnualFee, CardStatus, CardType
 )
 from models.annual_fee import AnnualFeeRuleCreate, FeeType
 from services.annual_fee_service import AnnualFeeService
@@ -68,7 +69,7 @@ class CardsService:
                 raise ValueError("信用卡号已存在")
             
             # 创建信用卡记录
-            card_dict = card_data.dict()
+            card_dict = card_data.model_dump()
             card_dict['user_id'] = user_id
             
             # 移除available_amount字段，因为它是计算属性
@@ -81,7 +82,7 @@ class CardsService:
             self.db.refresh(db_card)
             
             logger.info(f"信用卡创建成功: {db_card.id}")
-            return Card.from_orm(db_card)
+            return Card.model_validate(db_card)
             
         except ValueError:
             raise
@@ -122,7 +123,7 @@ class CardsService:
                 raise ValueError("信用卡号已存在")
             
             # 创建信用卡记录
-            card_dict = card_data.dict()
+            card_dict = card_data.model_dump()
             
             # 提取年费相关字段
             annual_fee_enabled = card_dict.pop('annual_fee_enabled', False)
@@ -183,7 +184,7 @@ class CardsService:
             
             # 构建响应数据
             card_response = CardWithAnnualFee(
-                **Card.from_orm(db_card).dict(),
+                **Card.model_validate(db_card).model_dump(),
                 annual_fee_rule=annual_fee_rule,
                 has_annual_fee=annual_fee_rule is not None,
                 current_year_fee_status="pending" if annual_fee_rule else None,
@@ -205,7 +206,10 @@ class CardsService:
         user_id: UUID,
         skip: int = 0, 
         limit: int = 100, 
-        keyword: str = ""
+        keyword: str = "",
+        status: Optional[CardStatus] = None,
+        card_type: Optional[CardType] = None,
+        bank_name: Optional[str] = None
     ) -> Tuple[List[Card], int]:
         """
         获取信用卡列表
@@ -215,6 +219,9 @@ class CardsService:
             skip: 跳过记录数
             limit: 限制记录数
             keyword: 搜索关键词
+            status: 信用卡状态
+            card_type: 信用卡类型
+            bank_name: 银行名称
             
         Returns:
             Tuple[List[Card], int]: 信用卡列表和总数
@@ -227,12 +234,22 @@ class CardsService:
                 self._get_credit_card_model().is_deleted == False
             )
             
+            # 筛选条件
+            if status:
+                query = query.filter(self._get_credit_card_model().status == status.value)
+            
+            if card_type:
+                query = query.filter(self._get_credit_card_model().card_type == card_type.value)
+                
+            if bank_name:
+                query = query.filter(self._get_credit_card_model().bank_name.ilike(f"%{bank_name}%"))
+            
             # 模糊搜索
             if keyword.strip():
                 search_filter = or_(
                     self._get_credit_card_model().bank_name.ilike(f"%{keyword}%"),
                     self._get_credit_card_model().card_name.ilike(f"%{keyword}%"),
-                    self._get_credit_card_model().notes.ilike(f"%{keyword}%")
+                    self._get_credit_card_model().card_number.ilike(f"%{keyword}%")
                 )
                 query = query.filter(search_filter)
             
@@ -245,7 +262,7 @@ class CardsService:
             ).offset(skip).limit(limit).all()
             
             logger.info(f"找到 {len(cards)} 张信用卡，总计 {total} 张")
-            return [Card.from_orm(card) for card in cards], total
+            return [Card.model_validate(card) for card in cards], total
             
         except Exception as e:
             logger.error(f"获取信用卡列表失败: {str(e)}")
@@ -361,7 +378,7 @@ class CardsService:
                 logger.warning(f"信用卡不存在: {card_id}")
                 return None
                 
-            return Card.from_orm(card)
+            return Card.model_validate(card)
             
         except Exception as e:
             logger.error(f"获取信用卡详情失败: {str(e)}")
@@ -439,7 +456,7 @@ class CardsService:
                 next_fee_due_date = None
             
             card_response = CardWithAnnualFee(
-                **Card.from_orm(card).dict(),
+                **Card.model_validate(card).model_dump(),
                 annual_fee_rule=annual_fee_rule_data,
                 has_annual_fee=rule is not None,
                 current_year_fee_status=record.waiver_status if record else None,
@@ -483,7 +500,7 @@ class CardsService:
                 return None
             
             # 更新字段
-            update_data = card_data.dict(exclude_unset=True)
+            update_data = card_data.model_dump(exclude_unset=True)
             # 移除available_amount字段，因为它是计算属性
             if 'available_amount' in update_data:
                 update_data.pop('available_amount')
@@ -496,7 +513,7 @@ class CardsService:
             self.db.refresh(card)
             
             logger.info(f"信用卡更新成功: {card_id}")
-            return Card.from_orm(card)
+            return Card.model_validate(card)
             
         except Exception as e:
             logger.error(f"更新信用卡失败: {str(e)}")
@@ -533,7 +550,7 @@ class CardsService:
                 logger.warning(f"信用卡不存在: {card_id}")
                 return None
             
-            update_data = card_data.dict(exclude_unset=True)
+            update_data = card_data.model_dump(exclude_unset=True)
             
             # 提取年费相关字段
             annual_fee_enabled = update_data.pop('annual_fee_enabled', None)
@@ -629,7 +646,7 @@ class CardsService:
             
             # 构建响应数据
             card_response = CardWithAnnualFee(
-                **Card.from_orm(card).dict(),
+                **Card.model_validate(card).model_dump(),
                 annual_fee_rule=annual_fee_rule,
                 has_annual_fee=annual_fee_rule is not None,
                 current_year_fee_status="pending" if annual_fee_rule else None,

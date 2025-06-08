@@ -62,7 +62,7 @@ class TransactionsService:
                 raise ValueError("信用卡不存在或不属于该用户")
             
             # 创建交易记录
-            transaction_dict = transaction_data.dict()
+            transaction_dict = transaction_data.model_dump()
             transaction_dict['user_id'] = user_id
             
             # 自动计算积分（如果未提供）
@@ -83,7 +83,7 @@ class TransactionsService:
                 self._update_annual_fee_progress(transaction_data.card_id, transaction_data.amount)
             
             logger.info(f"交易记录创建成功: {db_transaction.id}")
-            return Transaction.from_orm(db_transaction)
+            return Transaction.model_validate(db_transaction)
             
         except Exception as e:
             logger.error(f"创建交易记录失败: {str(e)}")
@@ -175,40 +175,26 @@ class TransactionsService:
             ).offset(skip).limit(limit).all()
             
             logger.info(f"找到 {len(transactions)} 条交易记录，总计 {total} 条")
-            return [Transaction.from_orm(transaction) for transaction in transactions], total
+            return [Transaction.model_validate(transaction) for transaction in transactions], total
             
         except Exception as e:
             logger.error(f"获取交易记录列表失败: {str(e)}")
             raise Exception(f"获取交易记录列表失败: {str(e)}")
 
     def get_transaction(self, transaction_id: UUID, user_id: UUID) -> Optional[Transaction]:
-        """
-        根据ID获取交易记录
-        
-        Args:
-            transaction_id: 交易记录ID
-            user_id: 用户ID
-            
-        Returns:
-            Optional[Transaction]: 交易记录信息
-        """
+        """获取单个交易记录"""
         try:
-            logger.info(f"获取交易记录: {transaction_id}")
-            
             transaction = self.db.query(self._get_transaction_model()).filter(
-                and_(
-                    self._get_transaction_model().id == transaction_id,
-                    self._get_transaction_model().user_id == user_id
-                )
+                self._get_transaction_model().id == transaction_id,
+                self._get_transaction_model().user_id == user_id,
+                self._get_transaction_model().is_deleted == False
             ).first()
             
-            if transaction:
-                logger.info(f"交易记录获取成功: {transaction_id}")
-                return Transaction.from_orm(transaction)
-            else:
-                logger.warning(f"交易记录不存在: {transaction_id}")
+            if not transaction:
                 return None
                 
+            return Transaction.model_validate(transaction)
+            
         except Exception as e:
             logger.error(f"获取交易记录失败: {str(e)}")
             raise Exception(f"获取交易记录失败: {str(e)}")
@@ -219,38 +205,30 @@ class TransactionsService:
         user_id: UUID,
         transaction_data: TransactionUpdate
     ) -> Optional[Transaction]:
-        """
-        更新交易记录
-        
-        Args:
-            transaction_id: 交易记录ID
-            user_id: 用户ID
-            transaction_data: 更新数据
-            
-        Returns:
-            Optional[Transaction]: 更新后的交易记录
-        """
+        """更新交易记录"""
         try:
-            logger.info(f"更新交易记录: {transaction_id}")
-            
             transaction = self.db.query(self._get_transaction_model()).filter(
-                and_(
-                    self._get_transaction_model().id == transaction_id,
-                    self._get_transaction_model().user_id == user_id
-                )
+                self._get_transaction_model().id == transaction_id,
+                self._get_transaction_model().user_id == user_id,
+                self._get_transaction_model().is_deleted == False
             ).first()
             
             if not transaction:
-                logger.warning(f"交易记录不存在: {transaction_id}")
                 return None
             
-            # 记录原始数据用于年费进度更新
-            old_amount = transaction.amount
-            old_type = transaction.transaction_type
-            old_status = transaction.status
+            update_data = transaction_data.model_dump(exclude_unset=True)
             
-            # 更新字段
-            update_data = transaction_data.dict(exclude_unset=True)
+            # 验证信用卡是否属于用户（如果更新了card_id）
+            if 'card_id' in update_data and update_data['card_id']:
+                card = self.db.query(self._get_card_model()).filter(
+                    self._get_card_model().id == update_data['card_id'],
+                    self._get_card_model().user_id == user_id,
+                    self._get_card_model().is_deleted == False
+                ).first()
+                
+                if not card:
+                    raise ValueError("指定的信用卡不存在或不属于当前用户")
+            
             for field, value in update_data.items():
                 if hasattr(transaction, field):
                     setattr(transaction, field, value)
@@ -258,14 +236,7 @@ class TransactionsService:
             self.db.commit()
             self.db.refresh(transaction)
             
-            # 如果影响年费进度的字段发生变化，重新计算年费进度
-            if (old_amount != transaction.amount or 
-                old_type != transaction.transaction_type or 
-                old_status != transaction.status):
-                self._recalculate_annual_fee_progress(transaction.card_id)
-            
-            logger.info(f"交易记录更新成功: {transaction_id}")
-            return Transaction.from_orm(transaction)
+            return Transaction.model_validate(transaction)
             
         except Exception as e:
             logger.error(f"更新交易记录失败: {str(e)}")
@@ -711,4 +682,9 @@ class TransactionsService:
     def _get_annual_fee_rule_model(self):
         """获取年费规则数据库模型"""
         from db_models.annual_fee import AnnualFeeRule
-        return AnnualFeeRule 
+        return AnnualFeeRule
+
+    def _get_card_model(self):
+        """获取信用卡数据库模型"""
+        from db_models.cards import CreditCard
+        return CreditCard 

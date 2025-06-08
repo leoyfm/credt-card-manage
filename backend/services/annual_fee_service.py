@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from uuid import UUID
 
 from sqlalchemy import and_, extract, func, text
@@ -34,7 +34,7 @@ class AnnualFeeService:
         self.db.add(db_rule)
         self.db.commit()
         self.db.refresh(db_rule)
-        return AnnualFeeRule.from_orm(db_rule)
+        return AnnualFeeRule.model_validate(db_rule)
 
     def get_annual_fee_rules(
         self, skip: int = 0, limit: int = 100, fee_type: Optional[FeeType] = None, keyword: str = ""
@@ -68,14 +68,14 @@ class AnnualFeeService:
         
         # 获取分页数据
         rules = query.offset(skip).limit(limit).all()
-        return [AnnualFeeRule.from_orm(rule) for rule in rules], total
+        return [AnnualFeeRule.model_validate(rule) for rule in rules], total
 
     def get_annual_fee_rule(self, rule_id: UUID) -> Optional[AnnualFeeRule]:
         """根据ID获取年费规则"""
         rule = self.db.query(self._get_annual_fee_rule_model()).filter(
             self._get_annual_fee_rule_model().id == rule_id
         ).first()
-        return AnnualFeeRule.from_orm(rule) if rule else None
+        return AnnualFeeRule.model_validate(rule) if rule else None
 
     def update_annual_fee_rule(
         self, rule_id: UUID, rule_data: AnnualFeeRuleUpdate
@@ -87,12 +87,12 @@ class AnnualFeeService:
         if not rule:
             return None
 
-        for field, value in rule_data.dict(exclude_unset=True).items():
+        for field, value in rule_data.model_dump(exclude_unset=True).items():
             setattr(rule, field, value)
 
         self.db.commit()
         self.db.refresh(rule)
-        return AnnualFeeRule.from_orm(rule)
+        return AnnualFeeRule.model_validate(rule)
 
     def delete_annual_fee_rule(self, rule_id: UUID) -> bool:
         """删除年费规则"""
@@ -114,7 +114,7 @@ class AnnualFeeService:
         self.db.add(db_record)
         self.db.commit()
         self.db.refresh(db_record)
-        return AnnualFeeRecord.from_orm(db_record)
+        return AnnualFeeRecord.model_validate(db_record)
 
     def create_annual_fee_record_auto(self, card_id: UUID, fee_year: int) -> Optional[UUID]:
         """自动创建年费记录（使用数据库函数）"""
@@ -175,14 +175,14 @@ class AnnualFeeService:
         
         # 获取分页数据
         records = query.offset(skip).limit(limit).all()
-        return [AnnualFeeRecord.from_orm(record) for record in records], total
+        return [AnnualFeeRecord.model_validate(record) for record in records], total
 
     def get_annual_fee_record(self, record_id: UUID) -> Optional[AnnualFeeRecord]:
         """根据ID获取年费记录"""
         record = self.db.query(self._get_annual_fee_record_model()).filter(
             self._get_annual_fee_record_model().id == record_id
         ).first()
-        return AnnualFeeRecord.from_orm(record) if record else None
+        return AnnualFeeRecord.model_validate(record) if record else None
 
     def update_annual_fee_record(
         self, record_id: UUID, record_data: AnnualFeeRecordUpdate
@@ -194,12 +194,12 @@ class AnnualFeeService:
         if not record:
             return None
 
-        for field, value in record_data.dict(exclude_unset=True).items():
+        for field, value in record_data.model_dump(exclude_unset=True).items():
             setattr(record, field, value)
 
         self.db.commit()
         self.db.refresh(record)
-        return AnnualFeeRecord.from_orm(record)
+        return AnnualFeeRecord.model_validate(record)
 
     # ==================== 年费减免检查 ====================
 
@@ -352,12 +352,12 @@ class AnnualFeeService:
     def _create_annual_fee_rule_db(self, rule_data: AnnualFeeRuleCreate):
         """创建数据库年费规则对象"""
         from db_models.annual_fee import AnnualFeeRule as AnnualFeeRuleDB
-        return AnnualFeeRuleDB(**rule_data.dict())
+        return AnnualFeeRuleDB(**rule_data.model_dump())
 
     def _create_annual_fee_record_db(self, record_data: AnnualFeeRecordCreate):
         """创建数据库年费记录对象"""
         from db_models.annual_fee import AnnualFeeRecord as AnnualFeeRecordDB
-        return AnnualFeeRecordDB(**record_data.dict())
+        return AnnualFeeRecordDB(**record_data.model_dump())
 
     def _get_annual_fee_rule_model(self):
         """获取年费规则数据库模型"""

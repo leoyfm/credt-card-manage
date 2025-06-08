@@ -51,7 +51,7 @@ class RecommendationsService:
                 self._get_recommendation_model().created_at.desc()
             ).offset(skip).limit(limit).all()
             
-            return [Recommendation.from_orm(rec) for rec in recommendations], total
+            return [Recommendation.model_validate(rec) for rec in recommendations], total
             
         except Exception as e:
             logger.error(f"获取推荐列表失败: {str(e)}")
@@ -60,7 +60,7 @@ class RecommendationsService:
     def create_recommendation(self, rec_data: RecommendationCreate, user_id: UUID) -> Recommendation:
         """创建推荐"""
         try:
-            rec_dict = rec_data.dict()
+            rec_dict = rec_data.model_dump()
             rec_dict['user_id'] = user_id
             
             db_rec = self._create_recommendation_db(rec_dict)
@@ -68,18 +68,18 @@ class RecommendationsService:
             self.db.commit()
             self.db.refresh(db_rec)
             
-            return Recommendation.from_orm(db_rec)
+            return Recommendation.model_validate(db_rec)
             
         except Exception as e:
             logger.error(f"创建推荐失败: {str(e)}")
             self.db.rollback()
             raise Exception(f"创建推荐失败: {str(e)}")
 
-    def get_recommendation(self, recommendation_id: UUID, user_id: UUID) -> Optional[Recommendation]:
+    def get_recommendation(self, rec_id: UUID, user_id: UUID) -> Optional[Recommendation]:
         """获取单个推荐"""
         try:
             recommendation = self.db.query(self._get_recommendation_model()).filter(
-                self._get_recommendation_model().id == recommendation_id,
+                self._get_recommendation_model().id == rec_id,
                 self._get_recommendation_model().user_id == user_id,
                 self._get_recommendation_model().is_deleted == False
             ).first()
@@ -87,7 +87,7 @@ class RecommendationsService:
             if not recommendation:
                 return None
                 
-            return Recommendation.from_orm(recommendation)
+            return Recommendation.model_validate(recommendation)
             
         except Exception as e:
             logger.error(f"获取推荐失败: {str(e)}")
@@ -95,14 +95,14 @@ class RecommendationsService:
 
     def update_recommendation(
         self, 
-        recommendation_id: UUID, 
+        rec_id: UUID, 
         user_id: UUID,
         rec_data: RecommendationUpdate
     ) -> Optional[Recommendation]:
         """更新推荐"""
         try:
             recommendation = self.db.query(self._get_recommendation_model()).filter(
-                self._get_recommendation_model().id == recommendation_id,
+                self._get_recommendation_model().id == rec_id,
                 self._get_recommendation_model().user_id == user_id,
                 self._get_recommendation_model().is_deleted == False
             ).first()
@@ -110,7 +110,7 @@ class RecommendationsService:
             if not recommendation:
                 return None
             
-            update_data = rec_data.dict(exclude_unset=True)
+            update_data = rec_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 if hasattr(recommendation, field):
                     setattr(recommendation, field, value)
@@ -118,7 +118,7 @@ class RecommendationsService:
             self.db.commit()
             self.db.refresh(recommendation)
             
-            return Recommendation.from_orm(recommendation)
+            return Recommendation.model_validate(recommendation)
             
         except Exception as e:
             logger.error(f"更新推荐失败: {str(e)}")

@@ -7,6 +7,7 @@
 import logging
 from typing import List, Optional, Tuple
 from uuid import UUID
+from datetime import datetime, UTC
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
@@ -50,7 +51,7 @@ class RemindersService:
                 self._get_reminder_model().reminder_date.desc()
             ).offset(skip).limit(limit).all()
             
-            return [Reminder.from_orm(reminder) for reminder in reminders], total
+            return [Reminder.model_validate(reminder) for reminder in reminders], total
             
         except Exception as e:
             logger.error(f"获取还款提醒列表失败: {str(e)}")
@@ -59,7 +60,7 @@ class RemindersService:
     def create_reminder(self, reminder_data: ReminderCreate, user_id: UUID) -> Reminder:
         """创建还款提醒"""
         try:
-            reminder_dict = reminder_data.dict()
+            reminder_dict = reminder_data.model_dump()
             reminder_dict['user_id'] = user_id
             
             db_reminder = self._create_reminder_db(reminder_dict)
@@ -67,7 +68,7 @@ class RemindersService:
             self.db.commit()
             self.db.refresh(db_reminder)
             
-            return Reminder.from_orm(db_reminder)
+            return Reminder.model_validate(db_reminder)
             
         except Exception as e:
             logger.error(f"创建还款提醒失败: {str(e)}")
@@ -86,7 +87,7 @@ class RemindersService:
             if not reminder:
                 return None
                 
-            return Reminder.from_orm(reminder)
+            return Reminder.model_validate(reminder)
             
         except Exception as e:
             logger.error(f"获取还款提醒失败: {str(e)}")
@@ -109,7 +110,7 @@ class RemindersService:
             if not reminder:
                 return None
             
-            update_data = reminder_data.dict(exclude_unset=True)
+            update_data = reminder_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 if hasattr(reminder, field):
                     setattr(reminder, field, value)
@@ -117,7 +118,7 @@ class RemindersService:
             self.db.commit()
             self.db.refresh(reminder)
             
-            return Reminder.from_orm(reminder)
+            return Reminder.model_validate(reminder)
             
         except Exception as e:
             logger.error(f"更新还款提醒失败: {str(e)}")
@@ -160,8 +161,7 @@ class RemindersService:
             
             from models.reminders import ReminderStatus
             reminder.status = ReminderStatus.READ
-            from datetime import datetime
-            reminder.read_at = datetime.utcnow()
+            reminder.read_at = datetime.now(UTC)
             
             self.db.commit()
             return True

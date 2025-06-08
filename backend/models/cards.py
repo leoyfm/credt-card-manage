@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict, field_serializer
 
 # 导入年费相关模型
 from .annual_fee import FeeType, AnnualFeeRule, AnnualFeeRuleCreate
@@ -60,7 +60,7 @@ class CardBase(BaseModel):
         min_length=2, 
         max_length=50,
         description="银行名称，如：招商银行、中国工商银行",
-        example="招商银行"
+        json_schema_extra={"example": "招商银行"}
     )
     
     card_name: str = Field(
@@ -68,7 +68,7 @@ class CardBase(BaseModel):
         min_length=2, 
         max_length=100,
         description="信用卡名称，如：招行经典白金卡、工行环球旅行卡",
-        example="招行经典白金卡"
+        json_schema_extra={"example": "招行经典白金卡"}
     )
     
     card_number: str = Field(
@@ -76,13 +76,13 @@ class CardBase(BaseModel):
         min_length=13, 
         max_length=19,
         description="信用卡号，支持13-19位数字",
-        example="6225882888888888"
+        json_schema_extra={"example": "6225882888888888"}
     )
     
     card_type: CardType = Field(
         ...,
         description="信用卡组织类型",
-        example=CardType.VISA
+        json_schema_extra={"example": CardType.VISA}
     )
     
     credit_limit: Decimal = Field(
@@ -90,21 +90,21 @@ class CardBase(BaseModel):
         ge=0, 
         le=9999999.99,
         description="信用额度，单位：元",
-        example=50000.00
+        json_schema_extra={"example": 50000.00}
     )
     
     used_amount: Decimal = Field(
         0, 
         ge=0,
         description="已使用额度，单位：元",
-        example=3500.50
+        json_schema_extra={"example": 3500.50}
     )
     
     available_amount: Optional[Decimal] = Field(
         None,
         ge=0,
         description="可用额度，自动计算得出",
-        example=46499.50
+        json_schema_extra={"example": 46499.50}
     )
     
     billing_day: int = Field(
@@ -112,7 +112,7 @@ class CardBase(BaseModel):
         ge=1, 
         le=31,
         description="账单日，每月的哪一天生成账单",
-        example=5
+        json_schema_extra={"example": 5}
     )
     
     due_day: int = Field(
@@ -120,7 +120,7 @@ class CardBase(BaseModel):
         ge=1, 
         le=31,
         description="还款日，每月的还款截止日期",
-        example=25
+        json_schema_extra={"example": 25}
     )
     
     expiry_month: int = Field(
@@ -128,7 +128,7 @@ class CardBase(BaseModel):
         ge=1, 
         le=12,
         description="卡片有效期月份，1-12",
-        example=10
+        json_schema_extra={"example": 10}
     )
     
     expiry_year: int = Field(
@@ -136,7 +136,7 @@ class CardBase(BaseModel):
         ge=2024, 
         le=2050,
         description="卡片有效期年份，如2024",
-        example=2027
+        json_schema_extra={"example": 2027}
     )
     
     annual_fee_rule_id: Optional[UUID] = Field(
@@ -148,45 +148,48 @@ class CardBase(BaseModel):
         "#1890ff",
         max_length=20,
         description="卡片颜色，用于前端显示",
-        example="#1890ff"
+        json_schema_extra={"example": "#1890ff"}
     )
     
     status: CardStatus = Field(
         CardStatus.INACTIVE,
         description="卡片状态",
-        example=CardStatus.ACTIVE
+        json_schema_extra={"example": CardStatus.ACTIVE}
     )
     
     is_active: bool = Field(
         True,
         description="是否启用此卡片",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     activation_date: Optional[date] = Field(
         None,
         description="激活日期",
-        example="2024-01-15"
+        json_schema_extra={"example": "2024-01-15"}
     )
     
     notes: Optional[str] = Field(
         None,
         max_length=500,
         description="备注信息",
-        example="主要用于日常消费，享受餐饮优惠"
+        json_schema_extra={"example": "主要用于日常消费，享受餐饮优惠"}
     )
 
-    @validator('card_number')
+    @field_validator('card_number')
+    @classmethod
     def validate_card_number(cls, v):
         """验证信用卡号格式"""
         if not v.isdigit():
             raise ValueError('信用卡号只能包含数字')
         return v
 
-    @validator('expiry_year')
-    def validate_expiry_not_past(cls, v, values):
+    @field_validator('expiry_year')
+    @classmethod
+    def validate_expiry_not_past(cls, v, info):
         """验证有效期不能是过去的时间"""
-        expiry_month = values.get('expiry_month')
+        data = info.data if hasattr(info, 'data') else {}
+        expiry_month = data.get('expiry_month')
         if expiry_month:
             today = date.today()
             # 如果是当前年份，月份不能早于当前月份
@@ -197,10 +200,12 @@ class CardBase(BaseModel):
                 raise ValueError('卡片有效期不能是过去的时间')
         return v
 
-    @validator('due_day')
-    def validate_due_day_after_billing_day(cls, v, values):
+    @field_validator('due_day')
+    @classmethod
+    def validate_due_day_after_billing_day(cls, v, info):
         """验证还款日应在账单日之后"""
-        billing_day = values.get('billing_day')
+        data = info.data if hasattr(info, 'data') else {}
+        billing_day = data.get('billing_day')
         if billing_day and v <= billing_day:
             raise ValueError('还款日应在账单日之后')
         return v
@@ -217,65 +222,63 @@ class CardWithAnnualFeeCreate(CardBase):
     annual_fee_enabled: bool = Field(
         False,
         description="是否启用年费管理",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     fee_type: Optional[FeeType] = Field(
         None, 
         description="年费类型，启用年费管理时必填",
-        example=FeeType.TRANSACTION_COUNT
+        json_schema_extra={"example": FeeType.TRANSACTION_COUNT}
     )
     
     base_fee: Optional[Decimal] = Field(
         None, 
         description="基础年费金额，启用年费管理时必填", 
         ge=0,
-        example=200.00
+        json_schema_extra={"example": 200.00}
     )
     
     waiver_condition_value: Optional[Decimal] = Field(
         None, 
         description="减免条件数值，如刷卡次数12或消费金额50000",
-        example=12
+        json_schema_extra={"example": 12}
     )
     
     points_per_yuan: Optional[Decimal] = Field(
         None, 
         description="积分兑换比例：1元对应的积分数，如1元=0.1积分。仅当fee_type为points_exchange时有效",
-        example=0.1,
+        json_schema_extra={"example": 0.1, "ge": 0},
         ge=0
     )
     
     annual_fee_month: Optional[int] = Field(
         None, 
         description="年费扣除月份，1-12月。如每年2月扣费则填2",
-        example=2,
-        ge=1,
-        le=12
+        json_schema_extra={"example": 2, "ge": 1, "le": 12}
     )
     
     annual_fee_day: Optional[int] = Field(
         None, 
         description="年费扣除日期，1-31日。如每年2月18日扣费则填18",
-        example=18,
-        ge=1,
-        le=31
+        json_schema_extra={"example": 18, "ge": 1, "le": 31}
     )
     
     fee_description: Optional[str] = Field(
         None, 
         description="年费规则描述，详细说明减免条件",
-        example="年内刷卡满12次可减免年费，每年2月18日扣除"
+        json_schema_extra={"example": "年内刷卡满12次可减免年费，每年2月18日扣除"}
     )
 
-    @validator('points_per_yuan')  
-    def validate_annual_fee_required_fields(cls, v, values):
+    @field_validator('points_per_yuan')  
+    @classmethod
+    def validate_annual_fee_required_fields(cls, v, info):
         """验证启用年费管理时的必填字段"""
-        annual_fee_enabled = values.get('annual_fee_enabled', False)
+        data = info.data if hasattr(info, 'data') else {}
+        annual_fee_enabled = data.get('annual_fee_enabled', False)
         
         if annual_fee_enabled:
-            fee_type = values.get('fee_type')
-            base_fee = values.get('base_fee')
+            fee_type = data.get('fee_type')
+            base_fee = data.get('base_fee')
             
             if not fee_type:
                 raise ValueError('启用年费管理时，年费类型为必填字段')
@@ -385,10 +388,27 @@ class Card(CardBase):
     
     用于返回信用卡数据，包含完整的卡片信息和系统生成的字段。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(..., description="信用卡ID，系统自动生成的唯一标识")
     user_id: UUID = Field(..., description="用户ID，卡片所属用户")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="最后更新时间")
+
+    @field_serializer('credit_limit', 'used_amount', 'available_amount')
+    def serialize_decimal(self, value: Optional[Decimal]) -> Optional[float]:
+        """序列化Decimal为float"""
+        return float(value) if value is not None else None
+
+    @field_serializer('activation_date')
+    def serialize_date(self, value: Optional[date]) -> Optional[str]:
+        """序列化date为ISO格式字符串"""
+        return value.isoformat() if value is not None else None
+
+    @field_serializer('created_at', 'updated_at')
+    def serialize_datetime(self, value: datetime) -> str:
+        """序列化datetime为ISO格式字符串"""
+        return value.isoformat()
 
     @property
     def expiry_display(self) -> str:
@@ -417,14 +437,6 @@ class Card(CardBase):
             return True
         return False
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            Decimal: lambda v: float(v),
-            date: lambda v: v.isoformat(),
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class CardWithAnnualFee(Card):
     """
@@ -432,6 +444,8 @@ class CardWithAnnualFee(Card):
     
     用于返回包含年费规则信息的完整信用卡数据。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     annual_fee_rule: Optional[AnnualFeeRule] = Field(
         None,
         description="年费规则信息，如果卡片设置了年费规则则包含完整信息"
@@ -453,14 +467,6 @@ class CardWithAnnualFee(Card):
         description="下一次年费到期日期"
     )
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            Decimal: lambda v: float(v),
-            date: lambda v: v.isoformat(),
-            datetime: lambda v: v.isoformat()
-        }
-
 
 class CardSummary(BaseModel):
     """
@@ -468,6 +474,8 @@ class CardSummary(BaseModel):
     
     用于列表显示时的简化信息，包含核心字段。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(..., description="信用卡ID")
     bank_name: str = Field(..., description="银行名称")
     card_name: str = Field(..., description="信用卡名称")
@@ -478,9 +486,6 @@ class CardSummary(BaseModel):
     status: CardStatus = Field(..., description="卡片状态")
     card_color: str = Field(..., description="卡片颜色")
 
-    class Config:
-        from_attributes = True
-
 
 class CardSummaryWithAnnualFee(CardSummary):
     """
@@ -488,10 +493,9 @@ class CardSummaryWithAnnualFee(CardSummary):
     
     用于列表显示时的简化信息，包含年费相关的关键字段。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     has_annual_fee: bool = Field(..., description="是否设置了年费规则")
     annual_fee_amount: Optional[Decimal] = Field(None, description="年费金额")
     fee_type_display: Optional[str] = Field(None, description="年费类型显示名称")
-    current_year_fee_status: Optional[str] = Field(None, description="当前年费状态")
-
-    class Config:
-        from_attributes = True 
+    current_year_fee_status: Optional[str] = Field(None, description="当前年费状态") 

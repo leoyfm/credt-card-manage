@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ReminderType(str, Enum):
@@ -48,13 +48,13 @@ class ReminderBase(BaseModel):
     card_id: UUID = Field(
         ..., 
         description="信用卡ID，关联的信用卡",
-        example="f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        json_schema_extra={"example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"}
     )
     
     reminder_type: ReminderType = Field(
         ...,
         description="提醒类型",
-        example=ReminderType.PAYMENT
+        json_schema_extra={"example": ReminderType.PAYMENT}
     )
     
     title: str = Field(
@@ -62,7 +62,7 @@ class ReminderBase(BaseModel):
         min_length=1, 
         max_length=100,
         description="提醒标题",
-        example="招商银行信用卡还款提醒"
+        json_schema_extra={"example": "招商银行信用卡还款提醒"}
     )
     
     message: str = Field(
@@ -70,45 +70,45 @@ class ReminderBase(BaseModel):
         min_length=1, 
         max_length=500,
         description="提醒内容",
-        example="您的招商银行信用卡将于3天后到期还款，请及时还款避免逾期"
+        json_schema_extra={"example": "您的招商银行信用卡将于3天后到期还款，请及时还款避免逾期"}
     )
     
     reminder_date: date = Field(
         ...,
         description="提醒日期",
-        example="2024-01-20"
+        json_schema_extra={"example": "2024-01-20"}
     )
     
     due_date: date = Field(
         ...,
         description="到期日期（还款日或账单日）",
-        example="2024-01-25"
+        json_schema_extra={"example": "2024-01-25"}
     )
     
     amount: Optional[Decimal] = Field(
         None,
         ge=0,
         description="相关金额，如还款金额、年费金额",
-        example=3500.50
+        json_schema_extra={"example": 3500.50}
     )
     
     status: ReminderStatus = Field(
         ReminderStatus.PENDING,
         description="提醒状态",
-        example=ReminderStatus.PENDING
+        json_schema_extra={"example": ReminderStatus.PENDING}
     )
     
     is_active: bool = Field(
         True,
         description="是否启用此提醒",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     notes: Optional[str] = Field(
         None,
         max_length=300,
         description="备注信息",
-        example="自动生成的还款提醒"
+        json_schema_extra={"example": "自动生成的还款提醒"}
     )
 
 
@@ -132,46 +132,46 @@ class ReminderUpdate(BaseModel):
         min_length=1, 
         max_length=100, 
         description="提醒标题",
-        example="工商银行信用卡还款提醒"
+        json_schema_extra={"example": "工商银行信用卡还款提醒"}
     )
     message: Optional[str] = Field(
         None, 
         min_length=1, 
         max_length=500, 
         description="提醒内容",
-        example="您的工商银行信用卡账单已出，请及时还款"
+        json_schema_extra={"example": "您的工商银行信用卡账单已出，请及时还款"}
     )
     reminder_date: Optional[date] = Field(
         None, 
         description="提醒日期",
-        example="2024-01-22"
+        json_schema_extra={"example": "2024-01-22"}
     )
     due_date: Optional[date] = Field(
         None, 
         description="到期日期",
-        example="2024-01-28"
+        json_schema_extra={"example": "2024-01-28"}
     )
     amount: Optional[Decimal] = Field(
         None, 
         ge=0, 
         description="相关金额",
-        example=4200.00
+        json_schema_extra={"example": 4200.00}
     )
     status: Optional[ReminderStatus] = Field(
         None, 
         description="提醒状态",
-        example=ReminderStatus.READ
+        json_schema_extra={"example": ReminderStatus.READ}
     )
     is_active: Optional[bool] = Field(
         None, 
         description="是否启用此提醒",
-        example=True
+        json_schema_extra={"example": True}
     )
     notes: Optional[str] = Field(
         None, 
         max_length=300, 
         description="备注信息",
-        example="已提醒用户还款"
+        json_schema_extra={"example": "已提醒用户还款"}
     )
 
 
@@ -188,10 +188,4 @@ class Reminder(ReminderBase):
     sent_at: Optional[datetime] = Field(None, description="发送时间")
     read_at: Optional[datetime] = Field(None, description="已读时间")
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
-        } 
+    model_config = ConfigDict(from_attributes=True) 

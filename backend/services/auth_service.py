@@ -5,7 +5,7 @@
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Dict, Any, Tuple, List
 from uuid import UUID
 
@@ -91,7 +91,7 @@ class AuthService:
         self.db.refresh(user)
 
         logger.info(f"用户注册成功 - user_id: {user.id}, username: {user.username}")
-        return UserProfile.from_orm(user)
+        return UserProfile.model_validate(user)
 
     def _check_user_exists(self, username: str, email: str, phone: Optional[str] = None):
         """检查用户是否已存在"""
@@ -155,7 +155,7 @@ class AuthService:
             access_token=access_token,
             token_type="bearer",
             expires_in=AuthUtils.get_token_expires_in(),
-            user=UserProfile.from_orm(user)
+            user=UserProfile.model_validate(user)
         )
 
     def login_with_phone_password(
@@ -196,7 +196,7 @@ class AuthService:
             access_token=access_token,
             token_type="bearer",
             expires_in=AuthUtils.get_token_expires_in(),
-            user=UserProfile.from_orm(user)
+            user=UserProfile.model_validate(user)
         )
 
     def login_with_phone_code(
@@ -253,7 +253,7 @@ class AuthService:
             access_token=access_token,
             token_type="bearer",
             expires_in=AuthUtils.get_token_expires_in(),
-            user=UserProfile.from_orm(user)
+            user=UserProfile.model_validate(user)
         )
 
     def login_with_wechat(
@@ -274,44 +274,37 @@ class AuthService:
         异常:
         - ValueError: 微信授权失败
         """
-        logger.info(f"微信登录请求 - code: {login_data.code}")
+        logger.info(f"微信登录请求 - code: {login_data.code[:10]}...")
 
-        # 通过授权码获取微信访问令牌
-        wechat_token_info = WechatUtils.exchange_code_for_token(login_data.code)
-        if not wechat_token_info:
+        # 通过微信授权码获取用户信息
+        wechat_info = WechatUtils.exchange_code_for_token(login_data.code)
+        if not wechat_info:
             raise ValueError("微信授权失败")
 
-        openid = wechat_token_info["openid"]
-        access_token = wechat_token_info["access_token"]
-
-        # 获取微信用户信息
-        wechat_user_info = WechatUtils.get_user_info(access_token, openid)
-        if not wechat_user_info:
-            raise ValueError("获取微信用户信息失败")
-
-        # 查找已绑定的用户
-        user = self._get_user_by_wechat_openid(openid)
+        # 查找是否已绑定用户
+        user = self._get_user_by_wechat_openid(wechat_info["openid"])
         
-        if not user:
-            # 创建新用户并绑定微信
-            user = self._create_user_from_wechat(wechat_user_info, login_data.user_info)
-            self._bind_wechat_to_user(user.id, wechat_user_info)
+        if user:
+            # 已绑定用户，直接登录
+            if not user.is_active:
+                raise ValueError("账户已被禁用")
+                
+            self._update_login_info(user, ip_address)
+            # 更新微信绑定信息
+            self._update_wechat_binding(user.id, wechat_info)
         else:
-            # 更新微信信息
-            self._update_wechat_binding(user.id, wechat_user_info)
+            # 未绑定用户，创建新用户
+            user = self._create_user_from_wechat(wechat_info, login_data.user_info)
+            self._update_login_info(user, ip_address)
 
-        if not user.is_active:
-            raise ValueError("账户已被禁用")
+        access_token = AuthUtils.create_access_token({"sub": str(user.id), "username": user.username})
 
-        self._update_login_info(user, ip_address)
-        jwt_token = AuthUtils.create_access_token({"sub": str(user.id), "username": user.username})
-
-        logger.info(f"微信登录成功 - user_id: {user.id}, openid: {openid}")
+        logger.info(f"微信登录成功 - user_id: {user.id}")
         return LoginResponse(
-            access_token=jwt_token,
+            access_token=access_token,
             token_type="bearer",
             expires_in=AuthUtils.get_token_expires_in(),
-            user=UserProfile.from_orm(user)
+            user=UserProfile.model_validate(user)
         )
 
     # ==================== 验证码相关 ====================
@@ -325,24 +318,24 @@ class AuthService:
         发送验证码
         
         参数:
-        - send_data: 发送验证码请求数据
+        - send_data: 发送验证码数据
         - ip_address: 请求IP地址
         
         返回:
-        - 是否发送成功
+        - 发送是否成功
         
         异常:
-        - ValueError: 发送频率过高或其他错误
+        - ValueError: 发送频率过高
         """
-        logger.info(f"发送验证码请求 - phone_or_email: {send_data.phone_or_email}, type: {send_data.code_type}")
+        logger.info(f"发送验证码请求 - {send_data.phone_or_email}, 类型: {send_data.code_type}")
 
-        # 检查发送频率（1分钟内只能发送一次）
+        # 检查发送频率
         if self._check_code_send_frequency(send_data.phone_or_email, send_data.code_type):
-            raise ValueError("发送频率过高，请稍后再试")
+            raise ValueError("验证码发送过于频繁，请稍后再试")
 
         # 生成验证码
-        code = VerificationCodeUtils.generate_numeric_code(6)
-        expires_at = VerificationCodeUtils.get_code_expires_at(5)  # 5分钟过期
+        code = VerificationCodeUtils.generate_numeric_code()
+        expires_at = VerificationCodeUtils.get_code_expires_at()
 
         # 保存验证码
         code_data = {
@@ -352,15 +345,19 @@ class AuthService:
             "expires_at": expires_at,
             "ip_address": ip_address
         }
-        
+
         verification_code = self._create_verification_code_db(code_data)
         self.db.add(verification_code)
         self.db.commit()
 
-        # 发送验证码（实际项目中需要集成短信/邮件服务）
+        # 发送验证码
         success = self._send_code_via_sms_or_email(send_data.phone_or_email, code, send_data.code_type)
         
-        logger.info(f"验证码发送{'成功' if success else '失败'} - phone_or_email: {send_data.phone_or_email}")
+        if success:
+            logger.info(f"验证码发送成功 - {send_data.phone_or_email}")
+        else:
+            logger.error(f"验证码发送失败 - {send_data.phone_or_email}")
+            
         return success
 
     def verify_code(
@@ -386,7 +383,7 @@ class AuthService:
                 self._get_verification_code_model().code == code,
                 self._get_verification_code_model().code_type == code_type.value,
                 self._get_verification_code_model().is_used == False,
-                self._get_verification_code_model().expires_at > datetime.utcnow()
+                self._get_verification_code_model().expires_at > datetime.now(UTC)
             )
         ).first()
 
@@ -400,7 +397,7 @@ class AuthService:
 
     def _check_code_send_frequency(self, phone_or_email: str, code_type: CodeType) -> bool:
         """检查验证码发送频率"""
-        one_minute_ago = datetime.utcnow() - timedelta(minutes=1)
+        one_minute_ago = datetime.now(UTC) - timedelta(minutes=1)
         recent_code = self.db.query(self._get_verification_code_model()).filter(
             and_(
                 self._get_verification_code_model().phone_or_email == phone_or_email,
@@ -423,7 +420,7 @@ class AuthService:
         user = self.db.query(self._get_user_model()).filter(
             self._get_user_model().id == user_id
         ).first()
-        return UserProfile.from_orm(user) if user else None
+        return UserProfile.model_validate(user) if user else None
 
     def update_user_profile(
         self, 
@@ -447,14 +444,14 @@ class AuthService:
         if not user:
             return None
 
-        for field, value in update_data.dict(exclude_unset=True).items():
+        for field, value in update_data.model_dump(exclude_unset=True).items():
             setattr(user, field, value)
 
         self.db.commit()
         self.db.refresh(user)
         
         logger.info(f"用户资料更新成功 - user_id: {user_id}")
-        return UserProfile.from_orm(user)
+        return UserProfile.model_validate(user)
 
     def change_password(
         self, 
@@ -532,13 +529,13 @@ class AuthService:
         binding = self.db.query(self._get_wechat_binding_model()).filter(
             self._get_wechat_binding_model().user_id == user_id
         ).first()
-        return WechatBindingInfo.from_orm(binding) if binding else None
+        return WechatBindingInfo.model_validate(binding) if binding else None
 
     # ==================== 辅助方法 ====================
 
     def _update_login_info(self, user, ip_address: str):
         """更新登录信息"""
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(UTC)
         user.last_login_ip = ip_address
         user.login_count = str(int(user.login_count or "0") + 1)
         self.db.commit()

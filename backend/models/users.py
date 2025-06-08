@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Optional, Dict, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 import re
 
 
@@ -72,13 +72,13 @@ class UserRegisterRequest(BaseModel):
         min_length=3,
         max_length=20,
         description="用户名，3-20位字符，支持字母、数字、下划线",
-        example="user123"
+        json_schema_extra={"example": "user123"}
     )
     
     email: EmailStr = Field(
         ...,
         description="邮箱地址，必须是有效的邮箱格式",
-        example="user@example.com"
+        json_schema_extra={"example": "user@example.com"}
     )
     
     password: str = Field(
@@ -86,20 +86,20 @@ class UserRegisterRequest(BaseModel):
         min_length=8,
         max_length=30,
         description="密码，8-30位字符，建议包含字母、数字和特殊字符",
-        example="password123"
+        json_schema_extra={"example": "password123"}
     )
     
     phone: Optional[str] = Field(
         None,
         description="手机号码，可选，中国大陆手机号格式",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     nickname: Optional[str] = Field(
         None,
         max_length=50,
         description="昵称，可选，默认使用用户名",
-        example="用户昵称"
+        json_schema_extra={"example": "用户昵称"}
     )
     
     verification_code: Optional[str] = Field(
@@ -107,24 +107,27 @@ class UserRegisterRequest(BaseModel):
         min_length=6,
         max_length=6,
         description="手机验证码，提供手机号时必填",
-        example="123456"
+        json_schema_extra={"example": "123456"}
     )
 
-    @validator('username')
+    @field_validator('username')
+    @classmethod
     def validate_username(cls, v):
         """验证用户名格式"""
         if not re.match(r'^[a-zA-Z0-9_]+$', v):
             raise ValueError('用户名只能包含字母、数字和下划线')
         return v
 
-    @validator('phone')
+    @field_validator('phone')
+    @classmethod
     def validate_phone(cls, v):
         """验证手机号格式"""
         if v and not re.match(r'^1[3-9]\d{9}$', v):
             raise ValueError('请输入有效的中国大陆手机号')
         return v
 
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def validate_password(cls, v):
         """验证密码强度"""
         if not re.search(r'[A-Za-z]', v):
@@ -145,19 +148,19 @@ class UsernamePasswordLogin(BaseModel):
     username: str = Field(
         ...,
         description="用户名或邮箱地址",
-        example="user123"
+        json_schema_extra={"example": "user123"}
     )
     
     password: str = Field(
         ...,
         description="用户密码",
-        example="password123"
+        json_schema_extra={"example": "password123"}
     )
     
     remember_me: bool = Field(
         False,
         description="是否记住登录状态，影响令牌过期时间",
-        example=True
+        json_schema_extra={"example": True}
     )
 
 
@@ -168,22 +171,23 @@ class PhonePasswordLogin(BaseModel):
     phone: str = Field(
         ...,
         description="手机号码",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     password: str = Field(
         ...,
         description="用户密码",
-        example="password123"
+        json_schema_extra={"example": "password123"}
     )
     
     remember_me: bool = Field(
         False,
         description="是否记住登录状态",
-        example=True
+        json_schema_extra={"example": True}
     )
 
-    @validator('phone')
+    @field_validator('phone')
+    @classmethod
     def validate_phone(cls, v):
         """验证手机号格式"""
         if not re.match(r'^1[3-9]\d{9}$', v):
@@ -198,7 +202,7 @@ class PhoneCodeLogin(BaseModel):
     phone: str = Field(
         ...,
         description="手机号码",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     verification_code: str = Field(
@@ -206,17 +210,19 @@ class PhoneCodeLogin(BaseModel):
         min_length=6,
         max_length=6,
         description="6位数字验证码",
-        example="123456"
+        json_schema_extra={"example": "123456"}
     )
 
-    @validator('phone')
+    @field_validator('phone')
+    @classmethod
     def validate_phone(cls, v):
         """验证手机号格式"""
         if not re.match(r'^1[3-9]\d{9}$', v):
             raise ValueError('请输入有效的中国大陆手机号')
         return v
 
-    @validator('verification_code')
+    @field_validator('verification_code')
+    @classmethod
     def validate_code(cls, v):
         """验证验证码格式"""
         if not v.isdigit():
@@ -231,13 +237,13 @@ class WechatLoginRequest(BaseModel):
     code: str = Field(
         ...,
         description="微信授权码，由微信客户端获取",
-        example="wx_auth_code_123456"
+        json_schema_extra={"example": "wx_auth_code_123456"}
     )
     
     user_info: Optional[Dict[str, Any]] = Field(
         None,
         description="可选的用户补充信息，如昵称等",
-        example={"nickname": "微信用户", "avatar_url": "https://wx.qlogo.cn/mmopen/xxx"}
+        json_schema_extra={"example": {"nickname": "微信用户", "avatar_url": "https://wx.qlogo.cn/mmopen/xxx"}}
     )
 
 
@@ -249,104 +255,103 @@ class UserProfile(BaseModel):
     
     返回用户的详细信息，用于API响应。
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(
         ...,
         description="用户唯一标识符",
-        example="123e4567-e89b-12d3-a456-426614174000"
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
     
     username: str = Field(
         ...,
         description="用户名",
-        example="user123"
+        json_schema_extra={"example": "user123"}
     )
     
     email: str = Field(
         ...,
         description="邮箱地址",
-        example="user@example.com"
+        json_schema_extra={"example": "user@example.com"}
     )
     
     phone: Optional[str] = Field(
         None,
         description="手机号码",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     nickname: Optional[str] = Field(
         None,
         description="用户昵称",
-        example="用户昵称"
+        json_schema_extra={"example": "用户昵称"}
     )
     
     avatar_url: Optional[str] = Field(
         None,
         description="头像URL",
-        example="https://example.com/avatar.jpg"
+        json_schema_extra={"example": "https://example.com/avatar.jpg"}
     )
     
     gender: Gender = Field(
         Gender.UNKNOWN,
         description="性别",
-        example="male"
+        json_schema_extra={"example": "male"}
     )
     
     birthday: Optional[datetime] = Field(
         None,
         description="生日",
-        example="1990-01-01T00:00:00"
+        json_schema_extra={"example": "1990-01-01T00:00:00"}
     )
     
     bio: Optional[str] = Field(
         None,
         description="个人简介",
-        example="这是我的个人简介"
+        json_schema_extra={"example": "这是我的个人简介"}
     )
     
     is_active: bool = Field(
         True,
         description="账户是否激活",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     is_verified: bool = Field(
         False,
         description="是否已验证邮箱或手机号",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     is_admin: bool = Field(
         False,
         description="是否为管理员",
-        example=False
+        json_schema_extra={"example": False}
     )
     
     login_count: str = Field(
         "0",
         description="登录次数",
-        example="10"
+        json_schema_extra={"example": "10"}
     )
     
     last_login_at: Optional[datetime] = Field(
         None,
         description="最后登录时间",
-        example="2024-01-01T12:00:00"
+        json_schema_extra={"example": "2024-01-01T12:00:00"}
     )
     
     created_at: datetime = Field(
         ...,
         description="注册时间",
-        example="2024-01-01T00:00:00"
+        json_schema_extra={"example": "2024-01-01T00:00:00"}
     )
     
     updated_at: datetime = Field(
         ...,
         description="最后更新时间",
-        example="2024-01-01T12:00:00"
+        json_schema_extra={"example": "2024-01-01T12:00:00"}
     )
-
-    class Config:
-        from_attributes = True
 
 
 class LoginResponse(BaseModel):
@@ -358,19 +363,19 @@ class LoginResponse(BaseModel):
     access_token: str = Field(
         ...,
         description="JWT访问令牌，用于API认证",
-        example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        json_schema_extra={"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
     )
     
     token_type: str = Field(
         "bearer",
         description="令牌类型，固定为bearer",
-        example="bearer"
+        json_schema_extra={"example": "bearer"}
     )
     
     expires_in: int = Field(
         ...,
         description="令牌过期时间（秒）",
-        example=86400
+        json_schema_extra={"example": 86400}
     )
     
     user: UserProfile = Field(
@@ -388,16 +393,17 @@ class SendCodeRequest(BaseModel):
     phone_or_email: str = Field(
         ...,
         description="手机号或邮箱地址",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     code_type: CodeType = Field(
         ...,
         description="验证码类型",
-        example=CodeType.LOGIN
+        json_schema_extra={"example": CodeType.LOGIN}
     )
 
-    @validator('phone_or_email')
+    @field_validator('phone_or_email')
+    @classmethod
     def validate_phone_or_email(cls, v):
         """验证手机号或邮箱格式"""
         # 检查是否为手机号
@@ -416,7 +422,7 @@ class VerifyCodeRequest(BaseModel):
     phone_or_email: str = Field(
         ...,
         description="手机号或邮箱地址",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     code: str = Field(
@@ -424,13 +430,13 @@ class VerifyCodeRequest(BaseModel):
         min_length=6,
         max_length=6,
         description="6位数字验证码",
-        example="123456"
+        json_schema_extra={"example": "123456"}
     )
     
     code_type: CodeType = Field(
         ...,
         description="验证码类型",
-        example=CodeType.LOGIN
+        json_schema_extra={"example": CodeType.LOGIN}
     )
 
 
@@ -446,32 +452,32 @@ class UserUpdateRequest(BaseModel):
         None,
         max_length=50,
         description="用户昵称",
-        example="新昵称"
+        json_schema_extra={"example": "新昵称"}
     )
     
     avatar_url: Optional[str] = Field(
         None,
         description="头像URL",
-        example="https://example.com/new-avatar.jpg"
+        json_schema_extra={"example": "https://example.com/new-avatar.jpg"}
     )
     
     gender: Optional[Gender] = Field(
         None,
         description="性别",
-        example=Gender.MALE
+        json_schema_extra={"example": Gender.MALE}
     )
     
     birthday: Optional[datetime] = Field(
         None,
         description="生日",
-        example="1990-01-01T00:00:00"
+        json_schema_extra={"example": "1990-01-01T00:00:00"}
     )
     
     bio: Optional[str] = Field(
         None,
         max_length=500,
         description="个人简介",
-        example="这是我的新个人简介"
+        json_schema_extra={"example": "这是我的新个人简介"}
     )
 
 
@@ -482,7 +488,7 @@ class ChangePasswordRequest(BaseModel):
     old_password: str = Field(
         ...,
         description="当前密码",
-        example="old_password123"
+        json_schema_extra={"example": "old_password123"}
     )
     
     new_password: str = Field(
@@ -490,10 +496,11 @@ class ChangePasswordRequest(BaseModel):
         min_length=8,
         max_length=30,
         description="新密码，8-30位字符",
-        example="new_password123"
+        json_schema_extra={"example": "new_password123"}
     )
 
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_new_password(cls, v):
         """验证新密码强度"""
         if not re.search(r'[A-Za-z]', v):
@@ -510,7 +517,7 @@ class ResetPasswordRequest(BaseModel):
     phone_or_email: str = Field(
         ...,
         description="手机号或邮箱地址",
-        example="13800138000"
+        json_schema_extra={"example": "13800138000"}
     )
     
     verification_code: str = Field(
@@ -518,7 +525,7 @@ class ResetPasswordRequest(BaseModel):
         min_length=6,
         max_length=6,
         description="6位数字验证码",
-        example="123456"
+        json_schema_extra={"example": "123456"}
     )
     
     new_password: str = Field(
@@ -526,10 +533,11 @@ class ResetPasswordRequest(BaseModel):
         min_length=8,
         max_length=30,
         description="新密码，8-30位字符",
-        example="new_password123"
+        json_schema_extra={"example": "new_password123"}
     )
 
-    @validator('new_password')
+    @field_validator('new_password')
+    @classmethod
     def validate_new_password(cls, v):
         """验证新密码强度"""
         if not re.search(r'[A-Za-z]', v):
@@ -545,80 +553,79 @@ class WechatBindingInfo(BaseModel):
     """
     微信绑定信息模型
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(
         ...,
         description="绑定记录ID",
-        example="123e4567-e89b-12d3-a456-426614174000"
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
     
     user_id: UUID = Field(
         ...,
         description="用户ID",
-        example="123e4567-e89b-12d3-a456-426614174000"
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
     
     openid: str = Field(
         ...,
         description="微信OpenID",
-        example="wx_openid_123456"
+        json_schema_extra={"example": "wx_openid_123456"}
     )
     
     unionid: Optional[str] = Field(
         None,
         description="微信UnionID",
-        example="wx_unionid_123456"
+        json_schema_extra={"example": "wx_unionid_123456"}
     )
     
     nickname: Optional[str] = Field(
         None,
         description="微信昵称",
-        example="微信昵称"
+        json_schema_extra={"example": "微信昵称"}
     )
     
     avatar_url: Optional[str] = Field(
         None,
         description="微信头像URL",
-        example="https://wx.qlogo.cn/mmopen/xxx"
+        json_schema_extra={"example": "https://wx.qlogo.cn/mmopen/xxx"}
     )
     
     sex: Gender = Field(
         Gender.UNKNOWN,
         description="微信性别信息",
-        example=Gender.MALE
+        json_schema_extra={"example": Gender.MALE}
     )
     
     country: Optional[str] = Field(
         None,
         description="国家",
-        example="中国"
+        json_schema_extra={"example": "中国"}
     )
     
     province: Optional[str] = Field(
         None,
         description="省份",
-        example="广东"
+        json_schema_extra={"example": "广东"}
     )
     
     city: Optional[str] = Field(
         None,
         description="城市",
-        example="深圳"
+        json_schema_extra={"example": "深圳"}
     )
     
     is_active: bool = Field(
         True,
         description="绑定是否有效",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     created_at: datetime = Field(
         ...,
         description="绑定时间",
-        example="2024-01-01T00:00:00"
+        json_schema_extra={"example": "2024-01-01T00:00:00"}
     )
-
-    class Config:
-        from_attributes = True
 
 
 # ==================== 令牌相关模型 ====================
@@ -630,7 +637,7 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(
         ...,
         description="刷新令牌",
-        example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        json_schema_extra={"example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}
     )
 
 
@@ -641,7 +648,7 @@ class LogoutRequest(BaseModel):
     all_devices: bool = Field(
         False,
         description="是否登出所有设备",
-        example=False
+        json_schema_extra={"example": False}
     )
 
 
@@ -651,56 +658,55 @@ class LoginLogInfo(BaseModel):
     """
     登录日志信息模型
     """
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(
         ...,
         description="日志记录ID",
-        example="123e4567-e89b-12d3-a456-426614174000"
+        json_schema_extra={"example": "123e4567-e89b-12d3-a456-426614174000"}
     )
     
     login_type: LoginType = Field(
         ...,
         description="登录方式",
-        example=LoginType.USERNAME_PASSWORD
+        json_schema_extra={"example": LoginType.USERNAME_PASSWORD}
     )
     
     ip_address: Optional[str] = Field(
         None,
         description="登录IP地址",
-        example="192.168.1.1"
+        json_schema_extra={"example": "192.168.1.1"}
     )
     
     user_agent: Optional[str] = Field(
         None,
         description="用户代理字符串",
-        example="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        json_schema_extra={"example": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     )
     
     is_success: bool = Field(
         True,
         description="登录是否成功",
-        example=True
+        json_schema_extra={"example": True}
     )
     
     failure_reason: Optional[str] = Field(
         None,
         description="失败原因",
-        example="密码错误"
+        json_schema_extra={"example": "密码错误"}
     )
     
     location: Optional[str] = Field(
         None,
         description="登录地理位置",
-        example="广东省深圳市"
+        json_schema_extra={"example": "广东省深圳市"}
     )
     
     created_at: datetime = Field(
         ...,
         description="登录时间",
-        example="2024-01-01T12:00:00"
+        json_schema_extra={"example": "2024-01-01T12:00:00"}
     )
-
-    class Config:
-        from_attributes = True
 
 
 # ==================== 用户统计模型 ====================
@@ -712,31 +718,31 @@ class UserStatsInfo(BaseModel):
     total_users: int = Field(
         ...,
         description="总用户数",
-        example=1000
+        json_schema_extra={"example": 1000}
     )
     
     active_users: int = Field(
         ...,
         description="活跃用户数",
-        example=800
+        json_schema_extra={"example": 800}
     )
     
     verified_users: int = Field(
         ...,
         description="已验证用户数",
-        example=600
+        json_schema_extra={"example": 600}
     )
     
     new_users_today: int = Field(
         ...,
         description="今日新增用户数",
-        example=10
+        json_schema_extra={"example": 10}
     )
     
     login_count_today: int = Field(
         ...,
         description="今日登录次数",
-        example=500
+        json_schema_extra={"example": 500}
     )
 
 # 为了避免循环引用，在文件末尾更新模型

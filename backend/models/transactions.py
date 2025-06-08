@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 # 导入枚举类型
 from db_models.transactions import TransactionType, TransactionCategory, TransactionStatus
@@ -22,86 +22,86 @@ class TransactionBase(BaseModel):
     card_id: UUID = Field(
         ..., 
         description="信用卡ID",
-        example="f47ac10b-58cc-4372-a567-0e02b2c3d479"
+        json_schema_extra={"example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"}
     )
     transaction_type: TransactionType = Field(
         ..., 
         description="交易类型",
-        example=TransactionType.EXPENSE
+        json_schema_extra={"example": TransactionType.EXPENSE}
     )
     amount: Decimal = Field(
         ..., 
         description="交易金额，单位：元", 
         ge=0,
-        example=199.50
+        json_schema_extra={"example": 199.50}
     )
     transaction_date: datetime = Field(
         ..., 
         description="交易时间",
-        example="2024-06-08T14:30:00"
+        json_schema_extra={"example": "2024-06-08T14:30:00"}
     )
     merchant_name: Optional[str] = Field(
         None, 
         description="商户名称",
         max_length=200,
-        example="星巴克咖啡"
+        json_schema_extra={"example": "星巴克咖啡"}
     )
     description: Optional[str] = Field(
         None, 
         description="交易描述",
         max_length=500,
-        example="购买咖啡和蛋糕"
+        json_schema_extra={"example": "购买咖啡和蛋糕"}
     )
     category: TransactionCategory = Field(
         TransactionCategory.OTHER, 
         description="交易分类",
-        example=TransactionCategory.DINING
+        json_schema_extra={"example": TransactionCategory.DINING}
     )
     status: TransactionStatus = Field(
         TransactionStatus.COMPLETED, 
         description="交易状态",
-        example=TransactionStatus.COMPLETED
+        json_schema_extra={"example": TransactionStatus.COMPLETED}
     )
     points_earned: Optional[Decimal] = Field(
         0, 
         description="获得积分数", 
         ge=0,
-        example=19.95
+        json_schema_extra={"example": 19.95}
     )
     points_rate: Optional[Decimal] = Field(
         None, 
         description="积分倍率",
         ge=0,
-        example=1.5
+        json_schema_extra={"example": 1.5}
     )
     reference_number: Optional[str] = Field(
         None, 
         description="交易参考号/凭证号",
         max_length=100,
-        example="TXN202406081430001"
+        json_schema_extra={"example": "TXN202406081430001"}
     )
     location: Optional[str] = Field(
         None, 
         description="交易地点",
         max_length=200,
-        example="北京市朝阳区三里屯"
+        json_schema_extra={"example": "北京市朝阳区三里屯"}
     )
     is_installment: bool = Field(
         False, 
         description="是否分期交易",
-        example=False
+        json_schema_extra={"example": False}
     )
     installment_count: Optional[int] = Field(
         None, 
         description="分期期数",
         ge=2,
         le=36,
-        example=None
+        json_schema_extra={"example": None}
     )
     notes: Optional[str] = Field(
         None, 
         description="备注信息",
-        example="使用优惠券消费"
+        json_schema_extra={"example": "使用优惠券消费"}
     )
 
     @field_validator('installment_count')
@@ -198,26 +198,25 @@ class Transaction(TransactionBase):
     id: UUID = Field(
         ..., 
         description="交易记录ID",
-        example="a1b2c3d4-5e6f-7890-abcd-ef1234567890"
+        json_schema_extra={"example": "a1b2c3d4-5e6f-7890-abcd-ef1234567890"}
     )
     user_id: UUID = Field(
         ..., 
         description="用户ID",
-        example="489f8b55-5e75-4f18-982f-fca23b9d3ee4"
+        json_schema_extra={"example": "489f8b55-5e75-4f18-982f-fca23b9d3ee4"}
     )
     created_at: datetime = Field(
         ..., 
         description="创建时间",
-        example="2024-06-08T14:30:00"
+        json_schema_extra={"example": "2024-06-08T14:30:00"}
     )
     updated_at: datetime = Field(
         ..., 
         description="更新时间",
-        example="2024-06-08T14:30:00"
+        json_schema_extra={"example": "2024-06-08T14:30:00"}
     )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TransactionWithCard(Transaction):
@@ -225,17 +224,17 @@ class TransactionWithCard(Transaction):
     card_name: str = Field(
         ..., 
         description="信用卡名称",
-        example="招商银行信用卡"
+        json_schema_extra={"example": "招商银行信用卡"}
     )
     bank_name: str = Field(
         ..., 
         description="银行名称",
-        example="招商银行"
+        json_schema_extra={"example": "招商银行"}
     )
     card_number_masked: str = Field(
         ..., 
         description="脱敏的信用卡号",
-        example="**** **** **** 1234"
+        json_schema_extra={"example": "**** **** **** 1234"}
     )
 
 
@@ -262,12 +261,12 @@ class TransactionQueryParams(BaseModel):
     start_date: Optional[datetime] = Field(
         None, 
         description="开始时间",
-        example="2024-01-01T00:00:00"
+        json_schema_extra={"example": "2024-01-01T00:00:00"}
     )
     end_date: Optional[datetime] = Field(
         None, 
         description="结束时间",
-        example="2024-12-31T23:59:59"
+        json_schema_extra={"example": "2024-12-31T23:59:59"}
     )
     merchant_name: Optional[str] = Field(
         None, 
@@ -286,7 +285,7 @@ class TransactionQueryParams(BaseModel):
     keyword: str = Field(
         "", 
         description="关键词模糊搜索，支持商户名称、交易描述、备注",
-        example=""
+        json_schema_extra={"example": ""}
     )
 
 
@@ -297,35 +296,35 @@ class TransactionStatistics(BaseModel):
     total_transactions: int = Field(
         ..., 
         description="总交易笔数",
-        example=156
+        json_schema_extra={"example": 156}
     )
     total_amount: Decimal = Field(
         ..., 
         description="总交易金额",
-        example=12580.50
+        json_schema_extra={"example": 12580.50}
     )
     expense_amount: Decimal = Field(
         ..., 
         description="总支出金额",
-        example=11200.30
+        json_schema_extra={"example": 11200.30}
     )
     income_amount: Decimal = Field(
         ..., 
         description="总收入金额",
-        example=1380.20
+        json_schema_extra={"example": 1380.20}
     )
     points_earned: Decimal = Field(
         ..., 
         description="总获得积分",
-        example=1125.50
+        json_schema_extra={"example": 1125.50}
     )
     categories: List[dict] = Field(
         ..., 
         description="分类统计",
-        example=[
+        json_schema_extra={"example": [
             {"category": "dining", "count": 45, "amount": 3200.50},
             {"category": "shopping", "count": 32, "amount": 5800.80}
-        ]
+        ]}
     )
 
 
@@ -334,32 +333,32 @@ class TransactionCategoryStatistics(BaseModel):
     category: TransactionCategory = Field(
         ..., 
         description="交易分类",
-        example=TransactionCategory.DINING
+        json_schema_extra={"example": TransactionCategory.DINING}
     )
     category_display: str = Field(
         ..., 
         description="分类显示名称",
-        example="餐饮美食"
+        json_schema_extra={"example": "餐饮美食"}
     )
     transaction_count: int = Field(
         ..., 
         description="交易笔数",
-        example=45
+        json_schema_extra={"example": 45}
     )
     total_amount: Decimal = Field(
         ..., 
         description="总金额",
-        example=3200.50
+        json_schema_extra={"example": 3200.50}
     )
     average_amount: Decimal = Field(
         ..., 
         description="平均金额",
-        example=71.12
+        json_schema_extra={"example": 71.12}
     )
     percentage: float = Field(
         ..., 
         description="占比百分比",
-        example=28.6
+        json_schema_extra={"example": 28.6}
     )
 
 
@@ -368,32 +367,32 @@ class MonthlyTransactionTrend(BaseModel):
     year: int = Field(
         ..., 
         description="年份",
-        example=2024
+        json_schema_extra={"example": 2024}
     )
     month: int = Field(
         ..., 
         description="月份",
-        example=6
+        json_schema_extra={"example": 6}
     )
     transaction_count: int = Field(
         ..., 
         description="交易笔数",
-        example=25
+        json_schema_extra={"example": 25}
     )
     total_amount: Decimal = Field(
         ..., 
         description="总金额",
-        example=2580.50
+        json_schema_extra={"example": 2580.50}
     )
     expense_amount: Decimal = Field(
         ..., 
         description="支出金额",
-        example=2380.30
+        json_schema_extra={"example": 2380.30}
     )
     income_amount: Decimal = Field(
         ..., 
         description="收入金额",
-        example=200.20
+        json_schema_extra={"example": 200.20}
     )
 
 

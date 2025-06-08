@@ -1,6 +1,7 @@
 import logging
 import pytz
 from datetime import datetime
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -21,8 +22,44 @@ logger = LogConfig.get_logger(__name__)
 # 配置时区
 TIMEZONE = pytz.timezone('Asia/Shanghai')
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    应用生命周期管理
+    
+    替换deprecated的on_event装饰器，使用现代的lifespan上下文管理器
+    """
+    # 启动事件
+    logger.info("信用卡管理系统正在启动...")
+    
+    try:
+        # 验证配置
+        validate_config()
+        logger.info("配置验证通过")
+        
+        # 创建数据库表
+        create_database()
+        logger.info("数据库初始化完成")
+        
+        # 打印环境信息
+        env_info = get_environment_info()
+        logger.info(f"环境信息: {env_info}")
+        
+        logger.info("系统启动完成")
+    except Exception as e:
+        logger.error(f"系统启动失败: {str(e)}")
+        raise
+    
+    yield
+    
+    # 关闭事件
+    logger.info("信用卡管理系统正在关闭...")
+
+
 app = FastAPI(
     title="信用卡管理系统 API",
+    lifespan=lifespan,
     description="""
 ## 智能化信用卡管理系统后端接口
 
@@ -142,40 +179,6 @@ async def log_requests(request: Request, call_next):
             duration=duration
         )
         raise
-
-# 应用启动事件
-@app.on_event("startup")
-async def startup_event():
-    """
-    应用启动时的初始化操作
-    """
-    logger.info("信用卡管理系统正在启动...")
-    
-    try:
-        # 验证配置
-        validate_config()
-        logger.info("配置验证通过")
-        
-        # 创建数据库表
-        create_database()
-        logger.info("数据库初始化完成")
-        
-        # 打印环境信息
-        env_info = get_environment_info()
-        logger.info(f"环境信息: {env_info}")
-        
-        logger.info("系统启动完成")
-    except Exception as e:
-        logger.error(f"系统启动失败: {str(e)}")
-        raise
-
-# 应用关闭事件
-@app.on_event("shutdown")
-async def shutdown_event():
-    """
-    应用关闭时的清理操作
-    """
-    logger.info("信用卡管理系统正在关闭...")
 
 # 全局异常处理器
 @app.exception_handler(Exception)
