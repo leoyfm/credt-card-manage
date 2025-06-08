@@ -114,14 +114,6 @@
       }
     },
     {
-      "path": "pages/login/index",
-      "type": "page",
-      "style": {
-        "navigationBarTitleText": "登录",
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/mine/index",
       "type": "page",
       "style": {

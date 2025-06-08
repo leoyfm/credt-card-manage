@@ -156,8 +156,11 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from 'vue'
 import { useToast } from 'wot-design-uni'
+import { useUserStore } from '@/store/user'
+import { CodeType } from '@/service/app/types'
 
 const toast = useToast()
+const userStore = useUserStore()
 
 // 登录类型
 const loginType = ref<'username' | 'phone'>('username')
@@ -210,42 +213,23 @@ const handleUsernameLogin = async () => {
   try {
     loading.value = true
     
-    // 这里应该调用登录API
-    // const response = await api.post('/api/auth/login/username', {
-    //   username: usernameForm.username,
-    //   password: usernameForm.password
-    // })
+    // 使用用户store进行登录
+    const result = await userStore.loginWithUsername({
+      username: usernameForm.username.trim(),
+      password: usernameForm.password.trim(),
+      remember_me: true
+    })
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 模拟登录成功
-    const mockResponse = {
-      success: true,
-      data: {
-        access_token: 'mock_token_123456',
-        user: {
-          id: '1',
-          username: usernameForm.username,
-          email: 'user@example.com'
-        }
-      }
-    }
-    
-    if (mockResponse.success) {
-      // 保存登录信息
-      uni.setStorageSync('token', mockResponse.data.access_token)
-      uni.setStorageSync('userInfo', mockResponse.data.user)
-      
-      toast.success('登录成功')
-      
+    if (result.success) {
       // 跳转到首页
       setTimeout(() => {
         uni.switchTab({ url: '/pages/index/index' })
       }, 1000)
     }
+    // 错误信息已经在store中通过toast显示了
   } catch (error: any) {
-    toast.error(error.message || '登录失败')
+    console.error('登录失败：', error)
+    toast.error('登录失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -263,6 +247,11 @@ const handlePhoneLogin = async () => {
     return
   }
   
+  if (!/^1[3-9]\d{9}$/.test(phoneForm.phone)) {
+    toast.error('请输入正确的手机号')
+    return
+  }
+  
   if (!phoneForm.code.trim()) {
     toast.error('请输入验证码')
     return
@@ -271,42 +260,22 @@ const handlePhoneLogin = async () => {
   try {
     loading.value = true
     
-    // 这里应该调用手机号登录API
-    // const response = await api.post('/api/auth/login/phone-code', {
-    //   phone: phoneForm.phone,
-    //   verification_code: phoneForm.code
-    // })
+    // 使用用户store进行手机登录
+    const result = await userStore.loginWithPhoneCode({
+      phone: phoneForm.phone.trim(),
+      verification_code: phoneForm.code.trim()
+    })
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // 模拟登录成功
-    const mockResponse = {
-      success: true,
-      data: {
-        access_token: 'mock_token_phone_123456',
-        user: {
-          id: '1',
-          username: 'phone_user',
-          phone: phoneForm.phone
-        }
-      }
-    }
-    
-    if (mockResponse.success) {
-      // 保存登录信息
-      uni.setStorageSync('token', mockResponse.data.access_token)
-      uni.setStorageSync('userInfo', mockResponse.data.user)
-      
-      toast.success('登录成功')
-      
+    if (result.success) {
       // 跳转到首页
       setTimeout(() => {
         uni.switchTab({ url: '/pages/index/index' })
       }, 1000)
     }
+    // 错误信息已经在store中通过toast显示了
   } catch (error: any) {
-    toast.error(error.message || '登录失败')
+    console.error('手机登录失败：', error)
+    toast.error('登录失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -327,19 +296,19 @@ const sendCode = async () => {
   try {
     codeSending.value = true
     
-    // 这里应该调用发送验证码的API
-    // const response = await api.post('/api/auth/code/send', {
-    //   phone_or_email: phoneForm.phone,
-    //   code_type: 'login'
-    // })
+    // 使用用户store发送验证码
+    const result = await userStore.sendVerificationCode({
+      phone_or_email: phoneForm.phone.trim(),
+      code_type: CodeType.login
+    })
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    toast.success('验证码发送成功')
-    startCountdown()
+    if (result.success) {
+      startCountdown()
+    }
+    // 错误信息已经在store中通过toast显示了
   } catch (error: any) {
-    toast.error(error.message || '验证码发送失败')
+    console.error('验证码发送失败：', error)
+    toast.error('验证码发送失败，请稍后重试')
   } finally {
     codeSending.value = false
   }
