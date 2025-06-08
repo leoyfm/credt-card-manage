@@ -63,9 +63,9 @@ class CardsService:
             card_dict = card_data.dict()
             card_dict['user_id'] = user_id
             
-            # 计算可用额度
-            if 'available_amount' not in card_dict or card_dict['available_amount'] is None:
-                card_dict['available_amount'] = card_dict['credit_limit'] - card_dict.get('used_amount', 0)
+            # 移除available_amount字段，因为它是计算属性
+            if 'available_amount' in card_dict:
+                card_dict.pop('available_amount')
             
             db_card = self._create_card_db(card_dict)
             self.db.add(db_card)
@@ -195,13 +195,13 @@ class CardsService:
             
             # 更新字段
             update_data = card_data.dict(exclude_unset=True)
+            # 移除available_amount字段，因为它是计算属性
+            if 'available_amount' in update_data:
+                update_data.pop('available_amount')
+                
             for field, value in update_data.items():
                 if hasattr(card, field):
                     setattr(card, field, value)
-            
-            # 重新计算可用额度
-            if 'credit_limit' in update_data or 'used_amount' in update_data:
-                card.available_amount = card.credit_limit - card.used_amount
             
             self.db.commit()
             self.db.refresh(card)
