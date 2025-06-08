@@ -11,4 +11,5 @@ python-dotenv==1.0.0
 httpx==0.25.2
 redis==5.0.1
 celery==5.3.4
-loguru==0.7.2 
+pytz==2023.3
+tzdata==2023.3 

@@ -37,14 +37,39 @@ class AnnualFeeService:
         return AnnualFeeRule.from_orm(db_rule)
 
     def get_annual_fee_rules(
-        self, skip: int = 0, limit: int = 100, fee_type: Optional[FeeType] = None
-    ) -> List[AnnualFeeRule]:
-        """获取年费规则列表"""
+        self, skip: int = 0, limit: int = 100, fee_type: Optional[FeeType] = None, keyword: str = ""
+    ) -> tuple[List[AnnualFeeRule], int]:
+        """
+        获取年费规则列表
+        
+        支持分页、类型过滤和模糊搜索功能。
+        
+        参数:
+        - skip: 跳过的记录数
+        - limit: 返回的记录数限制
+        - fee_type: 年费类型过滤
+        - keyword: 模糊搜索关键词，支持规则名称、描述搜索
+        """
         query = self.db.query(self._get_annual_fee_rule_model())
+        
+        # 年费类型过滤
         if fee_type:
             query = query.filter(self._get_annual_fee_rule_model().fee_type == fee_type)
+        
+        # 关键词模糊搜索
+        if keyword:
+            keyword_filter = f"%{keyword}%"
+            query = query.filter(
+                self._get_annual_fee_rule_model().rule_name.ilike(keyword_filter) |
+                self._get_annual_fee_rule_model().description.ilike(keyword_filter)
+            )
+        
+        # 获取总数
+        total = query.count()
+        
+        # 获取分页数据
         rules = query.offset(skip).limit(limit).all()
-        return [AnnualFeeRule.from_orm(rule) for rule in rules]
+        return [AnnualFeeRule.from_orm(rule) for rule in rules], total
 
     def get_annual_fee_rule(self, rule_id: UUID) -> Optional[AnnualFeeRule]:
         """根据ID获取年费规则"""
@@ -111,12 +136,26 @@ class AnnualFeeService:
         card_id: Optional[UUID] = None,
         fee_year: Optional[int] = None,
         waiver_status: Optional[WaiverStatus] = None,
+        keyword: str = "",
         skip: int = 0,
         limit: int = 100,
-    ) -> List[AnnualFeeRecord]:
-        """获取年费记录列表"""
+    ) -> tuple[List[AnnualFeeRecord], int]:
+        """
+        获取年费记录列表
+        
+        支持多种筛选条件和模糊搜索功能。
+        
+        参数:
+        - card_id: 信用卡ID过滤
+        - fee_year: 年费年份过滤
+        - waiver_status: 减免状态过滤
+        - keyword: 模糊搜索关键词，通过关联查询搜索卡片名称、银行名称
+        - skip: 跳过的记录数
+        - limit: 返回的记录数限制
+        """
         query = self.db.query(self._get_annual_fee_record_model())
         
+        # 基础过滤条件
         if card_id:
             query = query.filter(self._get_annual_fee_record_model().card_id == card_id)
         if fee_year:
@@ -124,8 +163,20 @@ class AnnualFeeService:
         if waiver_status:
             query = query.filter(self._get_annual_fee_record_model().waiver_status == waiver_status)
 
+        # 关键词模糊搜索（需要关联信用卡表）
+        if keyword:
+            keyword_filter = f"%{keyword}%"
+            query = query.join(self._get_credit_card_model()).filter(
+                self._get_credit_card_model().bank_name.ilike(keyword_filter) |
+                self._get_credit_card_model().card_name.ilike(keyword_filter)
+            )
+
+        # 获取总数
+        total = query.count()
+        
+        # 获取分页数据
         records = query.offset(skip).limit(limit).all()
-        return [AnnualFeeRecord.from_orm(record) for record in records]
+        return [AnnualFeeRecord.from_orm(record) for record in records], total
 
     def get_annual_fee_record(self, record_id: UUID) -> Optional[AnnualFeeRecord]:
         """根据ID获取年费记录"""
