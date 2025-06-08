@@ -70,7 +70,10 @@
     "build:quickapp-webview-union": "uni build -p quickapp-webview-union",
     "type-check": "vue-tsc --noEmit",
     "openapi-ts-request": "openapi-ts",
-    "prepare": "git init && husky"
+    "prepare": "git init && husky",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui"
   },
   "lint-staged": {
     "**/*.{vue,html,cjs,json,md,scss,css,txt}": [
@@ -136,10 +139,15 @@
     "@uni-helper/vite-plugin-uni-platform": "^0.0.4",
     "@uni-ku/bundle-optimizer": "^1.3.3",
     "@unocss/preset-legacy-compat": "^0.59.4",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/ui": "3.2.2",
     "@vue/runtime-core": "^3.4.21",
+    "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.1.3",
     "autoprefixer": "^10.4.20",
+    "happy-dom": "^17.6.3",
     "husky": "^9.1.7",
+    "jsdom": "^26.1.0",
     "lint-staged": "^15.2.10",
     "openapi-ts-request": "^1.1.2",
     "oxlint": "^0.1.0",
@@ -154,6 +162,7 @@
     "unplugin-auto-import": "^0.17.8",
     "vite": "6.3.5",
     "vite-plugin-restart": "^0.4.2",
+    "vitest": "^3.2.2",
     "vue-tsc": "^2.2.10"
   }
 }

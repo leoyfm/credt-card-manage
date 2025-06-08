@@ -171,6 +171,11 @@
           />
         </view>
 
+        <!-- 提示信息 -->
+        <view class="tip-info">
+          <view class="tip-text">性别信息可在注册后的个人资料中设置</view>
+        </view>
+
         <!-- 隐私协议 -->
         <view class="privacy-agreement">
           <wd-checkbox v-model="agreePrivacy" required>
@@ -220,8 +225,16 @@
 <script lang="ts" setup>
 import { ref, reactive, computed } from 'vue'
 import { useToast } from 'wot-design-uni'
+import { useUserStore } from '@/store/user'
+import { 
+  sendVerificationCodeApiAuthCodeSendPost,
+  verifyVerificationCodeApiAuthCodeVerifyPost
+} from '@/service/app/yonghurenzheng'
+import { CodeType, Gender } from '@/service/app/types'
+import type * as API from '@/service/app/types'
 
 const toast = useToast()
+const userStore = useUserStore()
 
 // 步骤
 const steps = ['基本信息', '手机验证', '完善信息']
@@ -249,9 +262,9 @@ const agreePrivacy = ref(false)
 
 // 性别选项
 const genderOptions = [
-  { value: 'male', label: '男' },
-  { value: 'female', label: '女' },
-  { value: 'unknown', label: '保密' }
+  { value: Gender.male, label: '男' },
+  { value: Gender.female, label: '女' },
+  { value: Gender.unknown, label: '保密' }
 ]
 
 // 验证码按钮文字
@@ -269,9 +282,17 @@ const handleBack = () => {
 }
 
 // 下一步
-const nextStep = () => {
+const nextStep = async () => {
   if (!validateCurrentStep()) {
     return
+  }
+  
+  // 第二步需要验证验证码
+  if (currentStep.value === 2) {
+    const isCodeValid = await verifyCode()
+    if (!isCodeValid) {
+      return
+    }
   }
   
   if (currentStep.value < 3) {
@@ -366,19 +387,19 @@ const sendCode = async () => {
   try {
     codeSending.value = true
     
-    // 这里应该调用发送验证码的API
-    // const response = await api.post('/api/auth/code/send', {
-    //   phone_or_email: registerForm.phone,
-    //   code_type: 'register'
-    // })
+    // 使用用户store发送验证码
+    const result = await userStore.sendVerificationCode({
+      phone_or_email: registerForm.phone.trim(),
+      code_type: CodeType.register
+    })
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    toast.success('验证码发送成功')
-    startCountdown()
+    if (result.success) {
+      startCountdown()
+    }
+    // 错误信息已经在store中通过toast显示了
   } catch (error: any) {
-    toast.error(error.message || '验证码发送失败')
+    console.error('验证码发送失败:', error)
+    toast.error('验证码发送失败，请稍后重试')
   } finally {
     codeSending.value = false
   }
@@ -398,6 +419,36 @@ const startCountdown = () => {
   }, 1000)
 }
 
+// 验证验证码
+const verifyCode = async () => {
+  try {
+    const requestBody: API.VerifyCodeRequest = {
+      phone_or_email: registerForm.phone.trim(),
+      code: registerForm.verification_code.trim(),
+      code_type: CodeType.register
+    }
+    
+    const response = await verifyVerificationCodeApiAuthCodeVerifyPost({
+      body: requestBody
+    })
+    
+    if (response.success && response.data) {
+      return true
+    } else {
+      toast.error(response.message || '验证码验证失败')
+      return false
+    }
+  } catch (error: any) {
+    console.error('验证码验证失败:', error)
+    if (error.response?.data?.message) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error('验证码验证失败，请稍后重试')
+    }
+    return false
+  }
+}
+
 // 注册
 const handleRegister = async () => {
   if (!validateCurrentStep()) {
@@ -407,20 +458,29 @@ const handleRegister = async () => {
   try {
     loading.value = true
     
-    // 这里应该调用注册API
-    // const response = await api.post('/api/auth/register', registerForm)
+    // 构建注册请求数据
+    const registerData: API.UserRegisterRequest = {
+      username: registerForm.username.trim(),
+      email: registerForm.email.trim(),
+      password: registerForm.password.trim(),
+      phone: registerForm.phone.trim() || null,
+      nickname: registerForm.nickname.trim() || null,
+      verification_code: registerForm.verification_code.trim() || null
+    }
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // 使用用户store进行注册
+    const result = await userStore.register(registerData)
     
-    toast.success('注册成功！')
-    
-    // 跳转到登录页面
-    setTimeout(() => {
-      uni.redirectTo({ url: '/pages/auth/login' })
-    }, 1000)
+    if (result.success) {
+      // 注册成功，跳转到登录页面
+      setTimeout(() => {
+        uni.redirectTo({ url: '/pages/auth/login' })
+      }, 1500)
+    }
+    // 错误信息已经在store中通过toast显示了
   } catch (error: any) {
-    toast.error(error.message || '注册失败')
+    console.error('注册失败:', error)
+    toast.error('注册失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -582,6 +642,16 @@ const showAgreement = (type: 'user' | 'privacy') => {
         height: 44px;
         margin-bottom: 8px;
       }
+    }
+  }
+  
+  .tip-info {
+    margin-bottom: 16px;
+    
+    .tip-text {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
     }
   }
   
