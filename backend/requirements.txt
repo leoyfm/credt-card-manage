@@ -12,4 +12,10 @@ httpx==0.25.2
 redis==5.0.1
 celery==5.3.4
 pytz==2023.3
-tzdata==2023.3 
+tzdata==2023.3
+# 认证相关依赖
+PyJWT==2.8.0
+email-validator==2.1.0
+phonenumbers==8.13.26
+requests==2.31.0
+cryptography==41.0.7 

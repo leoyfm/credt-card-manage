@@ -8,6 +8,8 @@ import uvicorn
 from utils.response import ResponseUtil
 from models.response import ApiResponse
 from routers import annual_fee, cards, reminders, recommendations, auth
+from database import create_database, get_db_health
+from config import settings, validate_config, get_environment_info
 
 # 配置日志
 logging.basicConfig(
@@ -84,11 +86,45 @@ app = FastAPI(
 # 配置CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应该设置具体的域名
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 应用启动事件
+@app.on_event("startup")
+async def startup_event():
+    """
+    应用启动时的初始化操作
+    """
+    logger.info("信用卡管理系统正在启动...")
+    
+    try:
+        # 验证配置
+        validate_config()
+        logger.info("配置验证通过")
+        
+        # 创建数据库表
+        create_database()
+        logger.info("数据库初始化完成")
+        
+        # 打印环境信息
+        env_info = get_environment_info()
+        logger.info(f"环境信息: {env_info}")
+        
+        logger.info("系统启动完成")
+    except Exception as e:
+        logger.error(f"系统启动失败: {str(e)}")
+        raise
+
+# 应用关闭事件
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    应用关闭时的清理操作
+    """
+    logger.info("信用卡管理系统正在关闭...")
 
 # 挂载路由模块
 app.include_router(auth.router, prefix="/api")
@@ -139,24 +175,36 @@ async def health_check():
     current_time = datetime.now(TIMEZONE)
     
     try:
-        # TODO: 添加数据库连接检查
-        # TODO: 添加Redis连接检查
+        # 检查数据库连接
+        db_health = get_db_health()
         
-        health_data = {
-            "status": "healthy", 
-            "service": "credit-card-management",
-            "timestamp": current_time.isoformat(),
-            "checks": {
-                "database": "ok",  # 实际应该检查数据库连接
-                "redis": "ok",     # 实际应该检查Redis连接
-            }
+        # 检查各个组件状态
+        checks = {
+            "database": db_health.get("database", "unknown"),
+            "redis": "not_configured",  # Redis暂未实现
+            "config": "ok"
         }
         
-        logger.info("健康检查通过")
-        return ResponseUtil.success(data=health_data, message="健康检查通过")
+        # 判断整体健康状态
+        is_healthy = all(status in ["ok", "connected", "not_configured"] for status in checks.values())
+        
+        health_data = {
+            "status": "healthy" if is_healthy else "unhealthy", 
+            "service": "credit-card-management",
+            "timestamp": current_time.isoformat(),
+            "checks": checks,
+            "environment": get_environment_info()
+        }
+        
+        if is_healthy:
+            logger.info("健康检查通过")
+            return ResponseUtil.success(data=health_data, message="健康检查通过")
+        else:
+            logger.warning("健康检查发现问题")
+            return ResponseUtil.error(data=health_data, message="服务健康检查发现问题")
     except Exception as e:
         logger.error(f"健康检查失败: {str(e)}")
-        return ResponseUtil.server_error(message="服务健康检查失败")
+        return ResponseUtil.server_error(message=f"服务健康检查失败: {str(e)}")
 
 # 路由已分模块管理，具体实现请查看 routers/ 目录下的各模块文件
 
