@@ -18,6 +18,7 @@
           fixed
           placeholder
           safe-area-inset-top
+          custom-style="height: 60px; line-height: 60px;"
           @click-left="handleBack"
           @click-right="handleSave"
         />
