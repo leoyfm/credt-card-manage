@@ -123,10 +123,20 @@ class CardBase(BaseModel):
         example=25
     )
     
-    expiry_date: date = Field(
-        ...,
-        description="卡片有效期",
-        example="2027-12-31"
+    expiry_month: int = Field(
+        ..., 
+        ge=1, 
+        le=12,
+        description="卡片有效期月份，1-12",
+        example=10
+    )
+    
+    expiry_year: int = Field(
+        ..., 
+        ge=2024, 
+        le=2050,
+        description="卡片有效期年份，如2024",
+        example=2027
     )
     
     annual_fee_rule_id: Optional[UUID] = Field(
@@ -173,11 +183,18 @@ class CardBase(BaseModel):
             raise ValueError('信用卡号只能包含数字')
         return v
 
-    @validator('expiry_date')
-    def validate_expiry_date(cls, v):
-        """验证有效期不能是过去的日期"""
-        if v < date.today():
-            raise ValueError('卡片有效期不能是过去的日期')
+    @validator('expiry_year')
+    def validate_expiry_not_past(cls, v, values):
+        """验证有效期不能是过去的时间"""
+        expiry_month = values.get('expiry_month')
+        if expiry_month:
+            today = date.today()
+            # 如果是当前年份，月份不能早于当前月份
+            if v == today.year and expiry_month < today.month:
+                raise ValueError('卡片有效期不能是过去的时间')
+            # 年份不能早于当前年份
+            elif v < today.year:
+                raise ValueError('卡片有效期不能是过去的时间')
         return v
 
     @validator('due_day')
@@ -298,7 +315,8 @@ class CardUpdate(BaseModel):
     used_amount: Optional[Decimal] = Field(None, ge=0, description="已使用额度")
     billing_day: Optional[int] = Field(None, ge=1, le=31, description="账单日")
     due_day: Optional[int] = Field(None, ge=1, le=31, description="还款日")
-    expiry_date: Optional[date] = Field(None, description="卡片有效期")
+    expiry_month: Optional[int] = Field(None, ge=1, le=12, description="卡片有效期月份")
+    expiry_year: Optional[int] = Field(None, ge=2024, le=2050, description="卡片有效期年份")
     annual_fee_rule_id: Optional[UUID] = Field(None, description="年费规则ID")
     card_color: Optional[str] = Field(None, max_length=20, description="卡片颜色")
     status: Optional[CardStatus] = Field(None, description="卡片状态")
@@ -371,6 +389,33 @@ class Card(CardBase):
     user_id: UUID = Field(..., description="用户ID，卡片所属用户")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="最后更新时间")
+
+    @property
+    def expiry_display(self) -> str:
+        """获取有效期的显示格式，如 '10/27'"""
+        return f"{self.expiry_month:02d}/{str(self.expiry_year)[-2:]}"
+    
+    @property
+    def is_expired(self) -> bool:
+        """检查卡片是否已过期"""
+        today = date.today()
+        if self.expiry_year < today.year:
+            return True
+        elif self.expiry_year == today.year and self.expiry_month < today.month:
+            return True
+        return False
+    
+    def expires_soon(self, months_ahead: int = 3) -> bool:
+        """检查卡片是否即将过期（默认3个月内）"""
+        from datetime import timedelta
+        today = date.today()
+        check_date = today + timedelta(days=months_ahead * 30)  # 近似计算
+        
+        if self.expiry_year < check_date.year:
+            return True
+        elif self.expiry_year == check_date.year and self.expiry_month <= check_date.month:
+            return True
+        return False
 
     class Config:
         from_attributes = True

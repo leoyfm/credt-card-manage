@@ -82,10 +82,16 @@ class CreditCard(BaseModel):
     )
 
     # 卡片状态和有效期
-    expiry_date = Column(
-        Date, 
+    expiry_month = Column(
+        Integer, 
         nullable=False,
-        comment="卡片有效期"
+        comment="卡片有效期月份，1-12"
+    )
+    
+    expiry_year = Column(
+        Integer, 
+        nullable=False,
+        comment="卡片有效期年份，如2024"
     )
     
     status = Column(
@@ -138,7 +144,7 @@ class CreditCard(BaseModel):
         Index("idx_credit_cards_bank_name", "bank_name"),
         Index("idx_credit_cards_card_type", "card_type"),
         Index("idx_credit_cards_status", "status"),
-        Index("idx_credit_cards_expiry_date", "expiry_date"),
+        Index("idx_credit_cards_expiry", "expiry_year", "expiry_month"),
         Index("idx_credit_cards_is_active_deleted", "is_active", "is_deleted"),
     )
 
@@ -162,4 +168,20 @@ class CreditCard(BaseModel):
         """获取脱敏的卡号"""
         if len(self.card_number) < 8:
             return self.card_number
-        return f"{self.card_number[:4]}****{self.card_number[-4:]}" 
+        return f"{self.card_number[:4]}****{self.card_number[-4:]}"
+    
+    @property
+    def expiry_display(self) -> str:
+        """获取有效期的显示格式，如 '10/27'"""
+        return f"{self.expiry_month:02d}/{str(self.expiry_year)[-2:]}"
+    
+    @property
+    def is_expired(self) -> bool:
+        """检查卡片是否已过期"""
+        from datetime import date
+        today = date.today()
+        if self.expiry_year < today.year:
+            return True
+        elif self.expiry_year == today.year and self.expiry_month < today.month:
+            return True
+        return False 
