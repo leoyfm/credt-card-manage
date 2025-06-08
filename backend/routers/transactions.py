@@ -26,6 +26,7 @@ from models.transactions import (
 from db_models.transactions import TransactionType, TransactionCategory, TransactionStatus
 from services.transactions_service import TransactionsService
 from routers.auth import get_current_user
+from models.users import UserProfile
 from utils.response import ResponseUtil
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ router = APIRouter()
 def create_transaction(
     transaction_data: TransactionCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     创建新的交易记录
@@ -65,7 +66,7 @@ def create_transaction(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         transaction = service.create_transaction(user_id, transaction_data)
         logger.info(f"交易记录创建成功: {transaction.id}")
@@ -103,7 +104,7 @@ def get_transactions(
     max_amount: Optional[Decimal] = Query(None, ge=0, description="最大金额"),
     keyword: str = Query("", description="关键词模糊搜索，支持商户名称、交易描述、备注"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     获取交易记录列表
@@ -122,7 +123,7 @@ def get_transactions(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         skip = (page - 1) * page_size
         
@@ -164,7 +165,7 @@ def get_transactions(
 def get_transaction(
     transaction_id: UUID,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     根据ID获取交易记录详情
@@ -179,7 +180,7 @@ def get_transaction(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         transaction = service.get_transaction(transaction_id, user_id)
         
@@ -207,7 +208,7 @@ def update_transaction(
     transaction_id: UUID,
     transaction_data: TransactionUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     更新交易记录信息
@@ -226,7 +227,7 @@ def update_transaction(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         transaction = service.update_transaction(transaction_id, user_id, transaction_data)
         
@@ -254,7 +255,7 @@ def update_transaction(
 def delete_transaction(
     transaction_id: UUID,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     删除交易记录
@@ -266,7 +267,7 @@ def delete_transaction(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         success = service.delete_transaction(transaction_id, user_id)
         
@@ -295,7 +296,7 @@ def get_transaction_statistics(
     start_date: Optional[datetime] = Query(None, description="开始时间"),
     end_date: Optional[datetime] = Query(None, description="结束时间"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     获取交易统计概览
@@ -312,7 +313,7 @@ def get_transaction_statistics(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         statistics = service.get_transaction_statistics(
             user_id=user_id,
@@ -341,7 +342,7 @@ def get_category_statistics(
     start_date: Optional[datetime] = Query(None, description="开始时间"),
     end_date: Optional[datetime] = Query(None, description="结束时间"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     获取分类消费统计
@@ -356,7 +357,7 @@ def get_category_statistics(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         statistics = service.get_category_statistics(
             user_id=user_id,
@@ -384,7 +385,7 @@ def get_monthly_trend(
     year: Optional[int] = Query(None, description="年份，默认当前年份"),
     card_id: Optional[UUID] = Query(None, description="信用卡ID过滤"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: UserProfile = Depends(get_current_user)
 ):
     """
     获取月度交易趋势
@@ -399,7 +400,7 @@ def get_monthly_trend(
     """
     try:
         service = TransactionsService(db)
-        user_id = UUID(current_user["sub"])
+        user_id = current_user.id
         
         trend = service.get_monthly_trend(
             user_id=user_id,

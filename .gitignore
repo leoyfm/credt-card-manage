@@ -152,3 +152,4 @@ backend/db_models/__pycache__/
 backend/__pycache__/
 backend/alembic/__pycache__/
 backend/alembic/versions/__pycache__/
+backend/tests/__pycache__/
