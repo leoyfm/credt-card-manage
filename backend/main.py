@@ -7,7 +7,7 @@ import uvicorn
 
 from utils.response import ResponseUtil
 from models.response import ApiResponse
-from routers import annual_fee, cards, reminders, recommendations
+from routers import annual_fee, cards, reminders, recommendations, auth
 
 # 配置日志
 logging.basicConfig(
@@ -73,6 +73,10 @@ app = FastAPI(
         {
             "name": "智能推荐",
             "description": "个性化信用卡推荐、用户画像分析、推荐反馈等功能"
+        },
+        {
+            "name": "用户认证",
+            "description": "用户注册、登录、密码管理、微信登录、验证码等认证功能"
         }
     ]
 )
@@ -87,6 +91,7 @@ app.add_middleware(
 )
 
 # 挂载路由模块
+app.include_router(auth.router, prefix="/api")
 app.include_router(annual_fee.router, prefix="/api")
 app.include_router(cards.router, prefix="/api")
 app.include_router(reminders.router, prefix="/api")

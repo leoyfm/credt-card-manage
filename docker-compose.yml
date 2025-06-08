@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: credit_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "5432:5432"

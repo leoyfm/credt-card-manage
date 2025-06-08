@@ -10,6 +10,7 @@ from .cards import CreditCard
 from .annual_fee import AnnualFeeRule, AnnualFeeRecord
 from .reminders import Reminder
 from .recommendations import Recommendation
+from .users import User, VerificationCode, WechatBinding, UserSession, LoginLog
 
 __all__ = [
     "Base",
@@ -18,5 +19,10 @@ __all__ = [
     "AnnualFeeRule",
     "AnnualFeeRecord",
     "Reminder",
-    "Recommendation"
+    "Recommendation",
+    "User",
+    "VerificationCode", 
+    "WechatBinding",
+    "UserSession",
+    "LoginLog"
 ] 
