@@ -3,20 +3,23 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 from models.response import ApiResponse, ApiPagedResponse
 from models.cards import CardCreate, CardUpdate, Card
 from services.cards_service import CardsService
 from utils.response import ResponseUtil
+from routers.auth import get_current_user
+from models.users import UserProfile
+from database import get_db
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/cards", tags=["信用卡"])
 
 
-def get_cards_service() -> CardsService:
+def get_cards_service(db: Session = Depends(get_db)) -> CardsService:
     """获取信用卡服务实例"""
-    # TODO: 实现依赖注入
-    pass
+    return CardsService(db)
 
 
 @router.get(
@@ -29,6 +32,7 @@ async def get_cards(
     page: int = Query(1, ge=1, description="页码，从1开始"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量，最大100"),
     keyword: str = Query("", description="模糊搜索关键词，支持银行名称、卡片名称搜索"),
+    current_user: UserProfile = Depends(get_current_user),
     service: CardsService = Depends(get_cards_service)
 ):
     """
@@ -44,9 +48,16 @@ async def get_cards(
     logger.info(f"获取信用卡列表请求 - page: {page}, page_size: {page_size}, keyword: {keyword}")
     
     try:
-        # TODO: 调用服务层获取数据
-        cards = []
-        total = 0
+        # 计算跳过的记录数
+        skip = (page - 1) * page_size
+        
+        # 调用服务层获取数据
+        cards, total = service.get_cards(
+            user_id=current_user.id,
+            skip=skip,
+            limit=page_size,
+            keyword=keyword
+        )
         
         logger.info(f"获取信用卡列表成功 - total: {total}")
         return ResponseUtil.paginated(
@@ -69,6 +80,7 @@ async def get_cards(
 )
 async def create_card(
     card_data: CardCreate,
+    current_user: UserProfile = Depends(get_current_user),
     service: CardsService = Depends(get_cards_service)
 ):
     """
@@ -79,9 +91,13 @@ async def create_card(
     logger.info(f"创建信用卡请求 - bank_name: {card_data.bank_name}")
     
     try:
-        # TODO: 调用服务层创建信用卡
+        # 调用服务层创建信用卡
+        card = service.create_card(card_data, current_user.id)
         logger.info("信用卡创建成功")
-        return ResponseUtil.created(message="创建信用卡成功")
+        return ResponseUtil.created(data=card, message="创建信用卡成功")
+    except ValueError as e:
+        logger.warning(f"创建信用卡参数错误: {str(e)}")
+        return ResponseUtil.validation_error(message=str(e))
     except Exception as e:
         logger.error(f"创建信用卡失败: {str(e)}")
         return ResponseUtil.server_error(message="创建信用卡失败")
@@ -95,6 +111,7 @@ async def create_card(
 )
 async def get_card(
     card_id: UUID,
+    current_user: UserProfile = Depends(get_current_user),
     service: CardsService = Depends(get_cards_service)
 ):
     """
@@ -105,12 +122,17 @@ async def get_card(
     logger.info(f"获取信用卡详情请求 - card_id: {card_id}")
     
     try:
-        # TODO: 调用服务层获取信用卡详情
+        # 调用服务层获取信用卡详情
+        card = service.get_card(card_id, current_user.id)
+        if not card:
+            logger.warning(f"信用卡不存在: {card_id}")
+            return ResponseUtil.not_found(message="信用卡不存在")
+        
         logger.info("获取信用卡详情成功")
-        return ResponseUtil.success(message="获取信用卡详情成功")
+        return ResponseUtil.success(data=card, message="获取信用卡详情成功")
     except Exception as e:
         logger.error(f"获取信用卡详情失败: {str(e)}")
-        return ResponseUtil.not_found(message="信用卡不存在")
+        return ResponseUtil.server_error(message="获取信用卡详情失败")
 
 
 @router.put(
@@ -122,6 +144,7 @@ async def get_card(
 async def update_card(
     card_id: UUID,
     card_data: CardUpdate,
+    current_user: UserProfile = Depends(get_current_user),
     service: CardsService = Depends(get_cards_service)
 ):
     """
@@ -132,9 +155,14 @@ async def update_card(
     logger.info(f"更新信用卡请求 - card_id: {card_id}")
     
     try:
-        # TODO: 调用服务层更新信用卡
+        # 调用服务层更新信用卡
+        card = service.update_card(card_id, current_user.id, card_data)
+        if not card:
+            logger.warning(f"信用卡不存在: {card_id}")
+            return ResponseUtil.not_found(message="信用卡不存在")
+        
         logger.info("信用卡更新成功")
-        return ResponseUtil.success(message="信用卡更新成功")
+        return ResponseUtil.success(data=card, message="信用卡更新成功")
     except Exception as e:
         logger.error(f"更新信用卡失败: {str(e)}")
         return ResponseUtil.server_error(message="更新信用卡失败")
@@ -148,6 +176,7 @@ async def update_card(
 )
 async def delete_card(
     card_id: UUID,
+    current_user: UserProfile = Depends(get_current_user),
     service: CardsService = Depends(get_cards_service)
 ):
     """
@@ -158,7 +187,12 @@ async def delete_card(
     logger.info(f"删除信用卡请求 - card_id: {card_id}")
     
     try:
-        # TODO: 调用服务层删除信用卡
+        # 调用服务层删除信用卡
+        success = service.delete_card(card_id, current_user.id)
+        if not success:
+            logger.warning(f"信用卡不存在: {card_id}")
+            return ResponseUtil.not_found(message="信用卡不存在")
+        
         logger.info("信用卡删除成功")
         return ResponseUtil.deleted(message="信用卡删除成功")
     except Exception as e:

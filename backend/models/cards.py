@@ -9,18 +9,24 @@ from pydantic import BaseModel, Field, validator
 
 class CardType(str, Enum):
     """
-    信用卡类型枚举
+    信用卡组织类型枚举
     
-    定义不同的信用卡类型：
-    - CREDIT: 贷记卡，可透支消费的标准信用卡
-    - DEBIT: 借记卡，储蓄卡类型
-    - BUSINESS: 商务卡，面向企业用户的信用卡
-    - STUDENT: 学生卡，面向学生群体的信用卡
+    定义不同的卡组织类型：
+    - VISA: Visa卡组织
+    - MASTERCARD: 万事达卡组织  
+    - UNIONPAY: 银联卡组织
+    - AMEX: 美国运通卡组织
+    - JCB: JCB卡组织
+    - DISCOVER: Discover卡组织
+    - DINERS: 大来卡组织
     """
-    CREDIT = "credit"  # 贷记卡
-    DEBIT = "debit"    # 借记卡  
-    BUSINESS = "business"  # 商务卡
-    STUDENT = "student"    # 学生卡
+    VISA = "visa"           # Visa
+    MASTERCARD = "mastercard"  # 万事达
+    UNIONPAY = "unionpay"      # 银联
+    AMEX = "amex"             # 美国运通
+    JCB = "jcb"              # JCB
+    DISCOVER = "discover"     # Discover
+    DINERS = "diners"        # 大来卡
 
 
 class CardStatus(str, Enum):
@@ -72,8 +78,8 @@ class CardBase(BaseModel):
     
     card_type: CardType = Field(
         ...,
-        description="信用卡类型",
-        example=CardType.CREDIT
+        description="信用卡组织类型",
+        example=CardType.VISA
     )
     
     credit_limit: Decimal = Field(
@@ -118,14 +124,6 @@ class CardBase(BaseModel):
         ...,
         description="卡片有效期",
         example="2027-12-31"
-    )
-    
-    annual_fee: Decimal = Field(
-        0, 
-        ge=0, 
-        le=99999.99,
-        description="年费金额，单位：元",
-        example=200.00
     )
     
     annual_fee_rule_id: Optional[UUID] = Field(
@@ -206,13 +204,12 @@ class CardUpdate(BaseModel):
     """
     bank_name: Optional[str] = Field(None, min_length=2, max_length=50, description="银行名称")
     card_name: Optional[str] = Field(None, min_length=2, max_length=100, description="信用卡名称")
-    card_type: Optional[CardType] = Field(None, description="信用卡类型")
+    card_type: Optional[CardType] = Field(None, description="信用卡组织类型")
     credit_limit: Optional[Decimal] = Field(None, ge=0, le=9999999.99, description="信用额度")
     used_amount: Optional[Decimal] = Field(None, ge=0, description="已使用额度")
     billing_day: Optional[int] = Field(None, ge=1, le=31, description="账单日")
     due_day: Optional[int] = Field(None, ge=1, le=31, description="还款日")
     expiry_date: Optional[date] = Field(None, description="卡片有效期")
-    annual_fee: Optional[Decimal] = Field(None, ge=0, le=99999.99, description="年费金额")
     annual_fee_rule_id: Optional[UUID] = Field(None, description="年费规则ID")
     card_color: Optional[str] = Field(None, max_length=20, description="卡片颜色")
     status: Optional[CardStatus] = Field(None, description="卡片状态")
@@ -250,7 +247,7 @@ class CardSummary(BaseModel):
     id: UUID = Field(..., description="信用卡ID")
     bank_name: str = Field(..., description="银行名称")
     card_name: str = Field(..., description="信用卡名称")
-    card_type: CardType = Field(..., description="信用卡类型")
+    card_type: CardType = Field(..., description="信用卡组织类型")
     credit_limit: Decimal = Field(..., description="信用额度")
     used_amount: Decimal = Field(..., description="已使用额度")
     available_amount: Decimal = Field(..., description="可用额度")

@@ -49,8 +49,8 @@ class CreditCard(BaseModel):
     card_type = Column(
         String(20), 
         nullable=False,
-        default="credit",
-        comment="卡片类型：credit/debit/business/student"
+        default="visa",
+        comment="卡组织类型：visa/mastercard/unionpay/amex/jcb/discover/diners"
     )
 
     # 额度信息
@@ -108,13 +108,6 @@ class CreditCard(BaseModel):
     )
 
     # 年费相关
-    annual_fee = Column(
-        Numeric(8, 2), 
-        nullable=False,
-        default=0,
-        comment="年费金额"
-    )
-    
     annual_fee_rule_id = Column(
         UUID(as_uuid=True),
         ForeignKey("annual_fee_rules.id"),
