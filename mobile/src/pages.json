@@ -74,6 +74,22 @@
       }
     },
     {
+      "path": "pages/auth/login",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/auth/register",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "注册",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/cards/add",
       "type": "page",
       "style": {
