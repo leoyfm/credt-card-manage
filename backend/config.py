@@ -8,6 +8,23 @@
 import os
 from typing import Optional
 from functools import lru_cache
+from pathlib import Path
+from dotenv import load_dotenv
+
+# 自动加载 .env 文件
+# 首先查找项目根目录的 .env 文件
+env_path = Path(__file__).parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+    print(f"✅ 已加载环境变量文件: {env_path}")
+else:
+    # 然后查找当前目录的 .env 文件
+    current_env_path = Path(__file__).parent / ".env"
+    if current_env_path.exists():
+        load_dotenv(current_env_path)
+        print(f"✅ 已加载环境变量文件: {current_env_path}")
+    else:
+        print("⚠️  未找到 .env 文件，将使用系统环境变量或默认值")
 
 
 class Settings:
@@ -39,6 +56,7 @@ class Settings:
         "JWT_SECRET_KEY",
         "your-super-secret-jwt-key-change-in-production-2024"
     )
+    
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24小时
     JWT_REFRESH_EXPIRE_DAYS: int = int(os.getenv("JWT_REFRESH_EXPIRE_DAYS", "30"))  # 30天
