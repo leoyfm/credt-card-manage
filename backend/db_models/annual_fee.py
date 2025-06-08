@@ -85,6 +85,12 @@ class AnnualFeeRecord(BaseModel):
         comment="信用卡ID，关联credit_cards表"
     )
     
+    rule_id = Column(
+        UUID(as_uuid=True), 
+        ForeignKey("annual_fee_rules.id"), 
+        comment="年费规则ID，关联annual_fee_rules表"
+    )
+    
     fee_year = Column(
         Integer, 
         nullable=False, 
@@ -134,6 +140,7 @@ class AnnualFeeRecord(BaseModel):
 
     # 关联关系
     card = relationship("CreditCard", back_populates="annual_fee_records")
+    rule = relationship("AnnualFeeRule", back_populates="records")
 
     # 索引定义
     __table_args__ = (

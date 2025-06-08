@@ -346,7 +346,7 @@ class UserProfile(BaseModel):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class LoginResponse(BaseModel):
@@ -618,7 +618,7 @@ class WechatBindingInfo(BaseModel):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ==================== 令牌相关模型 ====================
@@ -700,7 +700,7 @@ class LoginLogInfo(BaseModel):
     )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ==================== 用户统计模型 ====================

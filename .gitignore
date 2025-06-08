@@ -150,3 +150,4 @@ backend/routers/__pycache__/
 backend/models/__pycache__/
 backend/db_models/__pycache__/
 backend/__pycache__/
+backend/alembic/__pycache__/

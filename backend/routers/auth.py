@@ -41,11 +41,8 @@ router = APIRouter(prefix="/auth", tags=["用户认证"])
 # 安全依赖
 security = HTTPBearer()
 
-# 数据库依赖（需要根据实际项目配置）
-def get_db():
-    """获取数据库会话"""
-    # TODO: 实现数据库依赖注入
-    pass
+# 导入数据库依赖
+from database import get_db
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
