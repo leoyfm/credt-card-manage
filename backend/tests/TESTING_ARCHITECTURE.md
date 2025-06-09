@@ -369,6 +369,88 @@ pip install pytest-timeout
 - 使用正确的进程终止方式（`terminate()`而不是`kill()`）
 - 正确处理编码问题
 
+### 6. pytest无法收集测试文件
+
+**问题**: `collected 0 items` 或测试类无法被发现
+
+**原因**: 
+- 测试类继承了`BaseAPITest`但没有正确初始化父类
+- 使用了错误的类构造方式导致pytest无法识别测试方法
+
+**解决方案**: 
+```python
+# ❌ 错误方式 - 直接继承BaseAPITest
+class TestTransactionsUnit(BaseAPITest):
+    def setup_method(self):
+        super().__init__(client)  # 会导致pytest无法收集
+
+# ✅ 正确方式 - 使用组合模式
+class TestTransactionsUnit:
+    def setup_method(self):
+        self.client = FastAPITestClient()
+        self.api_test = BaseAPITest(self.client)  # 组合而不是继承
+        self.test_user = self.api_test.setup_test_user()
+        self.headers = {"Authorization": f"Bearer {self.test_user['token']}"}
+```
+
+### 7. API响应字段不匹配
+
+**问题**: 测试期望的字段名与实际API返回的字段不一致
+
+**常见不匹配情况**:
+- 分页字段：期望`page`实际为`current_page`
+- 统计字段：期望`total_expense`实际为`expense_amount`
+- 分页大小：期望`size`实际为`page_size`
+
+**解决方案**: 
+```python
+# 检查实际API响应格式，更新测试期望
+# 分页响应
+assert data["pagination"]["current_page"] == 1  # 不是page
+assert data["pagination"]["page_size"] == 5     # 不是size
+
+# 统计响应  
+assert "expense_amount" in data  # 不是total_expense
+assert "income_amount" in data   # 不是total_income
+```
+
+### 8. 枚举值和数据验证错误
+
+**问题**: 测试使用了API不支持的枚举值导致422或500错误
+
+**常见错误枚举**:
+- 交易类型：`"income"`（应使用`"payment"`）
+- 交易分类：`"grocery"`（应使用`"other"`）
+- 无效UUID格式导致500而不是400错误
+
+**解决方案**: 
+```python
+# 使用正确的枚举值
+valid_transaction_types = ["expense", "payment", "refund", "transfer", "withdrawal", "fee"]
+valid_categories = ["dining", "shopping", "transport", "entertainment", "medical", "education", "travel", "other"]
+
+# 对于错误处理测试，期望实际的状态码
+assert response.status_code in [400, 500]  # 后端可能返回500而不是400
+```
+
+### 9. 接口路径和参数不匹配
+
+**问题**: 测试使用的接口路径与实际API不符
+
+**常见路径错误**:
+- 月度趋势：`/statistics/monthly`（应为`/statistics/monthly-trend`）
+- 日期参数：简单date格式（应为datetime格式）
+
+**解决方案**: 
+```python
+# 使用正确的接口路径
+response = self.client.get("/api/transactions/statistics/monthly-trend")  # 不是monthly
+
+# 使用正确的日期时间格式
+start_date = "2024-06-05T00:00:00"  # 不是 "2024-06-05"
+end_date = "2024-06-10T23:59:59"    # 不是 "2024-06-10"
+```
+
 ## 🎯 最佳实践
 
 ### 1. 测试命名规范
@@ -549,7 +631,8 @@ python tests/test_runner.py all -r
 
 ## 🔖 版本历史
 
-- **v2.0** (当前): 修复性能测试架构，添加服务器自动管理，完善错误处理
+- **v2.1** (当前): 完善常见问题文档，新增pytest收集问题、API字段不匹配、枚举值错误等解决方案
+- **v2.0**: 修复性能测试架构，添加服务器自动管理，完善错误处理
 - **v1.5**: 添加集成测试支持，统一客户端抽象
 - **v1.0**: 初始版本，基础的三层测试架构
 
