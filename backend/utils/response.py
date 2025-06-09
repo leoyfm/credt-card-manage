@@ -114,7 +114,7 @@ class ResponseUtil:
     def paginated(
         items: List[T],
         total: int,
-        page: int,
+        current_page: int,
         page_size: int,
         message: str = "获取成功"
     ) -> ApiPagedResponse[T]:
@@ -126,7 +126,7 @@ class ResponseUtil:
         参数:
         - items: 当前页的数据列表
         - total: 总记录数
-        - page: 当前页码
+        - current_page: 当前页码
         - page_size: 每页大小
         - message: 响应消息
         """
@@ -134,8 +134,8 @@ class ResponseUtil:
         
         pagination = PaginationInfo(
             total=total,
-            page=page,
-            size=page_size,
+            current_page=current_page,
+            page_size=page_size,
             total_pages=pages
         )
         

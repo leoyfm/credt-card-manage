@@ -141,7 +141,7 @@ class TestStatisticsAPI:
         required_fields = [
             "total_transactions", "total_expense_amount", "total_payment_amount",
             "total_points_earned", "current_month_transactions", 
-            "current_month_expense", "average_transaction_amount"
+            "current_month_expense_amount", "average_transaction_amount"
         ]
         for field in required_fields:
             assert field in transaction_stats
@@ -183,7 +183,7 @@ class TestStatisticsAPI:
         annual_fee_stats = data["data"]
         required_fields = [
             "total_annual_fee", "waived_count", "pending_count",
-            "paid_count", "overdue_count", "current_year_fee_due",
+            "paid_count", "overdue_count", "current_year_due_amount",
             "savings_from_waiver"
         ]
         for field in required_fields:

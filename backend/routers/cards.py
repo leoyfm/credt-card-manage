@@ -67,7 +67,7 @@ async def get_cards(
         return ResponseUtil.paginated(
             items=cards,
             total=total,
-            page=page,
+            current_page=page,
             page_size=page_size,
             message="获取信用卡列表成功"
         )
@@ -113,7 +113,7 @@ async def get_cards_basic(
         return ResponseUtil.paginated(
             items=cards,
             total=total,
-            page=page,
+            current_page=page,
             page_size=page_size,
             message="获取信用卡列表成功"
         )
