@@ -327,4 +327,4 @@ class RecommendationFeedback(BaseModel):
         max_length=500,
         description="用户评论",
         json_schema_extra={"example": "这张卡的回馈率确实不错，考虑申请"}
-    ) 
+    )

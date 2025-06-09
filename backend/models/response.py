@@ -46,12 +46,12 @@ class PaginationInfo(BaseModel):
         description="总记录数",
         json_schema_extra={"example": 150}
     )
-    page: int = Field(
+    current_page: int = Field(
         ..., 
         description="当前页码，从1开始",
         json_schema_extra={"example": 1}
     )
-    size: int = Field(
+    page_size: int = Field(
         ..., 
         description="每页大小，即当前页实际返回的记录数",
         json_schema_extra={"example": 20}

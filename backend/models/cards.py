@@ -499,4 +499,4 @@ class CardSummaryWithAnnualFee(CardSummary):
     has_annual_fee: bool = Field(..., description="是否设置了年费规则")
     annual_fee_amount: Optional[Decimal] = Field(None, description="年费金额")
     fee_type_display: Optional[str] = Field(None, description="年费类型显示名称")
-    current_year_fee_status: Optional[str] = Field(None, description="当前年费状态") 
+    current_year_fee_status: Optional[str] = Field(None, description="当前年费状态")

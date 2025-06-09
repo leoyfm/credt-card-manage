@@ -146,7 +146,7 @@ def get_transactions(
         return ResponseUtil.paginated(
             items=transactions,
             total=total,
-            page=page,
+            current_page=page,
             page_size=page_size,
             message="获取交易记录列表成功"
         )

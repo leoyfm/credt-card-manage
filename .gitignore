@@ -144,12 +144,8 @@ hybrid/
 # Log files
 *.log
 logs/ 
-backend/utils/__pycache__/
-backend/services/__pycache__/
-backend/routers/__pycache__/
-backend/models/__pycache__/
-backend/db_models/__pycache__/
-backend/__pycache__/
-backend/alembic/__pycache__/
-backend/alembic/versions/__pycache__/
-backend/tests/__pycache__/
+# Python缓存文件
+**/__pycache__/
+*.py[cod]
+*$py.class
+
