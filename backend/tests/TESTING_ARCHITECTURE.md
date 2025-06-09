@@ -70,7 +70,7 @@ class TestRecommendationsUnit(BaseRecommendationTest):
 - 🌐 真实HTTP请求
 - 🔗 端到端测试
 - 🛡️ 网络层验证
-- 🚀 需要运行服务器
+- 🚀 需要手动启动服务器（主进程模式）
 - 📊 真实用户场景
 
 **示例**:
@@ -207,7 +207,10 @@ python tests/test_runner.py list
 # 运行单元测试
 python tests/test_runner.py unit
 
-# 运行集成测试（自动启动/管理服务器）
+# 运行集成测试（需要手动启动服务器）
+# 第一步：在另一个终端启动服务器
+python start.py dev
+# 第二步：运行集成测试
 python tests/test_runner.py integration
 
 # 运行性能测试
@@ -326,14 +329,14 @@ test_configs = {
 - 检查文件编码，确保没有中文乱码
 - 运行`pytest --markers`验证标记已注册
 
-### 2. 集成测试卡住
+### 2. 集成测试服务器启动
 
-**问题**: `python tests/test_runner.py integration`命令卡住不响应
+**问题**: 集成测试需要服务器运行但启动复杂
 
 **解决方案**: 
-- 测试运行器已修复异步服务器启动问题
-- 使用`subprocess.Popen`在后台启动服务器
-- 添加了进程清理机制和信号处理器
+- 集成测试不再自动启动服务器，避免进程管理复杂性
+- 要求用户手动启动服务器作为主进程: `python start.py dev`
+- 测试运行器只检查服务器是否可用，并提供清晰的启动指导
 
 ### 3. 性能测试架构错误
 
@@ -516,13 +519,16 @@ python tests/test_runner.py unit -v
 # 1. 单元测试
 python tests/test_runner.py unit
 
-# 2. 集成测试（会自动启动服务器）
+# 2. 集成测试（需要手动启动服务器）
+# 终端1: 启动服务器
+python start.py dev
+# 终端2: 运行集成测试
 python tests/test_runner.py integration
 
 # 3. 性能测试
 python tests/test_runner.py performance
 
-# 4. 生成完整报告
+# 4. 生成完整报告（需要服务器运行）
 python tests/test_runner.py all -r
 ```
 

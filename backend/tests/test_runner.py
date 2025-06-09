@@ -25,7 +25,6 @@ class TestRunner:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
         self.tests_root = Path(__file__).parent
-        self.server_process = None  # 用于跟踪服务器进程
         
         # 测试配置
         self.test_configs = {
@@ -156,86 +155,39 @@ class TestRunner:
         """检查服务器是否运行"""
         try:
             import requests
-            response = requests.get("http://127.0.0.1:8000/docs", timeout=5)
-            return response.status_code == 200
-        except:
+            # 首先尝试检查根路径或API路径
+            urls_to_check = [
+                "http://127.0.0.1:8000/",
+                "http://127.0.0.1:8000/api/health",
+                "http://127.0.0.1:8000/docs",
+                "http://127.0.0.1:8000/api/"
+            ]
+            
+            for url in urls_to_check:
+                try:
+                    response = requests.get(url, timeout=3)
+                    if response.status_code in [200, 404]:  # 404也说明服务器在运行
+                        logger.info(f"✅ 服务器健康检查成功: {url} -> {response.status_code}")
+                        return True
+                except:
+                    continue
+            
             return False
-    
-    def _start_server_if_needed(self) -> bool:
-        """如果需要，启动服务器"""
-        if self._check_server_running():
-            logger.info("✅ 服务器已在运行")
-            return True
-        
-        logger.info("🚀 启动测试服务器...")
-        
-        # 在后台启动服务器（不等待完成）
-        start_command = ["python", "start.py", "dev"]
-        
-        try:
-            import subprocess
-            # 设置环境变量解决Windows编码问题
-            env = os.environ.copy()
-            env['PYTHONIOENCODING'] = 'utf-8'
-            
-            # 使用Popen在后台启动服务器
-            self.server_process = subprocess.Popen(
-                start_command,
-                cwd=str(self.project_root),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                env=env,
-                # 在Windows上，需要设置CREATE_NEW_PROCESS_GROUP来避免继承父进程的控制台
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
-            )
-            logger.info(f"服务器进程已启动，PID: {self.server_process.pid}")
-            
         except Exception as e:
-            logger.error(f"服务器启动失败: {e}")
+            logger.debug(f"服务器健康检查失败: {e}")
             return False
-        
-        # 等待服务器启动
-        import time
-        for i in range(60):  # 等待最多60秒
-            if self._check_server_running():
-                logger.info("✅ 服务器启动成功")
-                return True
-            
-            # 检查服务器进程是否还在运行
-            if self.server_process.poll() is not None:
-                stdout, stderr = self.server_process.communicate()
-                logger.error(f"服务器进程异常退出: {stderr.decode('utf-8', errors='replace')}")
-                return False
-                
-            time.sleep(1)
-            if i % 5 == 0:  # 每5秒打印一次进度
-                logger.info(f"等待服务器启动... ({i+1}/60)")
-        
-        logger.error("❌ 服务器启动超时")
-        return False
     
-    def _cleanup_server(self):
-        """清理服务器进程"""
-        if self.server_process and self.server_process.poll() is None:
-            logger.info("🛑 正在停止测试服务器...")
-            try:
-                # 在Windows上使用terminate()
-                if os.name == 'nt':
-                    self.server_process.terminate()
-                else:
-                    self.server_process.terminate()
-                
-                # 等待进程结束
-                self.server_process.wait(timeout=10)
-                logger.info("✅ 测试服务器已停止")
-            except subprocess.TimeoutExpired:
-                logger.warning("⚠️  强制结束测试服务器进程")
-                self.server_process.kill()
-                self.server_process.wait()
-            except Exception as e:
-                logger.error(f"停止服务器时出错: {e}")
-            finally:
-                self.server_process = None
+    def _display_server_start_instructions(self):
+        """显示服务器启动说明"""
+        logger.info("🚀 集成测试需要服务器运行")
+        logger.info("📝 请在另一个终端中执行以下命令启动服务器:")
+        logger.info("   python start.py dev")
+        logger.info("")
+        logger.info("💡 启动服务器后，可以通过以下方式验证:")
+        logger.info("   - 访问 http://127.0.0.1:8000/docs 查看API文档")
+        logger.info("   - 或运行: python run_integration_manual.py")
+    
+
     
     def run_unit_tests(self, verbose: bool = False) -> Dict[str, Any]:
         """运行单元测试"""
@@ -270,16 +222,29 @@ class TestRunner:
         
         config = self.test_configs["integration"]
         
-        # 检查是否需要启动服务器
+        # 检查是否需要服务器运行
         if config.get("requires_server", False):
-            if not self._start_server_if_needed():
+            if not self._check_server_running():
+                logger.error("❌ 服务器未运行")
+                logger.info("💡 集成测试需要服务器运行，请执行以下步骤:")
+                logger.info("   1. 在另一个终端中启动服务器:")
+                logger.info("      python start.py dev")
+                logger.info("   2. 等待服务器完全启动")
+                logger.info("   3. 重新运行集成测试:")
+                logger.info("      python tests/test_runner.py integration")
+                logger.info("")
+                logger.info("🔍 或者使用手动集成测试脚本:")
+                logger.info("      python run_integration_manual.py")
+                
                 return {
                     "success": False,
                     "returncode": -1,
                     "stdout": "",
-                    "stderr": "无法启动测试服务器",
+                    "stderr": "服务器未运行，请手动启动服务器",
                     "command": "server check"
                 }
+            else:
+                logger.info("✅ 服务器已在运行，开始执行集成测试")
         
         command = ["python", "-m", "pytest"]
         
@@ -531,11 +496,10 @@ def main():
     # 创建测试运行器
     runner = TestRunner()
     
-    # 注册信号处理器确保清理服务器进程
+    # 注册信号处理器
     import signal
     def cleanup_handler(signum, frame):
-        logger.info("接收到退出信号，正在清理...")
-        runner._cleanup_server()
+        logger.info("接收到退出信号，正在退出...")
         sys.exit(0)
     
     signal.signal(signal.SIGINT, cleanup_handler)  # Ctrl+C
@@ -578,9 +542,6 @@ def main():
     except Exception as e:
         logger.error(f"测试运行失败: {e}")
         exit_code = 1
-    finally:
-        # 确保清理服务器进程
-        runner._cleanup_server()
         
     sys.exit(exit_code)
 
