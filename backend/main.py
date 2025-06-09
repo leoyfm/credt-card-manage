@@ -8,7 +8,7 @@ import uvicorn
 
 from utils.response import ResponseUtil
 from models.response import ApiResponse
-from routers import annual_fee, cards, reminders, recommendations, auth, transactions
+from routers import annual_fee, cards, reminders, recommendations, auth, transactions, statistics
 from database import create_database, get_db_health
 from config import settings, validate_config, get_environment_info
 
@@ -121,6 +121,10 @@ app = FastAPI(
         {
             "name": "交易统计",
             "description": "交易数据统计分析、分类统计、月度趋势、消费概览等功能"
+        },
+        {
+            "name": "统计分析",
+            "description": "全面的数据统计分析功能，包括信用卡、额度、交易、年费等维度的统计信息"
         }
     ]
 )
@@ -202,6 +206,7 @@ app.include_router(cards.router, prefix="/api")
 app.include_router(reminders.router, prefix="/api")
 app.include_router(recommendations.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api/transactions")
+app.include_router(statistics.router, prefix="/api")
 
 @app.get(
     "/", 

@@ -202,7 +202,11 @@ def test_card(client: TestClient, authenticated_user: Dict[str, Any], test_card_
         headers=authenticated_user["headers"]
     )
     assert response.status_code == 200  # 修复：创建信用卡接口实际返回200
-    return response.json()["data"]
+    
+    # 返回信用卡数据并包含headers
+    card_data = response.json()["data"]
+    card_data["headers"] = authenticated_user["headers"]
+    return card_data
 
 
 def create_test_transaction(
@@ -214,19 +218,19 @@ def create_test_transaction(
     """创建测试交易记录的辅助函数"""
     # 设置默认值
     default_data = {
-        "transaction_type": "expense",
-        "amount": 100.00,
-        "transaction_date": "2024-06-08T14:30:00",
-        "merchant_name": "测试商户",
-        "description": "测试交易",
-        "category": "other",
-        "status": "completed",
-        "points_earned": 10.0,
-        "points_rate": 1.0,
-        "reference_number": f"TEST{uuid4().hex[:8]}",
-        "location": "测试地点",
-        "is_installment": False
-    }
+            "transaction_type": "expense",
+            "amount": 100.00,
+            "transaction_date": "2024-06-08T14:30:00",
+            "merchant_name": "测试商户",
+            "description": "测试交易",
+            "category": "other",
+            "status": "completed",
+            "points_earned": 10.0,
+            "points_rate": 1.0,
+            "reference_number": f"TEST{uuid4().hex[:8]}",
+            "location": "测试地点",
+            "is_installment": False
+        }
     
     # 合并默认值和传入的数据
     if transaction_data is not None:
