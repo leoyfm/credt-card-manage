@@ -724,4 +724,91 @@ pytest tests/performance/test_cards_performance.py -v
 2. **资源清理**: 测试完成后自动清理创建的数据
 3. **错误处理**: 完善的异常情况测试
 4. **性能监控**: 持续监控API性能表现
-5. **并发安全**: 验证多用户同时操作的安全性 
+5. **并发安全**: 验证多用户同时操作的安全性
+
+## 统计功能模块测试说明
+
+### 测试覆盖范围
+
+统计功能模块提供全方位的数据统计测试覆盖：
+
+#### 单元测试 (`test_statistics_unit.py`) - 30个测试用例
+- **基础统计测试(8个)**: 概览、信用卡、额度、交易、年费、分类、月度、银行统计
+- **查询参数筛选(6个)**: 日期筛选、银行筛选、卡片筛选、数量限制、包含注销卡片
+- **边界条件测试(6个)**: 无效日期、未来日期、无效ID、超大/负数限制值、空参数
+- **权限安全测试(3个)**: 未授权访问、无效令牌、数据隔离验证
+- **性能响应测试(7个)**: 响应时间、并发请求、复杂筛选、数据一致性、接口可访问性
+
+#### 集成测试 (`test_statistics_integration.py`) - 12个测试用例
+- **端到端测试(4个)**: 完整统计流程、跨模块数据一致性、实时数据反映、多用户隔离
+- **复杂业务场景(3个)**: 综合筛选场景、负载下性能、数据聚合准确性
+- **网络协议测试(3个)**: HTTP头验证、响应压缩、错误处理恢复
+- **并发完整性(2个)**: 并发操作完整性、综合集成场景
+
+#### 性能测试 (`test_statistics_performance.py`) - 12个测试用例
+- **单次操作性能(5个)**: 概览、卡片、交易、分类、月度趋势统计性能
+- **批量操作性能(3个)**: 多次请求、筛选条件、全接口顺序执行性能
+- **并发性能测试(2个)**: 并发概览请求、并发不同统计请求
+- **压力测试(2个)**: 高负载性能、持续负载性能
+
+### 性能基准
+
+| 统计类型 | 目标响应时间 | 并发成功率 | 吞吐量要求 |
+|----------|-------------|-----------|-----------|
+| 统计概览 | < 3.0秒 | ≥80% | > 3 req/s |
+| 信用卡统计 | < 1.5秒 | ≥90% | > 5 req/s |
+| 交易统计 | < 2.0秒 | ≥85% | > 4 req/s |
+| 分类统计 | < 1.5秒 | ≥90% | > 5 req/s |
+| 月度趋势 | < 2.0秒 | ≥85% | > 4 req/s |
+| 筛选统计 | < 5.0秒 | ≥80% | > 2 req/s |
+| 全接口顺序 | < 8.0秒 | ≥80% | - |
+| 高负载场景 | < 10.0秒 | ≥70% | - |
+
+### 统计API接口
+
+```
+/api/statistics/overview       # 统计概览（综合所有统计数据）
+/api/statistics/cards          # 信用卡统计  
+/api/statistics/credit-limit   # 信用额度统计
+/api/statistics/transactions   # 交易统计
+/api/statistics/annual-fee     # 年费统计
+/api/statistics/categories     # 消费分类统计
+/api/statistics/monthly-trends # 月度趋势统计
+/api/statistics/banks          # 银行分布统计
+```
+
+### 运行统计功能测试
+
+```bash
+# 运行统计单元测试
+python tests/test_runner.py unit --filter=statistics
+pytest tests/unit/test_statistics_unit.py -v
+
+# 运行统计集成测试（需要先启动服务器）
+python start.py dev  # 终端1
+python tests/test_runner.py integration --filter=statistics  # 终端2
+pytest tests/integration/test_statistics_integration.py -v
+
+# 运行统计性能测试
+python tests/test_runner.py performance --filter=statistics
+pytest tests/performance/test_statistics_performance.py -v
+
+# 运行特定测试方法
+pytest tests/unit/test_statistics_unit.py::TestStatisticsUnit::test_01_get_statistics_overview_success -v
+```
+
+### 测试数据生成器
+
+统计功能测试使用专门的数据生成器：
+
+- **StatisticsTestDataGenerator**: 单元测试数据（信用卡、交易）
+- **StatisticsIntegrationTestDataGenerator**: 集成测试数据（多卡多交易）
+- **StatisticsPerformanceDataGenerator**: 性能测试数据（大批量数据）
+
+### 统计功能特色测试
+
+1. **多维度筛选测试**: 时间范围、银行、卡片、状态等多重筛选组合
+2. **数据聚合验证**: 分类占比、月度趋势、银行分布的数学一致性
+3. **实时数据反映**: 新增交易后统计数据的实时更新验证
+4. **跨模块一致性**: 统计数据与业务模块数据的一致性验证
+5. **高并发稳定性**: 多用户同时查询统计的性能和准确性 
