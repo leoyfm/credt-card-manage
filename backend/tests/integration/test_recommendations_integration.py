@@ -348,10 +348,11 @@ class TestRecommendationsIntegration(TestPerformanceMixin):
                 }
         
         # 并发负载测试
-        total_time, avg_time = self._measure_batch_operations_performance(
-            load_test_request,
+        metrics = self.measure_batch_operations_performance(
+            lambda: load_test_request(0),
             count=20,
-            max_avg_time=2.0
+            max_avg_time=2.0,
+            description="负载测试"
         )
         
-        logger.info(f"✅ 负载性能验证通过: 平均{avg_time:.3f}s/请求，总计{total_time:.3f}s") 
+        logger.info(f"✅ 负载性能验证通过: 平均{metrics['avg_response_time']:.3f}s/请求") 

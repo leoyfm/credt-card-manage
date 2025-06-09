@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from models.response import ApiResponse, ApiPagedResponse
 from models.cards import (
@@ -42,12 +42,10 @@ async def get_cards(
     """
     获取信用卡列表（集成年费信息）
     
-    支持分页和模糊搜索功能。返回信用卡基本信息以及年费相关信息。
-    
-    参数:
-    - page: 页码，从1开始
-    - page_size: 每页数量，默认20，最大100
-    - keyword: 搜索关键词，支持银行名称、卡片名称模糊匹配
+    支持分页和模糊搜索功能：
+    - 分页：通过page和page_size参数控制
+    - 搜索：通过keyword参数支持银行名称、卡片名称的模糊搜索
+    - 年费信息：返回每张卡的年费规则和当前状态
     """
     logger.info(f"获取信用卡列表请求 - page: {page}, page_size: {page_size}, keyword: {keyword}")
     
@@ -55,7 +53,7 @@ async def get_cards(
         # 计算跳过的记录数
         skip = (page - 1) * page_size
         
-        # 调用服务层获取数据（集成年费信息）
+        # 调用服务层获取数据
         cards, total = service.get_cards_with_annual_fee(
             user_id=current_user.id,
             skip=skip,
@@ -73,7 +71,10 @@ async def get_cards(
         )
     except Exception as e:
         logger.error(f"获取信用卡列表失败: {str(e)}")
-        return ResponseUtil.server_error(message="获取信用卡列表失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取信用卡列表失败"
+        )
 
 
 # 保留基础版本接口用于兼容性（放在参数路由之前）
@@ -91,9 +92,12 @@ async def get_cards_basic(
     service: CardsService = Depends(get_cards_service)
 ):
     """
-    获取信用卡列表（基础版本，不包含年费信息）
+    获取信用卡列表（基础版本，不含年费信息）
     
-    支持分页和模糊搜索功能。可以根据银行名称、卡片名称等关键词进行搜索。
+    支持分页和模糊搜索功能：
+    - 分页：通过page和page_size参数控制
+    - 搜索：通过keyword参数支持银行名称、卡片名称的模糊搜索
+    - 不包含年费信息，响应更快
     """
     logger.info(f"获取信用卡列表（基础版）请求 - page: {page}, page_size: {page_size}, keyword: {keyword}")
     
@@ -119,7 +123,10 @@ async def get_cards_basic(
         )
     except Exception as e:
         logger.error(f"获取信用卡列表（基础版）失败: {str(e)}")
-        return ResponseUtil.server_error(message="获取信用卡列表失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取信用卡列表失败"
+        )
 
 
 @router.post(
@@ -147,10 +154,16 @@ async def create_card_basic(
         return ResponseUtil.created(data=card, message="创建信用卡成功")
     except ValueError as e:
         logger.warning(f"创建信用卡（基础版）参数错误: {str(e)}")
-        return ResponseUtil.validation_error(message=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"创建信用卡（基础版）失败: {str(e)}")
-        return ResponseUtil.server_error(message="创建信用卡失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="创建信用卡失败"
+        )
 
 
 @router.post(
@@ -184,10 +197,16 @@ async def create_card(
         return ResponseUtil.created(data=card, message="创建信用卡成功")
     except ValueError as e:
         logger.warning(f"创建信用卡参数错误: {str(e)}")
-        return ResponseUtil.validation_error(message=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"创建信用卡失败: {str(e)}")
-        return ResponseUtil.server_error(message="创建信用卡失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="创建信用卡失败"
+        )
 
 
 @router.get(
@@ -213,13 +232,21 @@ async def get_card(
         card = service.get_card_with_annual_fee(card_id, current_user.id)
         if not card:
             logger.warning(f"信用卡不存在: {card_id}")
-            return ResponseUtil.not_found(message="信用卡不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="信用卡不存在"
+            )
         
         logger.info("获取信用卡详情成功")
         return ResponseUtil.success(data=card, message="获取信用卡详情成功")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"获取信用卡详情失败: {str(e)}")
-        return ResponseUtil.server_error(message="获取信用卡详情失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取信用卡详情失败"
+        )
 
 
 @router.put(
@@ -252,13 +279,21 @@ async def update_card(
         card = service.update_card_with_annual_fee(card_id, current_user.id, card_data)
         if not card:
             logger.warning(f"信用卡不存在: {card_id}")
-            return ResponseUtil.not_found(message="信用卡不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="信用卡不存在"
+            )
         
         logger.info("信用卡更新成功")
         return ResponseUtil.success(data=card, message="信用卡更新成功")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"更新信用卡失败: {str(e)}")
-        return ResponseUtil.server_error(message="更新信用卡失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新信用卡失败"
+        )
 
 
 @router.delete(
@@ -284,13 +319,21 @@ async def delete_card(
         success = service.delete_card(card_id, current_user.id)
         if not success:
             logger.warning(f"信用卡不存在: {card_id}")
-            return ResponseUtil.not_found(message="信用卡不存在")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="信用卡不存在"
+            )
         
         logger.info("信用卡删除成功")
         return ResponseUtil.deleted(message="信用卡删除成功")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"删除信用卡失败: {str(e)}")
-        return ResponseUtil.server_error(message="删除信用卡失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除信用卡失败"
+        )
 
 
  

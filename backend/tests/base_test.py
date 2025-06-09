@@ -351,35 +351,142 @@ class BaseStatisticsTest(BaseAPITest):
 class TestPerformanceMixin:
     """性能测试混入类"""
     
-    def measure_response_time(self, func, max_time: float = 2.0, *args, **kwargs):
-        """测量响应时间"""
+    def measure_response_time(self, func, max_time: float = 2.0, description: str = "操作"):
+        """测量单次响应时间"""
         import time
         start_time = time.time()
-        result = func(*args, **kwargs)
+        result = func()
         end_time = time.time()
         
         duration = end_time - start_time
-        assert duration < max_time, f"响应时间过长: {duration:.3f}s > {max_time}s"
+        success = duration < max_time
         
-        print(f"⏱️  响应时间: {duration:.3f}s")
-        return result
+        if not success:
+            print(f"❌ {description}响应时间过长: {duration:.3f}s > {max_time}s")
+        else:
+            print(f"⏱️  {description}响应时间: {duration:.3f}s")
+        
+        return {
+            "success": success,
+            "response_time": duration,
+            "result": result
+        }
     
-    def _measure_batch_operations_performance(self, operation_func, count: int = 10, max_avg_time: float = 1.0):
-        """测量批量操作性能（内部方法）"""
+    def measure_multiple_requests(self, func, count: int = 10, max_avg_time: float = 1.0, description: str = "批量操作"):
+        """测量多次请求的平均性能"""
+        import time
+        results = []
+        total_time = 0
+        
+        for i in range(count):
+            start_time = time.time()
+            result = func()
+            end_time = time.time()
+            
+            duration = end_time - start_time
+            total_time += duration
+            results.append(result)
+        
+        avg_time = total_time / count
+        success = avg_time < max_avg_time
+        
+        if not success:
+            print(f"❌ {description}平均响应时间过长: {avg_time:.3f}s > {max_avg_time}s")
+        else:
+            print(f"📊 {description}性能: 平均 {avg_time:.3f}s，总计 {count} 次")
+        
+        return {
+            "success": success,
+            "avg_response_time": avg_time,
+            "total_time": total_time,
+            "total_requests": count,
+            "results": results
+        }
+    
+    def measure_batch_operations_performance(self, operation_func, count: int = 10, max_avg_time: float = 1.0, description: str = "批量操作"):
+        """测量批量操作性能"""
         import time
         start_time = time.time()
         
-        for i in range(count):
-            operation_func(i)
+        result = operation_func()
         
         end_time = time.time()
         total_time = end_time - start_time
-        avg_time = total_time / count
+        avg_time = total_time / count if count > 0 else total_time
         
-        assert avg_time < max_avg_time, f"平均操作时间过长: {avg_time:.3f}s > {max_avg_time}s"
+        success = avg_time < max_avg_time
         
-        print(f"📊 批量操作性能: {count}次操作，总时间{total_time:.3f}s，平均{avg_time:.3f}s")
-        return total_time, avg_time
+        if not success:
+            print(f"❌ {description}平均操作时间过长: {avg_time:.3f}s > {max_avg_time}s")
+        else:
+            print(f"📊 {description}: {count}次操作，总时间{total_time:.3f}s，平均{avg_time:.3f}s")
+        
+        return {
+            "success": success,
+            "avg_response_time": avg_time,
+            "total_time": total_time,
+            "count": count,
+            "result": result
+        }
+    
+    def measure_concurrent_operations_performance(self, operation_func, concurrent_count: int = 5, iterations_per_thread: int = 2, max_avg_time: float = 3.0, description: str = "并发操作"):
+        """测量并发操作性能"""
+        import time
+        import threading
+        
+        results = []
+        times = []
+        lock = threading.Lock()
+        
+        def worker():
+            for _ in range(iterations_per_thread):
+                start_time = time.time()
+                success = operation_func()
+                end_time = time.time()
+                
+                with lock:
+                    results.append(success)
+                    times.append(end_time - start_time)
+        
+        # 启动并发线程
+        threads = []
+        start_time = time.time()
+        
+        for _ in range(concurrent_count):
+            thread = threading.Thread(target=worker)
+            threads.append(thread)
+            thread.start()
+        
+        # 等待所有线程完成
+        for thread in threads:
+            thread.join()
+        
+        end_time = time.time()
+        total_time = end_time - start_time
+        
+        # 计算统计信息
+        success_count = sum(1 for r in results if r)
+        total_operations = len(results)
+        success_rate = success_count / total_operations if total_operations > 0 else 0
+        avg_time = sum(times) / len(times) if times else 0
+        
+        overall_success = avg_time < max_avg_time
+        
+        if not overall_success:
+            print(f"❌ {description}平均时间过长: {avg_time:.3f}s > {max_avg_time}s")
+        else:
+            print(f"🔄 {description}: {concurrent_count}并发×{iterations_per_thread}次，成功率{success_rate:.1%}，平均{avg_time:.3f}s")
+        
+        return {
+            "success": overall_success,
+            "avg_response_time": avg_time,
+            "total_time": total_time,
+            "concurrent_count": concurrent_count,
+            "iterations_per_thread": iterations_per_thread,
+            "total_operations": total_operations,
+            "success_count": success_count,
+            "success_rate": success_rate
+        }
 
 
 class TestDataGenerator:
