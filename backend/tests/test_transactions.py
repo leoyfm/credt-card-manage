@@ -124,8 +124,8 @@ class TestTransactionCRUD:
         assert "pagination" in data
         assert len(data["items"]) == 3
         assert data["pagination"]["total"] == 3
-        assert data["pagination"]["page"] == 1
-        assert data["pagination"]["size"] == 20
+        assert data["pagination"]["current_page"] == 1
+        assert data["pagination"]["page_size"] == 20
 
     def test_get_transactions_with_filters(
         self, client: TestClient, authenticated_user: Dict[str, Any], test_card: Dict[str, Any]
@@ -521,7 +521,7 @@ class TestTransactionEdgeCases:
         
         data = assert_response_success(response)
         assert len(data["items"]) == 10
-        assert data["pagination"]["page"] == 1
+        assert data["pagination"]["current_page"] == 1
         assert data["pagination"]["total"] == 25
         assert data["pagination"]["total_pages"] == 3
         
@@ -533,7 +533,7 @@ class TestTransactionEdgeCases:
         
         data = assert_response_success(response)
         assert len(data["items"]) == 10
-        assert data["pagination"]["page"] == 2
+        assert data["pagination"]["current_page"] == 2
 
     def test_statistics_with_date_range(
         self, client: TestClient, authenticated_user: Dict[str, Any], test_card: Dict[str, Any]

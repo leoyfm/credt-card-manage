@@ -94,8 +94,8 @@ class TestCardCRUD:
         
         # 验证分页信息
         pagination = result["data"]["pagination"]
-        assert pagination["page"] == 1
-        assert pagination["size"] == 20
+        assert pagination["current_page"] == 1
+        assert pagination["page_size"] == 20
         assert pagination["total"] >= 1
 
     def test_get_card_detail(self, client: TestClient, authenticated_user: Dict[str, Any], test_card: Dict[str, Any]):
@@ -318,8 +318,8 @@ class TestCardPagination:
         assert response.status_code == 200
         result = response.json()
         pagination = result["data"]["pagination"]
-        assert pagination["page"] == 1
-        assert pagination["size"] == 5
+        assert pagination["current_page"] == 1
+        assert pagination["page_size"] == 5
 
     def test_get_cards_with_keyword_search(self, client: TestClient, authenticated_user: Dict[str, Any], test_card: Dict[str, Any]):
         """测试关键词搜索信用卡"""
