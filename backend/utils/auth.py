@@ -16,9 +16,10 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 # JWT配置
-SECRET_KEY = "your-secret-key-here"  # 生产环境应该从环境变量读取
+import os
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here-change-in-production")  # 生产环境必须从环境变量读取
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 24小时
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 默认24小时
 
 # 密码上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -145,7 +145,7 @@ class AuthService:
             raise ValueError("账户已被禁用")
 
         # 更新登录信息
-        self._update_login_info(user, ip_address)
+        self._update_login_info(user, ip_address, "username_password")
 
         # 生成令牌
         access_token = AuthUtils.create_access_token({"sub": str(user.id), "username": user.username})
@@ -188,7 +188,7 @@ class AuthService:
         if not user.is_active:
             raise ValueError("账户已被禁用")
 
-        self._update_login_info(user, ip_address)
+        self._update_login_info(user, ip_address, "phone_password")
         access_token = AuthUtils.create_access_token({"sub": str(user.id), "username": user.username})
 
         logger.info(f"手机号密码登录成功 - user_id: {user.id}")
@@ -245,7 +245,7 @@ class AuthService:
         if not user.is_active:
             raise ValueError("账户已被禁用")
 
-        self._update_login_info(user, ip_address)
+        self._update_login_info(user, ip_address, "phone_code")
         access_token = AuthUtils.create_access_token({"sub": str(user.id), "username": user.username})
 
         logger.info(f"手机号验证码登录成功 - user_id: {user.id}")
@@ -289,13 +289,13 @@ class AuthService:
             if not user.is_active:
                 raise ValueError("账户已被禁用")
                 
-            self._update_login_info(user, ip_address)
+            self._update_login_info(user, ip_address, "wechat")
             # 更新微信绑定信息
             self._update_wechat_binding(user.id, wechat_info)
         else:
             # 未绑定用户，创建新用户
             user = self._create_user_from_wechat(wechat_info, login_data.user_info)
-            self._update_login_info(user, ip_address)
+            self._update_login_info(user, ip_address, "wechat")
 
         access_token = AuthUtils.create_access_token({"sub": str(user.id), "username": user.username})
 
@@ -533,12 +533,54 @@ class AuthService:
 
     # ==================== 辅助方法 ====================
 
-    def _update_login_info(self, user, ip_address: str):
-        """更新登录信息"""
+    def _update_login_info(self, user, ip_address: str, login_type: str = "username_password", is_success: bool = True, failure_reason: str = None):
+        """更新登录信息并记录登录日志"""
         user.last_login_at = datetime.now(UTC)
         user.last_login_ip = ip_address
         user.login_count = str(int(user.login_count or "0") + 1)
+        
+        # 记录登录日志
+        self._create_login_log(
+            user_id=user.id,
+            login_type=login_type,
+            ip_address=ip_address,
+            is_success=is_success,
+            failure_reason=failure_reason
+        )
+        
         self.db.commit()
+
+    def _create_login_log(self, user_id: UUID, login_type: str, ip_address: str, is_success: bool = True, failure_reason: str = None):
+        """创建登录日志记录"""
+        try:
+            LoginLog = self._get_login_log_model()
+            
+            log_data = {
+                "user_id": user_id,
+                "login_type": login_type,
+                "ip_address": ip_address,
+                "is_success": is_success,
+                "failure_reason": failure_reason,
+                "location": self._get_location_by_ip(ip_address)
+            }
+            
+            log = LoginLog(**log_data)
+            self.db.add(log)
+            
+            logger.info(f"登录日志记录成功 - user_id: {user_id}, type: {login_type}, success: {is_success}")
+        except Exception as e:
+            logger.error(f"登录日志记录失败 - {str(e)}")
+
+    def _get_location_by_ip(self, ip_address: str) -> Optional[str]:
+        """根据IP地址获取地理位置（简化实现）"""
+        # 这里可以集成第三方IP地理位置服务
+        # 目前返回简单的本地/外部标识
+        if ip_address in ["127.0.0.1", "localhost", "::1"]:
+            return "本地登录"
+        elif ip_address.startswith("192.168.") or ip_address.startswith("10.") or ip_address.startswith("172."):
+            return "内网登录"
+        else:
+            return "外网登录"
 
     def _get_user_by_username(self, username: str):
         """通过用户名查找用户"""
@@ -668,4 +710,9 @@ class AuthService:
     def _get_wechat_binding_model(self):
         """获取微信绑定数据库模型"""
         from db_models.users import WechatBinding
-        return WechatBinding 
+        return WechatBinding
+
+    def _get_login_log_model(self):
+        """获取登录日志数据库模型"""
+        from db_models.users import LoginLog
+        return LoginLog 

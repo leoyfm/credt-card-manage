@@ -8,7 +8,7 @@ import uvicorn
 
 from utils.response import ResponseUtil
 from models.response import ApiResponse
-from routers import annual_fee, cards, reminders, recommendations, auth, transactions, statistics
+from routers import annual_fee, cards, reminders, recommendations, auth, transactions, statistics, users
 from database import create_database, get_db_health
 from config import settings, validate_config, get_environment_info
 
@@ -115,6 +115,10 @@ app = FastAPI(
             "description": "用户注册、登录、密码管理、微信登录、验证码等认证功能"
         },
         {
+            "name": "用户管理",
+            "description": "用户管理功能，包括用户列表、详情查看、状态管理、权限设置、登录日志等管理员功能"
+        },
+        {
             "name": "交易记录",
             "description": "交易记录管理、CRUD操作、交易查询和筛选等功能"
         },
@@ -201,6 +205,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # 挂载路由模块
 app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 app.include_router(annual_fee.router, prefix="/api")
 app.include_router(cards.router, prefix="/api")
 app.include_router(reminders.router, prefix="/api")
