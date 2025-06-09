@@ -12,7 +12,7 @@ from datetime import datetime
 # 配置
 BASE_URL = "http://localhost:8000/api"
 TEST_USER = {
-    "username": "testuser2024",
+    "username": "testuser001",
     "password": "TestPass123456"
 }
 
@@ -160,7 +160,7 @@ def test_annual_fee_statistics(headers):
             print(f"   已缴费次数: {stats['paid_count']}")
             print(f"   逾期次数: {stats['overdue_count']}")
             print(f"   本年度应缴费用: {stats['current_year_due_amount']}")
-            print(f"   减免节省金额: {stats['total_waived_amount']}")
+            print(f"   减免节省金额: {stats['savings_from_waiver']}")
             return True
         else:
             print(f"❌ 获取年费统计失败: {data['message']}")

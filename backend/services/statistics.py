@@ -391,7 +391,7 @@ class StatisticsService:
             total_payment_amount=total_result.total_payment_amount or Decimal('0'),
             total_points_earned=total_result.total_points_earned or Decimal('0'),
             current_month_transactions=current_month_result.current_month_transactions or 0,
-            current_month_expense=current_month_result.current_month_expense or Decimal('0'),
+            current_month_expense_amount=current_month_result.current_month_expense or Decimal('0'),
             average_transaction_amount=total_result.avg_amount or Decimal('0')
         )
 
@@ -409,7 +409,7 @@ class StatisticsService:
                 pending_count=0,
                 paid_count=0,
                 overdue_count=0,
-                current_year_fee_due=Decimal('0'),
+                current_year_due_amount=Decimal('0'),
                 savings_from_waiver=Decimal('0')
             )
         
@@ -454,7 +454,7 @@ class StatisticsService:
             pending_count=fee_result.pending_count or 0,
             paid_count=fee_result.paid_count or 0,
             overdue_count=fee_result.overdue_count or 0,
-            current_year_fee_due=current_year_fee,
+            current_year_due_amount=current_year_fee,
             savings_from_waiver=fee_result.savings_from_waiver or Decimal('0')
         )
 

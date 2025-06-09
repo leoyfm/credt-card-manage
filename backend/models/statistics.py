@@ -121,7 +121,7 @@ class TransactionStatistics(BaseModel):
         description="本月交易笔数",
         json_schema_extra={"example": 23}
     )
-    current_month_expense: Decimal = Field(
+    current_month_expense_amount: Decimal = Field(
         ..., 
         description="本月消费金额，单位：元",
         json_schema_extra={"example": "12500.00"}
@@ -224,7 +224,7 @@ class AnnualFeeStatistics(BaseModel):
         description="逾期未缴的卡片数量",
         json_schema_extra={"example": 0}
     )
-    current_year_fee_due: Decimal = Field(
+    current_year_due_amount: Decimal = Field(
         ..., 
         description="当前年度应缴年费，单位：元",
         json_schema_extra={"example": "800.00"}
