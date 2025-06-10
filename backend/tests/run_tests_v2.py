@@ -1,372 +1,544 @@
 #!/usr/bin/env python3
 """
-测试框架 v2.0 主运行器
+新测试框架v2.0主运行器
 
-支持交互模式和命令行模式，提供智能的测试发现、执行和报告功能
+提供智能测试发现、执行和报告功能。
+支持交互式菜单和命令行界面。
 """
 
+import os
 import sys
 import argparse
-import asyncio
+import time
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
-# 添加项目根目录到路径
+# 添加项目根目录到Python路径
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from tests.framework.core.runner import SmartTestRunner
+# 导入测试框架组件
+from tests.framework.core.runner import SmartTestRunner, TestRunConfig, TestDiscovery
 from tests.framework.clients.api import FluentAPIClient
+from tests.framework.core.suite import TestPriority
 
 
-class TestsV2Runner:
-    """测试框架v2.0主运行器"""
+class TestFrameworkCLI:
+    """测试框架命令行界面"""
     
     def __init__(self):
-        self.runner = SmartTestRunner()
-        self.api_client = FluentAPIClient()
+        self.runner: Optional[SmartTestRunner] = None
+        self.discovery = TestDiscovery()
+        self.base_url = "http://127.0.0.1:8000"
     
-    def interactive_mode(self):
-        """交互模式"""
-        print("🧪 信用卡管理系统测试框架 v2.0")
-        print("=" * 50)
+    def create_runner(self, config: TestRunConfig = None) -> SmartTestRunner:
+        """创建测试运行器"""
+        if config is None:
+            config = TestRunConfig(base_url=self.base_url)
         
-        while True:
-            print("\n📋 测试选项:")
-            print("1. 🔍 发现所有测试")
-            print("2. 🚀 运行全部测试")
-            print("3. 🏷️  按标签运行测试")
-            print("4. 📦 按套件运行测试")
-            print("5. ⚡ 运行烟雾测试")
-            print("6. 🏃 运行性能测试")
-            print("7. 💪 运行压力测试")
-            print("8. 🔧 检查服务器状态")
-            print("9. 📊 查看测试统计")
-            print("0. 退出")
-            
-            choice = input("\n请选择操作 (0-9): ").strip()
-            
-            if choice == "0":
-                print("👋 再见!")
-                break
-            elif choice == "1":
-                self.discover_tests()
-            elif choice == "2":
-                self.run_all_tests()
-            elif choice == "3":
-                self.run_tests_by_tags()
-            elif choice == "4":
-                self.run_tests_by_suite()
-            elif choice == "5":
-                self.run_smoke_tests()
-            elif choice == "6":
-                self.run_performance_tests()
-            elif choice == "7":
-                self.run_stress_tests()
-            elif choice == "8":
-                self.check_server_status()
-            elif choice == "9":
-                self.show_test_statistics()
-            else:
-                print("❌ 无效选择，请重试")
+        self.runner = SmartTestRunner(config)
+        return self.runner
     
-    def discover_tests(self):
-        """发现所有测试"""
-        print("\n🔍 正在发现测试...")
-        
-        tests = self.runner.discover_tests()
-        
-        print(f"📋 发现 {len(tests)} 个测试:")
-        
-        # 按套件分组显示
-        suites = {}
-        for test in tests:
-            suite_name = test.get('suite', 'Unknown')
-            if suite_name not in suites:
-                suites[suite_name] = []
-            suites[suite_name].append(test)
-        
-        for suite_name, suite_tests in suites.items():
-            print(f"\n📦 {suite_name} ({len(suite_tests)} 个测试)")
-            for test in suite_tests[:5]:  # 只显示前5个
-                print(f"   • {test.get('name', 'Unknown')}")
-            if len(suite_tests) > 5:
-                print(f"   ... 还有 {len(suite_tests) - 5} 个测试")
+    def check_server_status(self) -> bool:
+        """检查服务器状态"""
+        try:
+            client = FluentAPIClient(self.base_url)
+            return client.is_server_available()
+        except:
+            return False
     
-    def run_all_tests(self):
-        """运行全部测试"""
-        print("\n🚀 运行全部测试...")
+    def display_welcome(self):
+        """显示欢迎信息"""
+        print("\n" + "="*60)
+        print("🚀 信用卡管理系统 - 新测试框架 v2.0")
+        print("="*60)
+        print("🎯 智能测试发现、执行和报告")
+        print("🔥 支持API、集成、性能、压力测试")
+        print("📊 详细的测试分析和性能指标")
+        print("="*60)
+    
+    def display_main_menu(self):
+        """显示主菜单"""
+        print("\n📋 主菜单:")
+        print("1. 🔍 发现并查看测试套件")
+        print("2. 🏃 运行所有测试")
+        print("3. 🔥 运行冒烟测试")
+        print("4. ⚡ 运行性能测试")
+        print("5. 💪 运行压力测试")
+        print("6. 🔗 运行集成测试")
+        print("7. 🏷️ 按标签运行测试")
+        print("8. 📁 按套件运行测试")
+        print("9. 🔧 服务器状态检查")
+        print("10. ⚙️ 设置配置")
+        print("0. 🚪 退出")
+        print("-" * 40)
+    
+    def discover_and_display_suites(self):
+        """发现并显示测试套件"""
+        print("\n🔍 正在发现测试套件...")
         
-        confirm = input("⚠️  这可能需要较长时间，确定继续? (y/N): ").strip().lower()
-        if confirm != 'y':
-            print("❌ 已取消")
+        suites = self.discovery.discover_suites()
+        
+        if not suites:
+            print("❌ 未发现任何测试套件")
             return
         
-        results = self.runner.run_all_tests()
-        self.display_results(results)
-    
-    def run_tests_by_tags(self):
-        """按标签运行测试"""
-        print("\n🏷️  可用标签:")
-        tags = ["smoke", "api", "performance", "stress", "unit", "integration"]
-        for i, tag in enumerate(tags, 1):
-            print(f"{i}. {tag}")
+        print(f"\n📁 发现 {len(suites)} 个测试套件:")
+        print("-" * 60)
         
-        choice = input("\n请输入标签名称或编号: ").strip()
-        
-        # 处理编号输入
-        if choice.isdigit():
-            tag_index = int(choice) - 1
-            if 0 <= tag_index < len(tags):
-                tag = tags[tag_index]
-            else:
-                print("❌ 无效编号")
-                return
-        else:
-            tag = choice
-        
-        print(f"\n🚀 运行标签 '{tag}' 的测试...")
-        results = self.runner.run_tests_by_tags([tag])
-        self.display_results(results)
-    
-    def run_tests_by_suite(self):
-        """按套件运行测试"""
-        print("\n📦 可用测试套件:")
-        suites = [
-            "信用卡管理API",
-            "交易管理API", 
-            "年费规则管理",
-            "智能推荐API",
-            "还款提醒API",
-            "仪表板统计API",
-            "用户管理API"
-        ]
-        
+        total_tests = 0
         for i, suite in enumerate(suites, 1):
-            print(f"{i}. {suite}")
+            test_count = len(suite.tests)
+            total_tests += test_count
+            
+            print(f"{i:2}. 📦 {suite.name}")
+            print(f"     📝 {suite.description or '无描述'}")
+            print(f"     🧪 {test_count} 个测试")
+            
+            if suite.tags:
+                print(f"     🏷️ 标签: {', '.join(suite.tags)}")
+            
+            # 显示测试方法
+            if test_count > 0:
+                print("     🔸 测试用例:")
+                for test in suite.tests[:5]:  # 只显示前5个
+                    tags_str = f" [{', '.join(test.tags)}]" if test.tags else ""
+                    print(f"       • {test.name}{tags_str}")
+                
+                if test_count > 5:
+                    print(f"       • ... 还有 {test_count - 5} 个测试")
+            
+            print()
         
-        choice = input("\n请输入套件名称或编号: ").strip()
+        print(f"📊 总计: {len(suites)} 个套件, {total_tests} 个测试")
+    
+    def run_all_tests(self):
+        """运行所有测试"""
+        print("\n🚀 开始运行所有测试...")
         
-        # 处理编号输入
-        if choice.isdigit():
-            suite_index = int(choice) - 1
-            if 0 <= suite_index < len(suites):
-                suite = suites[suite_index]
-            else:
-                print("❌ 无效编号")
-                return
-        else:
-            suite = choice
+        config = TestRunConfig(
+            base_url=self.base_url,
+            verbose=True,
+            output_format="console"
+        )
         
-        print(f"\n🚀 运行套件 '{suite}' 的测试...")
-        results = self.runner.run_tests_by_suite(suite)
-        self.display_results(results)
+        runner = self.create_runner(config)
+        
+        start_time = time.time()
+        results = runner.run_all()
+        duration = time.time() - start_time
+        
+        self.display_summary(results, duration)
     
     def run_smoke_tests(self):
-        """运行烟雾测试"""
-        print("\n⚡ 运行烟雾测试 (快速验证核心功能)...")
-        results = self.runner.run_smoke_tests()
-        self.display_results(results)
+        """运行冒烟测试"""
+        print("\n🔥 开始运行冒烟测试...")
+        
+        config = TestRunConfig(
+            base_url=self.base_url,
+            filter_tags=["smoke", "critical"],
+            verbose=True
+        )
+        
+        runner = self.create_runner(config)
+        
+        start_time = time.time()
+        results = runner.run_smoke_tests()
+        duration = time.time() - start_time
+        
+        self.display_summary(results, duration)
     
     def run_performance_tests(self):
         """运行性能测试"""
-        print("\n🏃 运行性能测试...")
-        confirm = input("⚠️  性能测试可能影响系统性能，确定继续? (y/N): ").strip().lower()
-        if confirm != 'y':
-            print("❌ 已取消")
-            return
+        print("\n⚡ 开始运行性能测试...")
         
-        results = self.runner.run_performance_tests()
-        self.display_results(results)
+        config = TestRunConfig(
+            base_url=self.base_url,
+            filter_tags=["performance", "benchmark"],
+            verbose=True
+        )
+        
+        runner = self.create_runner(config)
+        
+        start_time = time.time()
+        results = runner.run_performance_tests()
+        duration = time.time() - start_time
+        
+        self.display_summary(results, duration)
+        
+        # 显示性能指标
+        if runner:
+            perf_summary = runner.api_client.get_performance_summary()
+            if perf_summary:
+                print("\n📊 性能指标:")
+                print(f"  • 平均响应时间: {perf_summary.get('avg_duration', 0):.3f}s")
+                print(f"  • 最快响应: {perf_summary.get('min_duration', 0):.3f}s")
+                print(f"  • 最慢响应: {perf_summary.get('max_duration', 0):.3f}s")
+                print(f"  • 成功率: {perf_summary.get('success_rate', 0):.1f}%")
     
     def run_stress_tests(self):
         """运行压力测试"""
-        print("\n💪 运行压力测试...")
-        confirm = input("⚠️  压力测试会产生高负载，确定继续? (y/N): ").strip().lower()
-        if confirm != 'y':
-            print("❌ 已取消")
+        print("\n💪 开始运行压力测试...")
+        print("⚠️ 压力测试可能需要较长时间，请耐心等待...")
+        
+        config = TestRunConfig(
+            base_url=self.base_url,
+            filter_tags=["stress"],
+            verbose=True,
+            timeout=300  # 5分钟超时
+        )
+        
+        runner = self.create_runner(config)
+        
+        start_time = time.time()
+        results = runner.run_tests_by_tags(["stress"])
+        duration = time.time() - start_time
+        
+        self.display_summary(results, duration)
+    
+    def run_integration_tests(self):
+        """运行集成测试"""
+        print("\n🔗 开始运行集成测试...")
+        
+        # 检查服务器状态
+        if not self.check_server_status():
+            print("❌ 服务器未运行！集成测试需要服务器运行。")
+            print("请在另一个终端中运行: python start.py dev")
             return
         
-        results = self.runner.run_stress_tests()
-        self.display_results(results)
+        config = TestRunConfig(
+            base_url=self.base_url,
+            filter_tags=["integration", "e2e"],
+            verbose=True
+        )
+        
+        runner = self.create_runner(config)
+        
+        start_time = time.time()
+        results = runner.run_integration_tests()
+        duration = time.time() - start_time
+        
+        self.display_summary(results, duration)
     
-    def check_server_status(self):
-        """检查服务器状态"""
-        print("\n🔧 检查服务器状态...")
+    def run_tests_by_tags(self):
+        """按标签运行测试"""
+        print("\n🏷️ 按标签运行测试")
+        print("常用标签: smoke, performance, stress, integration, unit, api")
+        
+        tags_input = input("请输入标签 (多个标签用空格分隔): ").strip()
+        if not tags_input:
+            print("❌ 未输入标签")
+            return
+        
+        tags = tags_input.split()
+        print(f"\n🔍 搜索标签: {tags}")
+        
+        config = TestRunConfig(
+            base_url=self.base_url,
+            filter_tags=tags,
+            verbose=True
+        )
+        
+        runner = self.create_runner(config)
+        
+        start_time = time.time()
+        results = runner.run_tests_by_tags(tags)
+        duration = time.time() - start_time
+        
+        self.display_summary(results, duration)
+    
+    def run_tests_by_suites(self):
+        """按套件运行测试"""
+        print("\n📁 按测试套件运行")
+        
+        # 先发现套件
+        suites = self.discovery.discover_suites()
+        if not suites:
+            print("❌ 未发现任何测试套件")
+            return
+        
+        print("\n可用的测试套件:")
+        for i, suite in enumerate(suites, 1):
+            print(f"{i}. {suite.name} ({len(suite.tests)} 个测试)")
         
         try:
-            # 检查基本连接
-            response = self.api_client.get("/health")
-            if response.status_code == 200:
-                print("✅ 服务器运行正常")
-                
-                # 检查具体服务状态
-                print("\n📊 服务状态详情:")
-                
-                # 检查数据库连接
-                try:
-                    db_response = self.api_client.get("/health/db")
-                    if db_response.status_code == 200:
-                        print("✅ 数据库连接正常")
-                    else:
-                        print("❌ 数据库连接异常")
-                except:
-                    print("❌ 无法检查数据库状态")
-                
-                # 检查认证服务
-                try:
-                    auth_response = self.api_client.get("/api/v1/public/health")
-                    if auth_response.status_code == 200:
-                        print("✅ 认证服务正常")
-                    else:
-                        print("❌ 认证服务异常")
-                except:
-                    print("❌ 无法检查认证服务")
-                
-            else:
-                print(f"❌ 服务器响应异常: {response.status_code}")
-                
-        except Exception as e:
-            print(f"❌ 无法连接到服务器: {e}")
-            print("\n💡 请确保:")
-            print("1. 服务器正在运行 (python start.py dev)")
-            print("2. 服务器地址正确 (默认: http://localhost:8000)")
-            print("3. 网络连接正常")
+            choice = input("\n请选择套件编号 (多个用空格分隔): ").strip()
+            if not choice:
+                print("❌ 未选择套件")
+                return
+            
+            selected_indices = [int(x) - 1 for x in choice.split()]
+            selected_suites = [suites[i].name for i in selected_indices if 0 <= i < len(suites)]
+            
+            if not selected_suites:
+                print("❌ 无效的套件选择")
+                return
+            
+            print(f"\n🏃 运行套件: {', '.join(selected_suites)}")
+            
+            config = TestRunConfig(
+                base_url=self.base_url,
+                filter_suites=selected_suites,
+                verbose=True
+            )
+            
+            runner = self.create_runner(config)
+            
+            start_time = time.time()
+            results = runner.run_suites(selected_suites)
+            duration = time.time() - start_time
+            
+            self.display_summary(results, duration)
+            
+        except (ValueError, IndexError):
+            print("❌ 无效的输入")
     
-    def show_test_statistics(self):
-        """显示测试统计"""
-        print("\n📊 测试统计信息...")
+    def check_and_display_server_status(self):
+        """检查并显示服务器状态"""
+        print("\n🔧 检查服务器状态...")
         
-        stats = self.runner.get_test_statistics()
+        is_available = self.check_server_status()
         
-        print(f"📋 总测试数: {stats.get('total_tests', 0)}")
-        print(f"📦 测试套件数: {stats.get('total_suites', 0)}")
-        print(f"🏷️  标签数: {stats.get('total_tags', 0)}")
-        
-        # 按类型统计
-        by_type = stats.get('by_type', {})
-        print(f"\n📊 按类型分布:")
-        for test_type, count in by_type.items():
-            print(f"   {test_type}: {count}")
-        
-        # 按套件统计
-        by_suite = stats.get('by_suite', {})
-        print(f"\n📦 按套件分布:")
-        for suite, count in by_suite.items():
-            print(f"   {suite}: {count}")
+        if is_available:
+            print("✅ 服务器运行正常")
+            
+            # 获取服务器信息
+            try:
+                client = FluentAPIClient(self.base_url)
+                health_response = client.health_check()
+                
+                if health_response.response.status_code == 200:
+                    data = health_response.data
+                    if data:
+                        print(f"🌐 API版本: {data.get('version', 'unknown')}")
+                        print(f"⏰ 服务器时间: {data.get('timestamp', 'unknown')}")
+                        print(f"💽 数据库状态: {data.get('database', 'unknown')}")
+                
+            except Exception as e:
+                print(f"⚠️ 获取服务器详细信息失败: {e}")
+        else:
+            print("❌ 服务器未运行或无法连接")
+            print(f"🔗 检查地址: {self.base_url}")
+            print("💡 启动命令: python start.py dev")
     
-    def display_results(self, results: Dict[str, Any]):
-        """显示测试结果"""
-        print("\n" + "=" * 50)
-        print("📊 测试结果")
+    def configure_settings(self):
+        """配置设置"""
+        print("\n⚙️ 配置设置")
+        print(f"当前API地址: {self.base_url}")
+        
+        new_url = input(f"输入新的API地址 (回车保持当前): ").strip()
+        if new_url:
+            self.base_url = new_url
+            print(f"✅ API地址已更新为: {self.base_url}")
+    
+    def display_summary(self, results: List, duration: float):
+        """显示测试结果摘要"""
+        if not results:
+            print("\n❌ 没有测试结果")
+            return
+        
+        from tests.framework.core.suite import TestStatus
+        
+        total = len(results)
+        passed = sum(1 for r in results if r.status == TestStatus.PASSED)
+        failed = sum(1 for r in results if r.status == TestStatus.FAILED)
+        errors = sum(1 for r in results if r.status == TestStatus.ERROR)
+        
+        success_rate = (passed / total * 100) if total > 0 else 0
+        
+        print(f"\n🎯 测试执行摘要 (耗时: {duration:.2f}s)")
         print("=" * 50)
-        
-        total = results.get('total', 0)
-        passed = results.get('passed', 0)
-        failed = results.get('failed', 0)
-        skipped = results.get('skipped', 0)
-        
-        print(f"总计: {total}")
+        print(f"📊 总计: {total}")
         print(f"✅ 通过: {passed}")
         print(f"❌ 失败: {failed}")
-        print(f"⏭️  跳过: {skipped}")
+        print(f"💥 错误: {errors}")
+        print(f"📈 成功率: {success_rate:.1f}%")
         
-        if total > 0:
-            success_rate = (passed / total) * 100
-            print(f"📈 成功率: {success_rate:.1f}%")
-        
-        # 显示失败的测试
-        failures = results.get('failures', [])
-        if failures:
-            print(f"\n❌ 失败的测试 ({len(failures)}):")
-            for failure in failures[:10]:  # 只显示前10个
-                print(f"   • {failure.get('name', 'Unknown')}: {failure.get('error', 'Unknown error')}")
-            if len(failures) > 10:
-                print(f"   ... 还有 {len(failures) - 10} 个失败")
-        
-        # 显示性能数据
-        performance = results.get('performance', {})
-        if performance:
-            print(f"\n⚡ 性能数据:")
-            print(f"   执行时间: {performance.get('total_time', 0):.2f}s")
-            print(f"   平均响应时间: {performance.get('avg_response_time', 0):.2f}s")
+        if failed > 0 or errors > 0:
+            print(f"\n❌ 失败的测试:")
+            for result in results:
+                if result.status in [TestStatus.FAILED, TestStatus.ERROR]:
+                    print(f"  • {result.test_name}: {result.error_message}")
     
-    def command_line_mode(self, args):
-        """命令行模式"""
-        if args.discover:
-            self.discover_tests()
-        elif args.all:
-            self.run_all_tests()
-        elif args.tags:
-            results = self.runner.run_tests_by_tags(args.tags)
-            self.display_results(results)
-        elif args.suite:
-            results = self.runner.run_tests_by_suite(args.suite)
-            self.display_results(results)
-        elif args.smoke:
-            self.run_smoke_tests()
-        elif args.performance:
-            self.run_performance_tests()
-        elif args.stress:
-            self.run_stress_tests()
-        elif args.check:
-            self.check_server_status()
-        elif args.stats:
-            self.show_test_statistics()
-        else:
-            print("❌ 请指定要执行的操作，使用 -h 查看帮助")
+    def run_interactive(self):
+        """运行交互式界面"""
+        self.display_welcome()
+        
+        while True:
+            try:
+                self.display_main_menu()
+                choice = input("请选择操作 (0-10): ").strip()
+                
+                if choice == "0":
+                    print("\n👋 再见！")
+                    break
+                elif choice == "1":
+                    self.discover_and_display_suites()
+                elif choice == "2":
+                    self.run_all_tests()
+                elif choice == "3":
+                    self.run_smoke_tests()
+                elif choice == "4":
+                    self.run_performance_tests()
+                elif choice == "5":
+                    self.run_stress_tests()
+                elif choice == "6":
+                    self.run_integration_tests()
+                elif choice == "7":
+                    self.run_tests_by_tags()
+                elif choice == "8":
+                    self.run_tests_by_suites()
+                elif choice == "9":
+                    self.check_and_display_server_status()
+                elif choice == "10":
+                    self.configure_settings()
+                else:
+                    print("❌ 无效选择，请重试")
+                
+                input("\n按回车键继续...")
+                
+            except KeyboardInterrupt:
+                print("\n\n👋 用户中断，退出程序")
+                break
+            except Exception as e:
+                print(f"\n💥 发生错误: {e}")
+                input("按回车键继续...")
+
+
+def create_argument_parser() -> argparse.ArgumentParser:
+    """创建命令行参数解析器"""
+    parser = argparse.ArgumentParser(
+        description="信用卡管理系统新测试框架v2.0",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例用法:
+  python run_tests_v2.py                    # 交互式模式
+  python run_tests_v2.py --all              # 运行所有测试
+  python run_tests_v2.py --smoke            # 运行冒烟测试
+  python run_tests_v2.py --performance      # 运行性能测试
+  python run_tests_v2.py --tags smoke api   # 按标签运行
+  python run_tests_v2.py --suites cards     # 按套件运行
+  python run_tests_v2.py --parallel --workers 4  # 并行执行
+        """
+    )
+    
+    # 运行模式
+    run_group = parser.add_mutually_exclusive_group()
+    run_group.add_argument("--all", action="store_true", help="运行所有测试")
+    run_group.add_argument("--smoke", action="store_true", help="运行冒烟测试")
+    run_group.add_argument("--performance", action="store_true", help="运行性能测试")
+    run_group.add_argument("--stress", action="store_true", help="运行压力测试")
+    run_group.add_argument("--integration", action="store_true", help="运行集成测试")
+    run_group.add_argument("--discover", action="store_true", help="发现并显示测试套件")
+    
+    # 过滤选项
+    parser.add_argument("--tags", nargs="+", help="按标签过滤测试")
+    parser.add_argument("--suites", nargs="+", help="按套件名称过滤测试")
+    parser.add_argument("--pattern", help="按名称模式过滤测试")
+    
+    # 执行选项
+    parser.add_argument("--parallel", action="store_true", help="并行执行测试")
+    parser.add_argument("--workers", type=int, default=4, help="并行工作进程数")
+    parser.add_argument("--timeout", type=int, help="测试超时时间(秒)")
+    parser.add_argument("--fail-fast", action="store_true", help="遇到失败立即停止")
+    
+    # 输出选项
+    parser.add_argument("--output", choices=["console", "json", "html"], 
+                       default="console", help="输出格式")
+    parser.add_argument("--output-file", help="输出文件路径")
+    parser.add_argument("--verbose", action="store_true", help="详细输出")
+    parser.add_argument("--quiet", action="store_true", help="静默模式")
+    
+    # 环境选项
+    parser.add_argument("--base-url", default="http://127.0.0.1:8000", 
+                       help="API服务器地址")
+    parser.add_argument("--check-server", action="store_true", help="检查服务器状态")
+    
+    return parser
 
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(
-        description="信用卡管理系统测试框架 v2.0",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例用法:
-  %(prog)s                          # 交互模式
-  %(prog)s --all                    # 运行所有测试
-  %(prog)s --tags smoke api         # 运行特定标签的测试
-  %(prog)s --suite "信用卡管理API"   # 运行特定套件的测试
-  %(prog)s --smoke                  # 运行烟雾测试
-  %(prog)s --performance            # 运行性能测试
-  %(prog)s --stress                 # 运行压力测试
-  %(prog)s --check                  # 检查服务器状态
-  %(prog)s --stats                  # 显示测试统计
-        """
-    )
-    
-    # 测试执行选项
-    execution_group = parser.add_argument_group('测试执行')
-    execution_group.add_argument('--all', action='store_true', help='运行所有测试')
-    execution_group.add_argument('--tags', nargs='+', help='按标签运行测试')
-    execution_group.add_argument('--suite', help='按套件运行测试')
-    execution_group.add_argument('--smoke', action='store_true', help='运行烟雾测试')
-    execution_group.add_argument('--performance', action='store_true', help='运行性能测试')
-    execution_group.add_argument('--stress', action='store_true', help='运行压力测试')
-    
-    # 信息查看选项
-    info_group = parser.add_argument_group('信息查看')
-    info_group.add_argument('--discover', action='store_true', help='发现所有测试')
-    info_group.add_argument('--check', action='store_true', help='检查服务器状态')
-    info_group.add_argument('--stats', action='store_true', help='显示测试统计')
-    
-    # 运行配置选项
-    config_group = parser.add_argument_group('运行配置')
-    config_group.add_argument('--parallel', type=int, help='并行执行的进程数')
-    config_group.add_argument('--timeout', type=int, help='测试超时时间(秒)')
-    config_group.add_argument('--verbose', '-v', action='store_true', help='详细输出')
-    config_group.add_argument('--report', help='生成报告文件路径')
-    
+    parser = create_argument_parser()
     args = parser.parse_args()
     
-    runner = TestsV2Runner()
+    # 创建CLI实例
+    cli = TestFrameworkCLI()
+    cli.base_url = args.base_url
     
-    # 如果没有任何参数，启动交互模式
+    # 检查服务器状态
+    if args.check_server:
+        cli.check_and_display_server_status()
+        return
+    
+    # 如果没有指定任何参数，运行交互式模式
     if len(sys.argv) == 1:
-        runner.interactive_mode()
-    else:
-        runner.command_line_mode(args)
+        cli.run_interactive()
+        return
+    
+    # 命令行模式
+    try:
+        # 创建运行配置
+        config = TestRunConfig(
+            filter_tags=args.tags,
+            filter_suites=args.suites,
+            filter_pattern=args.pattern,
+            parallel=args.parallel,
+            max_workers=args.workers,
+            timeout=args.timeout,
+            fail_fast=args.fail_fast,
+            output_format=args.output,
+            output_file=args.output_file,
+            verbose=args.verbose and not args.quiet,
+            base_url=args.base_url
+        )
+        
+        runner = cli.create_runner(config)
+        
+        # 执行相应的测试
+        start_time = time.time()
+        
+        if args.discover:
+            cli.discover_and_display_suites()
+            return
+        elif args.all:
+            results = runner.run_all()
+        elif args.smoke:
+            results = runner.run_smoke_tests()
+        elif args.performance:
+            results = runner.run_performance_tests()
+        elif args.stress:
+            results = runner.run_tests_by_tags(["stress"])
+        elif args.integration:
+            results = runner.run_integration_tests()
+        elif args.tags:
+            results = runner.run_tests_by_tags(args.tags)
+        elif args.suites:
+            results = runner.run_suites(args.suites)
+        else:
+            # 默认运行所有测试
+            results = runner.run_all()
+        
+        duration = time.time() - start_time
+        
+        # 显示结果摘要
+        if not args.quiet:
+            cli.display_summary(results, duration)
+        
+        # 根据测试结果设置退出代码
+        from tests.framework.core.suite import TestStatus
+        failed_count = sum(1 for r in results if r.status in [TestStatus.FAILED, TestStatus.ERROR])
+        sys.exit(0 if failed_count == 0 else 1)
+        
+    except KeyboardInterrupt:
+        print("\n用户中断")
+        sys.exit(130)
+    except Exception as e:
+        print(f"错误: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

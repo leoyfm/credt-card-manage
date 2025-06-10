@@ -1,522 +1,541 @@
 """
-数据装饰器
+数据装饰器系统
 
-提供自动数据准备和清理功能，让测试专注于业务逻辑验证。
-
-Usage:
-    @with_user
-    @with_cards(count=3, bank="招商银行")
-    def test_user_cards(self, api, user, cards):
-        # 数据会自动创建和清理
-        pass
+提供自动化的测试数据创建、管理和清理功能。
 """
 
-import functools
-import logging
-from typing import Dict, Any, Callable, Optional, List, Union
-from uuid import uuid4
+import uuid
 import random
+import string
+from functools import wraps
+from typing import Any, Dict, List, Optional, Callable, Union
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+import json
 
-logger = logging.getLogger(__name__)
+from ..clients.api import FluentAPIClient
 
 
-class DataCleaner:
-    """数据清理器"""
+@dataclass
+class UserData:
+    """用户数据"""
+    id: Optional[str] = None
+    username: str = ""
+    email: str = ""
+    password: str = "TestPass123456"
+    nickname: str = "测试用户"
+    phone: Optional[str] = None
+    is_admin: bool = False
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
     
-    cleanup_stack = []
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "username": self.username,
+            "email": self.email,
+            "password": self.password,
+            "nickname": self.nickname,
+            "phone": self.phone
+        }
+
+
+@dataclass
+class CardData:
+    """信用卡数据"""
+    id: Optional[str] = None
+    user_id: Optional[str] = None
+    card_name: str = "测试信用卡"
+    bank_name: str = "测试银行"
+    card_number: str = ""
+    credit_limit: float = 50000.00
+    expiry_month: int = 12
+    expiry_year: int = 2027
+    billing_date: Optional[int] = 5
+    due_date: Optional[int] = 25
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "card_name": self.card_name,
+            "bank_name": self.bank_name,
+            "card_number": self.card_number,
+            "credit_limit": self.credit_limit,
+            "expiry_month": self.expiry_month,
+            "expiry_year": self.expiry_year,
+            "billing_date": self.billing_date,
+            "due_date": self.due_date
+        }
+
+
+@dataclass
+class TransactionData:
+    """交易数据"""
+    id: Optional[str] = None
+    card_id: Optional[str] = None
+    transaction_type: str = "expense"
+    amount: float = 100.00
+    description: str = "测试交易"
+    merchant_name: Optional[str] = "测试商户"
+    transaction_date: Optional[str] = None
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "card_id": self.card_id,
+            "transaction_type": self.transaction_type,
+            "amount": self.amount,
+            "description": self.description,
+            "merchant_name": self.merchant_name,
+            "transaction_date": self.transaction_date or datetime.now().isoformat()
+        }
+
+
+class DataFactory:
+    """数据工厂基类"""
+    
+    @staticmethod
+    def random_string(length: int = 8) -> str:
+        """生成随机字符串"""
+        return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
+    
+    @staticmethod
+    def random_email(domain: str = "example.com") -> str:
+        """生成随机邮箱"""
+        return f"test_{DataFactory.random_string()}@{domain}"
+    
+    @staticmethod
+    def random_phone() -> str:
+        """生成随机手机号"""
+        return f"138{random.randint(10000000, 99999999)}"
+    
+    @staticmethod
+    def random_card_number() -> str:
+        """生成随机卡号"""
+        return f"6225{random.randint(100000000000, 999999999999)}"
+
+
+class UserFactory(DataFactory):
+    """用户数据工厂"""
     
     @classmethod
-    def add_cleanup(cls, cleanup_func: Callable):
-        """添加清理函数"""
-        cls.cleanup_stack.append(cleanup_func)
-    
-    @classmethod
-    def cleanup_all(cls):
-        """执行所有清理"""
-        while cls.cleanup_stack:
-            cleanup_func = cls.cleanup_stack.pop()
-            try:
-                cleanup_func()
-            except Exception as e:
-                logger.warning(f"数据清理失败: {e}")
-    
-    @classmethod
-    def cleanup_user(cls, user_id: str):
-        """清理用户相关数据"""
-        # 这里应该调用实际的清理API
-        logger.info(f"清理用户数据: {user_id}")
-
-
-class TestUser:
-    """测试用户对象"""
-    
-    def __init__(self, data: Dict[str, Any]):
-        self.id = data.get("id")
-        self.username = data.get("username")
-        self.email = data.get("email")
-        self.password = data.get("password")
-        self.nickname = data.get("nickname")
-        self.token = data.get("token")
-        self.raw_data = data
-    
-    def __repr__(self):
-        return f"TestUser(id={self.id}, username={self.username})"
-
-
-class TestCard:
-    """测试信用卡对象"""
-    
-    def __init__(self, data: Dict[str, Any]):
-        self.id = data.get("id")
-        self.card_name = data.get("card_name")
-        self.bank_name = data.get("bank_name")
-        self.card_number = data.get("card_number")
-        self.credit_limit = data.get("credit_limit")
-        self.raw_data = data
-    
-    def __repr__(self):
-        return f"TestCard(id={self.id}, name={self.card_name})"
-
-
-class TestTransaction:
-    """测试交易对象"""
-    
-    def __init__(self, data: Dict[str, Any]):
-        self.id = data.get("id")
-        self.card_id = data.get("card_id")
-        self.amount = data.get("amount")
-        self.transaction_type = data.get("transaction_type")
-        self.merchant_name = data.get("merchant_name")
-        self.raw_data = data
-    
-    def __repr__(self):
-        return f"TestTransaction(id={self.id}, amount={self.amount})"
-
-
-def with_user(username: str = None, **user_kwargs):
-    """
-    自动创建用户装饰器
-    
-    自动注册用户、登录并设置认证信息。
-    
-    Args:
-        username: 指定用户名（可选）
-        **user_kwargs: 其他用户属性
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            api = kwargs.get('api')
-            if not api:
-                raise ValueError("with_user装饰器需要api客户端，请先使用@api_test装饰器")
-            
-            # 生成唯一用户数据
-            unique_id = uuid4().hex[:8]
-            user_data = {
-                "username": username or f"testuser_{unique_id}",
-                "email": f"test_{unique_id}@example.com",
-                "password": "TestPass123456",
-                "nickname": f"测试用户_{unique_id}",
-                **user_kwargs
-            }
-            
-            try:
-                # 注册用户
-                register_response = api.post("/api/v1/public/auth/register", data=user_data)
-                register_response.should.succeed()
-                
-                # 登录获取token
-                login_response = api.post("/api/v1/public/auth/login/username", data={
-                    "username": user_data["username"],
-                    "password": user_data["password"]
-                })
-                login_response.should.succeed()
-                
-                # 设置认证信息
-                token_data = login_response.data
-                api.set_auth(token_data["access_token"])
-                
-                # 创建用户对象
-                user_info = token_data.get("user", {})
-                user = TestUser({
-                    **user_data,
-                    **user_info,
-                    "token": token_data["access_token"]
-                })
-                
-                # 注入用户对象
-                kwargs['user'] = user
-                
-                logger.info(f"✅ 创建测试用户: {user.username}")
-                
-                # 添加清理函数
-                DataCleaner.add_cleanup(lambda: DataCleaner.cleanup_user(user.id))
-                
-                return func(*args, **kwargs)
-                
-            except Exception as e:
-                logger.error(f"创建用户失败: {e}")
-                raise
+    def create(cls, **kwargs) -> UserData:
+        """创建用户数据"""
+        username = kwargs.get("username", f"testuser_{cls.random_string()}")
+        email = kwargs.get("email", cls.random_email())
         
-        wrapper._creates_user = True
-        return wrapper
+        user_data = UserData(
+            username=username,
+            email=email,
+            password=kwargs.get("password", "TestPass123456"),
+            nickname=kwargs.get("nickname", f"测试用户_{cls.random_string(4)}"),
+            phone=kwargs.get("phone", cls.random_phone()),
+            is_admin=kwargs.get("is_admin", False)
+        )
+        
+        return user_data
     
+    @classmethod
+    def create_admin(cls, **kwargs) -> UserData:
+        """创建管理员用户"""
+        kwargs["is_admin"] = True
+        kwargs["nickname"] = kwargs.get("nickname", "管理员")
+        return cls.create(**kwargs)
+    
+    @classmethod
+    def create_batch(cls, count: int, **kwargs) -> List[UserData]:
+        """批量创建用户"""
+        return [cls.create(**kwargs) for _ in range(count)]
+
+
+class CardFactory(DataFactory):
+    """信用卡数据工厂"""
+    
+    BANKS = [
+        "招商银行", "工商银行", "建设银行", "农业银行", "中国银行", 
+        "交通银行", "民生银行", "浦发银行", "兴业银行", "光大银行"
+    ]
+    
+    CARD_NAMES = [
+        "经典白金卡", "钻石卡", "金卡", "白金卡", "无限卡",
+        "全币种卡", "联名卡", "商旅卡", "购物卡", "现金卡"
+    ]
+    
+    @classmethod
+    def create(cls, user_id: str = None, **kwargs) -> CardData:
+        """创建信用卡数据"""
+        bank_name = kwargs.get("bank_name", random.choice(cls.BANKS))
+        card_name = kwargs.get("card_name", f"{bank_name}{random.choice(cls.CARD_NAMES)}")
+        
+        card_data = CardData(
+            user_id=user_id,
+            card_name=card_name,
+            bank_name=bank_name,
+            card_number=kwargs.get("card_number", cls.random_card_number()),
+            credit_limit=kwargs.get("credit_limit", random.choice([10000, 20000, 50000, 100000, 200000])),
+            expiry_month=kwargs.get("expiry_month", random.randint(1, 12)),
+            expiry_year=kwargs.get("expiry_year", random.randint(2025, 2030)),
+            billing_date=kwargs.get("billing_date", random.randint(1, 28)),
+            due_date=kwargs.get("due_date", random.randint(1, 28))
+        )
+        
+        return card_data
+    
+    @classmethod
+    def create_batch(cls, count: int, user_id: str = None, **kwargs) -> List[CardData]:
+        """批量创建信用卡"""
+        return [cls.create(user_id=user_id, **kwargs) for _ in range(count)]
+    
+    @classmethod
+    def create_high_limit_card(cls, user_id: str = None, **kwargs) -> CardData:
+        """创建高额度信用卡"""
+        kwargs["credit_limit"] = kwargs.get("credit_limit", 500000)
+        kwargs["card_name"] = kwargs.get("card_name", "钻石无限卡")
+        return cls.create(user_id=user_id, **kwargs)
+
+
+class TransactionFactory(DataFactory):
+    """交易数据工厂"""
+    
+    MERCHANTS = [
+        "星巴克", "麦当劳", "肯德基", "必胜客", "海底捞",
+        "超市发", "华联超市", "永辉超市", "家乐福", "沃尔玛",
+        "中石油", "中石化", "招商银行", "工商银行", "支付宝",
+        "京东", "淘宝", "天猫", "拼多多", "美团"
+    ]
+    
+    DESCRIPTIONS = [
+        "餐饮消费", "购物消费", "加油消费", "交通出行", "娱乐消费",
+        "教育培训", "医疗保健", "生活服务", "旅游住宿", "网络购物"
+    ]
+    
+    @classmethod
+    def create(cls, card_id: str = None, **kwargs) -> TransactionData:
+        """创建交易数据"""
+        transaction_data = TransactionData(
+            card_id=card_id,
+            transaction_type=kwargs.get("transaction_type", "expense"),
+            amount=kwargs.get("amount", round(random.uniform(10, 5000), 2)),
+            description=kwargs.get("description", random.choice(cls.DESCRIPTIONS)),
+            merchant_name=kwargs.get("merchant_name", random.choice(cls.MERCHANTS)),
+            transaction_date=kwargs.get("transaction_date", 
+                (datetime.now() - timedelta(days=random.randint(0, 30))).isoformat()
+            )
+        )
+        
+        return transaction_data
+    
+    @classmethod
+    def create_batch(cls, count: int, card_id: str = None, **kwargs) -> List[TransactionData]:
+        """批量创建交易"""
+        return [cls.create(card_id=card_id, **kwargs) for _ in range(count)]
+    
+    @classmethod
+    def create_large_transaction(cls, card_id: str = None, **kwargs) -> TransactionData:
+        """创建大额交易"""
+        kwargs["amount"] = kwargs.get("amount", random.uniform(10000, 50000))
+        kwargs["description"] = kwargs.get("description", "大额消费")
+        return cls.create(card_id=card_id, **kwargs)
+
+
+class DataManager:
+    """数据管理器"""
+    
+    def __init__(self, api_client: FluentAPIClient):
+        self.api_client = api_client
+        self.created_users: List[UserData] = []
+        self.created_cards: List[CardData] = []
+        self.created_transactions: List[TransactionData] = []
+        self.cleanup_hooks: List[Callable] = []
+    
+    def create_user(self, user_data: UserData = None, auto_login: bool = True) -> UserData:
+        """创建并注册用户"""
+        if user_data is None:
+            user_data = UserFactory.create()
+        
+        # 注册用户
+        response = self.api_client.register_user(user_data.to_dict())
+        response.succeed()
+        
+        # 获取用户ID
+        if response.data and "data" in response.data:
+            user_data.id = response.data["data"].get("id")
+        
+        # 自动登录
+        if auto_login:
+            login_response = self.api_client.login_user(user_data.username, user_data.password)
+            login_response.succeed()
+            
+            if login_response.data and "data" in login_response.data:
+                user_data.access_token = login_response.data["data"].get("access_token")
+                user_data.refresh_token = login_response.data["data"].get("refresh_token")
+        
+        self.created_users.append(user_data)
+        print(f"✅ 创建用户: {user_data.username}")
+        
+        return user_data
+    
+    def create_card(self, card_data: CardData = None, user: UserData = None) -> CardData:
+        """创建信用卡"""
+        if card_data is None:
+            card_data = CardFactory.create()
+        
+        if user:
+            card_data.user_id = user.id
+            # 设置用户认证
+            if user.access_token:
+                self.api_client.set_auth(user.access_token)
+        
+        # 创建信用卡
+        response = self.api_client.create_card(card_data.to_dict())
+        response.succeed()
+        
+        # 获取卡片ID
+        if response.data and "data" in response.data:
+            card_data.id = response.data["data"].get("id")
+        
+        self.created_cards.append(card_data)
+        print(f"✅ 创建信用卡: {card_data.card_name}")
+        
+        return card_data
+    
+    def create_transaction(self, transaction_data: TransactionData = None, card: CardData = None) -> TransactionData:
+        """创建交易记录"""
+        if transaction_data is None:
+            transaction_data = TransactionFactory.create()
+        
+        if card:
+            transaction_data.card_id = card.id
+        
+        # 创建交易
+        response = self.api_client.create_transaction(transaction_data.to_dict())
+        response.succeed()
+        
+        # 获取交易ID
+        if response.data and "data" in response.data:
+            transaction_data.id = response.data["data"].get("id")
+        
+        self.created_transactions.append(transaction_data)
+        print(f"✅ 创建交易: {transaction_data.description} (¥{transaction_data.amount})")
+        
+        return transaction_data
+    
+    def cleanup_all(self):
+        """清理所有创建的数据"""
+        print("🧹 开始清理测试数据...")
+        
+        # 执行自定义清理钩子
+        for hook in self.cleanup_hooks:
+            try:
+                hook()
+            except Exception as e:
+                print(f"⚠️ 清理钩子执行失败: {e}")
+        
+        # 清理事务记录
+        for transaction in self.created_transactions:
+            if transaction.id:
+                try:
+                    self.api_client.delete(f"/api/v1/user/transactions/{transaction.id}/delete")
+                    print(f"🗑️ 删除交易: {transaction.id}")
+                except:
+                    pass
+        
+        # 清理信用卡
+        for card in self.created_cards:
+            if card.id:
+                try:
+                    self.api_client.delete(f"/api/v1/user/cards/{card.id}/delete")
+                    print(f"🗑️ 删除信用卡: {card.id}")
+                except:
+                    pass
+        
+        # 清理用户
+        for user in self.created_users:
+            if user.id:
+                try:
+                    # 设置用户认证后删除账户
+                    if user.access_token:
+                        self.api_client.set_auth(user.access_token)
+                    self.api_client.delete("/api/v1/user/profile/account")
+                    print(f"🗑️ 删除用户: {user.username}")
+                except:
+                    pass
+        
+        # 清空记录
+        self.created_users.clear()
+        self.created_cards.clear()
+        self.created_transactions.clear()
+        self.cleanup_hooks.clear()
+        
+        print("✅ 测试数据清理完成")
+    
+    def add_cleanup_hook(self, hook: Callable):
+        """添加清理钩子"""
+        self.cleanup_hooks.append(hook)
+
+
+# 装饰器实现
+def with_user(username: str = None, auto_login: bool = True, **user_kwargs):
+    """用户数据装饰器"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 获取或创建API客户端
+            api_client = kwargs.get("api") or FluentAPIClient()
+            data_manager = DataManager(api_client)
+            
+            # 创建用户数据
+            user_data = UserFactory.create(username=username, **user_kwargs)
+            user = data_manager.create_user(user_data, auto_login=auto_login)
+            
+            # 注入参数
+            kwargs["api"] = api_client
+            kwargs["user"] = user
+            kwargs["data_manager"] = data_manager
+            
+            try:
+                return func(*args, **kwargs)
+            finally:
+                # 自动清理
+                data_manager.cleanup_all()
+        
+        return wrapper
     return decorator
 
 
 def with_cards(count: int = 1, **card_kwargs):
-    """
-    自动创建信用卡装饰器
-    
-    Args:
-        count: 创建卡片数量
-        **card_kwargs: 卡片属性
-    """
+    """信用卡数据装饰器"""
     def decorator(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args, **kwargs):
-            api = kwargs.get('api')
-            user = kwargs.get('user')
+            user = kwargs.get("user")
+            data_manager = kwargs.get("data_manager")
             
-            if not api or not user:
-                raise ValueError("with_cards装饰器需要api和user，请先使用@api_test和@with_user装饰器")
+            if not user or not data_manager:
+                raise ValueError("with_cards 装饰器需要 with_user 装饰器配合使用")
             
+            # 创建信用卡
             cards = []
-            banks = ["招商银行", "工商银行", "建设银行", "农业银行", "中国银行"]
-            
-            for i in range(count):
-                card_data = {
-                    "card_name": f"测试信用卡{i+1}",
-                    "bank_name": card_kwargs.get("bank", random.choice(banks)),
-                    "card_number": f"6225{random.randint(100000000000, 999999999999)}",
-                    "card_type": "visa",
-                    "credit_limit": 50000.00,
-                    "expiry_month": 12,
-                    "expiry_year": 2027,
-                    "billing_day": random.randint(1, 28),
-                    "due_day": random.randint(1, 28),
-                    "used_amount": 0.0,
-                    "annual_fee_enabled": False,
-                    **{k: v for k, v in card_kwargs.items() if k != "bank"}
-                }
-                
-                # 创建信用卡
-                response = api.post("/api/v1/user/cards/create", data=card_data)
-                response.should.succeed()
-                
-                card = TestCard(response.data)
+            for _ in range(count):
+                card_data = CardFactory.create(**card_kwargs)
+                card = data_manager.create_card(card_data, user)
                 cards.append(card)
-                
-                logger.info(f"✅ 创建测试信用卡: {card.card_name}")
             
-            # 注入卡片对象
+            # 注入参数
             if count == 1:
-                kwargs['card'] = cards[0]
+                kwargs["card"] = cards[0]
             else:
-                kwargs['cards'] = cards
+                kwargs["cards"] = cards
             
             return func(*args, **kwargs)
         
-        wrapper._creates_cards = True
-        wrapper._card_count = count
         return wrapper
-    
     return decorator
 
 
-def with_transactions(count: int = 10, card_index: int = 0, **transaction_kwargs):
-    """
-    自动创建交易记录装饰器
-    
-    Args:
-        count: 交易记录数量
-        card_index: 使用的卡片索引
-        **transaction_kwargs: 交易属性
-    """
+def with_transactions(count: int = 1, **transaction_kwargs):
+    """交易数据装饰器"""
     def decorator(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(*args, **kwargs):
-            api = kwargs.get('api')
-            cards = kwargs.get('cards') or [kwargs.get('card')]
+            card = kwargs.get("card")
+            cards = kwargs.get("cards")
+            data_manager = kwargs.get("data_manager")
             
-            if not api or not cards or not cards[0]:
-                raise ValueError("with_transactions装饰器需要api和cards，请先使用相关装饰器")
+            if not data_manager:
+                raise ValueError("with_transactions 装饰器需要 with_user 装饰器配合使用")
             
-            # 选择卡片
-            if card_index >= len(cards):
-                card_index_to_use = 0
-            else:
-                card_index_to_use = card_index
+            if not card and not cards:
+                raise ValueError("with_transactions 装饰器需要 with_cards 装饰器配合使用")
             
-            target_card = cards[card_index_to_use]
+            # 选择信用卡
+            target_card = card or (cards[0] if cards else None)
+            
+            # 创建交易记录
             transactions = []
-            
-            merchants = ["超市", "餐厅", "加油站", "商场", "网购", "咖啡店"]
-            categories = ["dining", "shopping", "gas", "grocery", "entertainment"]
-            
-            for i in range(count):
-                transaction_data = {
-                    "card_id": target_card.id,
-                    "transaction_type": "expense",
-                    "amount": round(random.uniform(10, 1000), 2),
-                    "transaction_date": "2024-06-08T14:30:00",
-                    "merchant_name": random.choice(merchants),
-                    "description": f"测试交易{i+1}",
-                    "category": random.choice(categories),
-                    "status": "completed",
-                    "points_earned": 10.0,
-                    "points_rate": 1.0,
-                    "reference_number": f"TEST{uuid4().hex[:8]}",
-                    "location": "测试地点",
-                    "is_installment": False,
-                    **transaction_kwargs
-                }
-                
-                # 创建交易记录
-                response = api.post("/api/v1/user/transactions/create", data=transaction_data)
-                response.should.succeed()
-                
-                transaction = TestTransaction(response.data)
+            for _ in range(count):
+                transaction_data = TransactionFactory.create(**transaction_kwargs)
+                transaction = data_manager.create_transaction(transaction_data, target_card)
                 transactions.append(transaction)
             
-            # 注入交易对象
-            kwargs['transactions'] = transactions
-            
-            logger.info(f"✅ 创建{count}条测试交易记录")
+            # 注入参数
+            if count == 1:
+                kwargs["transaction"] = transactions[0]
+            else:
+                kwargs["transactions"] = transactions
             
             return func(*args, **kwargs)
         
-        wrapper._creates_transactions = True
-        wrapper._transaction_count = count
         return wrapper
-    
     return decorator
 
 
-def with_data(data_spec: Dict[str, Any]):
-    """
-    复杂数据创建装饰器
-    
-    支持创建复杂的数据关系。
-    
-    Args:
-        data_spec: 数据规格定义
-    """
+def with_user_and_cards(card_count: int = 1, username: str = None, **kwargs):
+    """用户和信用卡组合装饰器"""
     def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            api = kwargs.get('api')
-            if not api:
-                raise ValueError("with_data装饰器需要api客户端")
-            
-            # 解析数据规格并创建数据
-            created_data = {}
-            
-            for key, spec in data_spec.items():
-                if key == "user":
-                    # 创建用户
-                    user_data = _create_user_data(spec)
-                    user = _register_and_login_user(api, user_data)
-                    created_data[key] = user
-                    kwargs['user'] = user
-                
-                elif key == "cards":
-                    # 创建信用卡
-                    user = created_data.get("user") or kwargs.get("user")
-                    if not user:
-                        raise ValueError("创建信用卡需要先创建用户")
-                    
-                    cards = _create_cards(api, spec)
-                    created_data[key] = cards
-                    kwargs['cards'] = cards
-                
-                elif key == "transactions":
-                    # 创建交易记录
-                    cards = created_data.get("cards") or kwargs.get("cards")
-                    if not cards:
-                        raise ValueError("创建交易记录需要先创建信用卡")
-                    
-                    transactions = _create_transactions(api, cards[0], spec)
-                    created_data[key] = transactions
-                    kwargs['transactions'] = transactions
-            
-            # 注入数据对象
-            kwargs['data'] = type('Data', (), created_data)
-            
-            return func(*args, **kwargs)
+        # 分离用户和卡片参数
+        user_kwargs = {k: v for k, v in kwargs.items() if k in ["password", "nickname", "phone", "is_admin"]}
+        card_kwargs = {k: v for k, v in kwargs.items() if k not in user_kwargs}
         
-        wrapper._creates_data = True
-        wrapper._data_spec = data_spec
-        return wrapper
-    
+        # 应用装饰器链
+        decorated = with_transactions(0)(func) if "transactions" in func.__code__.co_varnames else func
+        decorated = with_cards(card_count, **card_kwargs)(decorated)
+        decorated = with_user(username, **user_kwargs)(decorated)
+        
+        return decorated
     return decorator
 
 
-def with_admin_user(func):
-    """
-    创建管理员用户装饰器
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        api = kwargs.get('api')
-        if not api:
-            raise ValueError("with_admin_user装饰器需要api客户端")
+def with_test_data(users: int = 1, cards_per_user: int = 1, transactions_per_card: int = 0):
+    """完整测试数据装饰器"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            api_client = kwargs.get("api") or FluentAPIClient()
+            data_manager = DataManager(api_client)
+            
+            # 创建用户、信用卡和交易的完整数据集
+            all_users = []
+            all_cards = []
+            all_transactions = []
+            
+            for i in range(users):
+                # 创建用户
+                user_data = UserFactory.create()
+                user = data_manager.create_user(user_data)
+                all_users.append(user)
+                
+                # 为用户创建信用卡
+                user_cards = []
+                for j in range(cards_per_user):
+                    card_data = CardFactory.create()
+                    card = data_manager.create_card(card_data, user)
+                    user_cards.append(card)
+                    all_cards.append(card)
+                    
+                    # 为信用卡创建交易
+                    for k in range(transactions_per_card):
+                        transaction_data = TransactionFactory.create()
+                        transaction = data_manager.create_transaction(transaction_data, card)
+                        all_transactions.append(transaction)
+            
+            # 注入参数
+            kwargs["api"] = api_client
+            kwargs["data_manager"] = data_manager
+            kwargs["users"] = all_users
+            kwargs["cards"] = all_cards
+            kwargs["transactions"] = all_transactions
+            
+            if users == 1:
+                kwargs["user"] = all_users[0]
+            if cards_per_user == 1 and users == 1:
+                kwargs["card"] = all_cards[0]
+            
+            try:
+                return func(*args, **kwargs)
+            finally:
+                # 自动清理
+                data_manager.cleanup_all()
         
-        # 创建管理员用户
-        admin_data = {
-            "username": f"admin_{uuid4().hex[:8]}",
-            "email": f"admin_{uuid4().hex[:8]}@example.com",
-            "password": "AdminPass123456",
-            "nickname": "管理员",
-            "is_admin": True
-        }
-        
-        # 注册和登录流程
-        register_response = api.post("/api/v1/public/auth/register", data=admin_data)
-        register_response.should.succeed()
-        
-        login_response = api.post("/api/v1/public/auth/login/username", data={
-            "username": admin_data["username"],
-            "password": admin_data["password"]
-        })
-        login_response.should.succeed()
-        
-        # 设置认证
-        token_data = login_response.data
-        api.set_auth(token_data["access_token"])
-        
-        admin = TestUser({
-            **admin_data,
-            **token_data.get("user", {}),
-            "token": token_data["access_token"]
-        })
-        
-        kwargs['admin'] = admin
-        
-        logger.info(f"✅ 创建管理员用户: {admin.username}")
-        
-        return func(*args, **kwargs)
-    
-    wrapper._creates_admin = True
-    return wrapper
-
-
-def cleanup_after(func):
-    """
-    自动清理装饰器
-    
-    测试完成后自动清理所有创建的数据。
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        finally:
-            DataCleaner.cleanup_all()
-    
-    return wrapper
-
-
-# 辅助函数
-
-def _create_user_data(spec):
-    """创建用户数据"""
-    if isinstance(spec, dict):
-        return {
-            "username": spec.get("username", f"user_{uuid4().hex[:8]}"),
-            "email": spec.get("email", f"test_{uuid4().hex[:8]}@example.com"),
-            "password": spec.get("password", "TestPass123456"),
-            "nickname": spec.get("nickname", "测试用户"),
-            **{k: v for k, v in spec.items() if k not in ["username", "email", "password", "nickname"]}
-        }
-    else:
-        return {
-            "username": f"user_{uuid4().hex[:8]}",
-            "email": f"test_{uuid4().hex[:8]}@example.com",
-            "password": "TestPass123456",
-            "nickname": "测试用户"
-        }
-
-
-def _register_and_login_user(api, user_data):
-    """注册并登录用户"""
-    # 注册
-    register_response = api.post("/api/v1/public/auth/register", data=user_data)
-    register_response.should.succeed()
-    
-    # 登录
-    login_response = api.post("/api/v1/public/auth/login/username", data={
-        "username": user_data["username"],
-        "password": user_data["password"]
-    })
-    login_response.should.succeed()
-    
-    # 设置认证
-    token_data = login_response.data
-    api.set_auth(token_data["access_token"])
-    
-    return TestUser({
-        **user_data,
-        **token_data.get("user", {}),
-        "token": token_data["access_token"]
-    })
-
-
-def _create_cards(api, spec):
-    """创建信用卡"""
-    if isinstance(spec, dict):
-        count = spec.get("count", 1)
-        card_data = {k: v for k, v in spec.items() if k != "count"}
-    else:
-        count = spec if isinstance(spec, int) else 1
-        card_data = {}
-    
-    cards = []
-    for i in range(count):
-        card_info = {
-            "card_name": f"测试信用卡{i+1}",
-            "bank_name": "测试银行",
-            "card_number": f"6225{random.randint(100000000000, 999999999999)}",
-            "card_type": "visa",
-            "credit_limit": 50000.00,
-            "expiry_month": 12,
-            "expiry_year": 2027,
-            **card_data
-        }
-        
-        response = api.post("/api/v1/user/cards/create", data=card_info)
-        response.should.succeed()
-        
-        cards.append(TestCard(response.data))
-    
-    return cards
-
-
-def _create_transactions(api, card, spec):
-    """创建交易记录"""
-    if isinstance(spec, dict):
-        count = spec.get("count", 10)
-        transaction_data = {k: v for k, v in spec.items() if k != "count"}
-    else:
-        count = spec if isinstance(spec, int) else 10
-        transaction_data = {}
-    
-    transactions = []
-    for i in range(count):
-        transaction_info = {
-            "card_id": card.id,
-            "transaction_type": "expense",
-            "amount": round(random.uniform(10, 1000), 2),
-            "transaction_date": "2024-06-08T14:30:00",
-            "merchant_name": "测试商户",
-            "description": f"测试交易{i+1}",
-            "category": "dining",
-            **transaction_data
-        }
-        
-        response = api.post("/api/v1/user/transactions/create", data=transaction_info)
-        response.should.succeed()
-        
-        transactions.append(TestTransaction(response.data))
-    
-    return transactions 
+        return wrapper
+    return decorator 
