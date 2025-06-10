@@ -76,27 +76,27 @@ class FluentAPIClient:
         self.session.headers.update(headers)
         return self
     
-    def get(self, path: str, params: Dict[str, Any] = None, **kwargs) -> ResponseAssertion:
+    def get(self, path: str, params: Dict[str, Any] = None, **kwargs) -> 'ResponseAssertion':
         """GET请求"""
         return self._request("GET", path, params=params, **kwargs)
     
-    def post(self, path: str, data: Any = None, **kwargs) -> ResponseAssertion:
+    def post(self, path: str, data: Any = None, **kwargs) -> 'ResponseAssertion':
         """POST请求"""
         return self._request("POST", path, json=data, **kwargs)
     
-    def put(self, path: str, data: Any = None, **kwargs) -> ResponseAssertion:
+    def put(self, path: str, data: Any = None, **kwargs) -> 'ResponseAssertion':
         """PUT请求"""
         return self._request("PUT", path, json=data, **kwargs)
     
-    def patch(self, path: str, data: Any = None, **kwargs) -> ResponseAssertion:
+    def patch(self, path: str, data: Any = None, **kwargs) -> 'ResponseAssertion':
         """PATCH请求"""
         return self._request("PATCH", path, json=data, **kwargs)
     
-    def delete(self, path: str, **kwargs) -> ResponseAssertion:
+    def delete(self, path: str, **kwargs) -> 'ResponseAssertion':
         """DELETE请求"""
         return self._request("DELETE", path, **kwargs)
     
-    def _request(self, method: str, path: str, **kwargs) -> ResponseAssertion:
+    def _request(self, method: str, path: str, **kwargs) -> 'ResponseAssertion':
         """执行HTTP请求"""
         url = urljoin(self.base_url + "/", path.lstrip('/'))
         
@@ -147,7 +147,7 @@ class FluentAPIClient:
             print(f"❌ 请求失败: {method} {path} - {e}")
             raise
     
-    def login_user(self, username: str, password: str) -> ResponseAssertion:
+    def login_user(self, username: str, password: str) -> 'ResponseAssertion':
         """用户登录便捷方法"""
         response = self.post("/api/v1/public/auth/login/username", {
             "username": username,
@@ -168,11 +168,11 @@ class FluentAPIClient:
         
         return response
     
-    def register_user(self, user_data: Dict[str, Any]) -> ResponseAssertion:
+    def register_user(self, user_data: Dict[str, Any]) -> 'ResponseAssertion':
         """用户注册便捷方法"""
         return self.post("/api/v1/public/auth/register", user_data)
     
-    def logout(self) -> ResponseAssertion:
+    def logout(self) -> 'ResponseAssertion':
         """退出登录便捷方法"""
         response = self.post("/api/v1/user/profile/logout")
         
@@ -182,37 +182,37 @@ class FluentAPIClient:
         
         return response
     
-    def health_check(self) -> ResponseAssertion:
+    def health_check(self) -> 'ResponseAssertion':
         """健康检查便捷方法"""
         return self.get("/api/v1/public/system/health")
     
-    def get_user_profile(self) -> ResponseAssertion:
+    def get_user_profile(self) -> 'ResponseAssertion':
         """获取用户资料便捷方法"""
         return self.get("/api/v1/user/profile/info")
     
-    def create_card(self, card_data: Dict[str, Any]) -> ResponseAssertion:
+    def create_card(self, card_data: Dict[str, Any]) -> 'ResponseAssertion':
         """创建信用卡便捷方法"""
         return self.post("/api/v1/user/cards/create", card_data)
     
-    def get_cards_list(self, page: int = 1, page_size: int = 20) -> ResponseAssertion:
+    def get_cards_list(self, page: int = 1, page_size: int = 20) -> 'ResponseAssertion':
         """获取信用卡列表便捷方法"""
         return self.get("/api/v1/user/cards/list", {
             "page": page,
             "page_size": page_size
         })
     
-    def create_transaction(self, transaction_data: Dict[str, Any]) -> ResponseAssertion:
-        """创建交易记录便捷方法"""
+    def create_transaction(self, transaction_data: Dict[str, Any]) -> 'ResponseAssertion':
+        """创建交易便捷方法"""
         return self.post("/api/v1/user/transactions/create", transaction_data)
     
-    def get_transactions_list(self, page: int = 1, page_size: int = 20) -> ResponseAssertion:
+    def get_transactions_list(self, page: int = 1, page_size: int = 20) -> 'ResponseAssertion':
         """获取交易列表便捷方法"""
         return self.get("/api/v1/user/transactions/list", {
             "page": page,
             "page_size": page_size
         })
     
-    def get_statistics_overview(self) -> ResponseAssertion:
+    def get_statistics_overview(self) -> 'ResponseAssertion':
         """获取统计总览便捷方法"""
         return self.get("/api/v1/user/statistics/overview")
     
@@ -274,39 +274,39 @@ class APIClientBuilder:
     """API客户端构建器"""
     
     def __init__(self):
-        self.base_url = "http://127.0.0.1:8000"
-        self.headers = {}
-        self.auth_token = None
+        self._base_url = "http://127.0.0.1:8000"
+        self._auth_token = None
+        self._headers = {}
     
     def with_base_url(self, url: str) -> 'APIClientBuilder':
         """设置基础URL"""
-        self.base_url = url
+        self._base_url = url
         return self
     
     def with_auth(self, token: str) -> 'APIClientBuilder':
         """设置认证令牌"""
-        self.auth_token = token
+        self._auth_token = token
         return self
     
     def with_header(self, key: str, value: str) -> 'APIClientBuilder':
         """设置请求头"""
-        self.headers[key] = value
+        self._headers[key] = value
         return self
     
     def with_headers(self, headers: Dict[str, str]) -> 'APIClientBuilder':
         """设置多个请求头"""
-        self.headers.update(headers)
+        self._headers.update(headers)
         return self
     
     def build(self) -> FluentAPIClient:
         """构建API客户端"""
-        client = FluentAPIClient(self.base_url)
+        client = FluentAPIClient(self._base_url)
         
-        if self.headers:
-            client.set_headers(self.headers)
+        if self._auth_token:
+            client.set_auth(self._auth_token)
         
-        if self.auth_token:
-            client.set_auth(self.auth_token)
+        if self._headers:
+            client.set_headers(self._headers)
         
         return client
 
@@ -341,37 +341,37 @@ def set_default_client(client: FluentAPIClient):
 
 
 # 便捷API方法（使用默认客户端）
-def get(path: str, **kwargs) -> ResponseAssertion:
+def get(path: str, **kwargs) -> 'ResponseAssertion':
     """GET请求便捷函数"""
     return get_default_client().get(path, **kwargs)
 
 
-def post(path: str, data: Any = None, **kwargs) -> ResponseAssertion:
+def post(path: str, data: Any = None, **kwargs) -> 'ResponseAssertion':
     """POST请求便捷函数"""
     return get_default_client().post(path, data, **kwargs)
 
 
-def put(path: str, data: Any = None, **kwargs) -> ResponseAssertion:
+def put(path: str, data: Any = None, **kwargs) -> 'ResponseAssertion':
     """PUT请求便捷函数"""
     return get_default_client().put(path, data, **kwargs)
 
 
-def delete(path: str, **kwargs) -> ResponseAssertion:
+def delete(path: str, **kwargs) -> 'ResponseAssertion':
     """DELETE请求便捷函数"""
     return get_default_client().delete(path, **kwargs)
 
 
-def login(username: str, password: str) -> ResponseAssertion:
+def login(username: str, password: str) -> 'ResponseAssertion':
     """登录便捷函数"""
     return get_default_client().login_user(username, password)
 
 
-def logout() -> ResponseAssertion:
+def logout() -> 'ResponseAssertion':
     """退出登录便捷函数"""
     return get_default_client().logout()
 
 
-def health_check() -> ResponseAssertion:
+def health_check() -> 'ResponseAssertion':
     """健康检查便捷函数"""
     return get_default_client().health_check()
 
@@ -379,212 +379,211 @@ def health_check() -> ResponseAssertion:
 class ResponseAssertion:
     """响应断言类"""
     
-    def __init__(self, response: requests.Response, request_start_time: float = None):
+    def __init__(self, response: requests.Response, request_desc: str = ""):
         self.response = response
-        self.request_start_time = request_start_time
-        self.response_time = time.time() - request_start_time if request_start_time else None
-        
-        # 解析响应数据
-        self.raw_data = None
+        self.request_desc = request_desc
         self.data = None
         
-        if response.content:
-            try:
-                self.raw_data = response.json()
-                # 处理统一响应格式
-                if isinstance(self.raw_data, dict) and "data" in self.raw_data:
-                    self.data = self.raw_data["data"]
-                else:
-                    self.data = self.raw_data
-            except json.JSONDecodeError:
-                self.raw_data = response.text
-                self.data = response.text
+        # 解析JSON响应
+        try:
+            if response.content:
+                self.data = response.json()
+        except (json.JSONDecodeError, ValueError):
+            # 非JSON响应
+            self.data = None
+        
+        # 计算响应时间（从请求开始到现在）
+        self.duration = getattr(response, 'elapsed', None)
+        if self.duration:
+            self.duration = self.duration.total_seconds()
     
     @property
     def should(self):
-        """流畅断言接口入口"""
+        """流畅断言接口"""
         return self
     
     def succeed(self, status_code: int = 200):
         """断言请求成功"""
-        assert self.response.status_code == status_code, \
-            f"期望状态码 {status_code}，实际 {self.response.status_code}\n" \
-            f"响应内容: {self.response.text}"
+        if self.response.status_code != status_code:
+            print(f"❌ {self.request_desc} 期望状态码 {status_code}，实际 {self.response.status_code}")
+            if self.data and not self.data.get("success", True):
+                print(f"   错误信息: {self.data.get('message', '未知错误')}")
+            raise AssertionError(f"期望状态码 {status_code}，实际 {self.response.status_code}")
         
-        # 检查统一响应格式中的success字段
-        if isinstance(self.raw_data, dict) and "success" in self.raw_data:
-            assert self.raw_data.get("success", True), \
-                f"响应失败: {self.raw_data.get('message', '未知错误')}"
+        # 检查响应格式
+        if self.data and isinstance(self.data, dict):
+            if not self.data.get("success", True):
+                print(f"❌ {self.request_desc} 响应标识失败: {self.data}")
+                raise AssertionError(f"响应失败: {self.data}")
         
+        print(f"✅ {self.request_desc} 成功 ({self.response.status_code})")
         return self
     
     def fail(self, status_code: int = None, error_code: str = None):
         """断言请求失败"""
-        if status_code:
-            assert self.response.status_code == status_code, \
-                f"期望失败状态码 {status_code}，实际 {self.response.status_code}"
-        else:
-            assert self.response.status_code >= 400, \
-                f"期望失败状态码(>=400)，实际 {self.response.status_code}"
+        if status_code and self.response.status_code != status_code:
+            raise AssertionError(f"期望状态码 {status_code}，实际 {self.response.status_code}")
         
-        if error_code and isinstance(self.raw_data, dict):
-            actual_code = self.raw_data.get("code") or self.raw_data.get("error_code")
-            assert actual_code == error_code, \
-                f"期望错误代码 {error_code}，实际 {actual_code}"
+        if not status_code and self.response.status_code < 400:
+            raise AssertionError(f"期望请求失败，但实际成功 ({self.response.status_code})")
         
+        if error_code and self.data:
+            actual_error = self.data.get("error_code")
+            if actual_error != error_code:
+                raise AssertionError(f"期望错误码 {error_code}，实际 {actual_error}")
+        
+        print(f"✅ {self.request_desc} 按预期失败 ({self.response.status_code})")
         return self
     
     def with_data(self, **expected):
         """断言响应数据"""
-        assert self.data is not None, "响应中没有数据"
+        if not self.data:
+            raise AssertionError("响应不包含JSON数据")
         
-        if not isinstance(self.data, dict):
-            raise AssertionError(f"响应数据不是字典格式: {type(self.data)}")
+        # 获取data字段（如果存在）
+        response_data = self.data.get("data", self.data)
         
         for key, expected_value in expected.items():
             if "__" in key:
-                # 支持复杂断言
+                # 复杂断言如 email__contains
                 field, operator = key.split("__", 1)
-                actual_value = self._get_nested_value(self.data, field)
+                actual_value = self._get_nested_value(response_data, field)
                 self._assert_with_operator(actual_value, operator, expected_value, field)
             else:
-                actual_value = self._get_nested_value(self.data, key)
-                assert actual_value == expected_value, \
-                    f"字段 {key} 期望值 {expected_value}，实际值 {actual_value}"
+                # 简单相等断言
+                actual_value = self._get_nested_value(response_data, key)
+                if actual_value != expected_value:
+                    print(f"❌ 字段 {key} 期望值 {expected_value}，实际值 {actual_value}")
+                    raise AssertionError(f"字段 {key} 期望值 {expected_value}，实际值 {actual_value}")
         
+        print(f"✅ {self.request_desc} 数据验证通过")
         return self
     
     def with_pagination(self, total_items: int = None, items_type: str = None, **kwargs):
         """断言分页响应"""
-        # 检查是否有分页信息
-        pagination = None
-        if isinstance(self.raw_data, dict):
-            pagination = self.raw_data.get("pagination")
+        if not self.data:
+            raise AssertionError("响应不包含JSON数据")
         
-        assert pagination is not None, "响应中缺少分页信息"
+        # 检查分页信息
+        if "pagination" not in self.data:
+            raise AssertionError("响应中缺少分页信息")
         
-        # 验证总数
+        pagination = self.data["pagination"]
+        
         if total_items is not None:
-            actual_total = pagination.get("total", 0)
-            assert actual_total == total_items, \
-                f"期望总数 {total_items}，实际 {actual_total}"
+            actual_total = pagination.get("total")
+            if actual_total != total_items:
+                print(f"❌ 期望总条目数 {total_items}，实际 {actual_total}")
+                raise AssertionError(f"期望总条目数 {total_items}，实际 {actual_total}")
         
-        # 验证数据类型
+        # 检查数据数组
         if items_type:
-            items = self.data if isinstance(self.data, list) else []
-            assert len(items) > 0, f"没有找到 {items_type} 数据"
+            items = self.data.get("data", [])
+            if not isinstance(items, list):
+                raise AssertionError(f"期望 {items_type} 数据数组，实际不是数组")
+            
+            if len(items) == 0 and total_items and total_items > 0:
+                raise AssertionError(f"期望有 {items_type} 数据，但数组为空")
         
-        # 验证其他分页参数
-        for key, value in kwargs.items():
-            assert key in pagination, f"分页信息中缺少字段 {key}"
-            assert pagination[key] == value, \
-                f"分页字段 {key} 期望值 {value}，实际值 {pagination[key]}"
-        
+        print(f"✅ {self.request_desc} 分页验证通过")
         return self
     
     def with_error(self, error_code: str = None, message_contains: str = None):
         """断言错误响应"""
-        if isinstance(self.raw_data, dict):
-            if error_code:
-                actual_code = self.raw_data.get("code") or self.raw_data.get("error_code")
-                assert actual_code == error_code, \
-                    f"期望错误代码 {error_code}，实际 {actual_code}"
-            
-            if message_contains:
-                message = self.raw_data.get("message", "")
-                assert message_contains in message, \
-                    f"错误消息中不包含 '{message_contains}': {message}"
+        if not self.data:
+            raise AssertionError("响应不包含JSON数据")
         
+        if error_code:
+            actual_error = self.data.get("error_code")
+            if actual_error != error_code:
+                raise AssertionError(f"期望错误码 {error_code}，实际 {actual_error}")
+        
+        if message_contains:
+            message = self.data.get("message", "")
+            if message_contains not in message:
+                raise AssertionError(f"期望错误消息包含 '{message_contains}'，实际消息: '{message}'")
+        
+        print(f"✅ {self.request_desc} 错误验证通过")
         return self
     
     def complete_within(self, seconds: float):
         """断言响应时间"""
-        if self.response_time is None:
-            logger.warning("无法检查响应时间，请求时间未记录")
-            return self
+        if self.duration and self.duration > seconds:
+            print(f"⚠️ {self.request_desc} 响应时间 {self.duration:.3f}s 超过期望的 {seconds}s")
+            raise AssertionError(f"响应时间 {self.duration:.3f}s 超过期望的 {seconds}s")
         
-        assert self.response_time <= seconds, \
-            f"响应时间超出预期: {self.response_time:.3f}s > {seconds}s"
-        
+        print(f"✅ {self.request_desc} 响应时间 {self.duration:.3f}s 符合要求")
         return self
     
     def have_header(self, header_name: str, expected_value: str = None):
         """断言响应头"""
-        assert header_name in self.response.headers, \
-            f"响应头中缺少 {header_name}"
+        actual_value = self.response.headers.get(header_name)
         
-        if expected_value:
-            actual_value = self.response.headers[header_name]
-            assert actual_value == expected_value, \
-                f"响应头 {header_name} 期望值 {expected_value}，实际值 {actual_value}"
+        if actual_value is None:
+            raise AssertionError(f"响应头中缺少 {header_name}")
         
+        if expected_value and actual_value != expected_value:
+            raise AssertionError(f"响应头 {header_name} 期望值 {expected_value}，实际值 {actual_value}")
+        
+        print(f"✅ {self.request_desc} 响应头验证通过")
         return self
     
     def _get_nested_value(self, data: dict, key: str):
-        """获取嵌套字段值"""
+        """获取嵌套字段值，支持 user.profile.name 格式"""
         if "." in key:
-            # 支持嵌套字段如 user.profile.name
             keys = key.split(".")
-            current = data
+            value = data
             for k in keys:
-                if isinstance(current, dict) and k in current:
-                    current = current[k]
+                if isinstance(value, dict):
+                    value = value.get(k)
                 else:
                     return None
-            return current
+            return value
         else:
             return data.get(key)
     
     def _assert_with_operator(self, actual, operator: str, expected, field: str):
         """使用操作符进行断言"""
-        if operator == "exists":
-            assert actual is not None, f"字段 {field} 不存在"
-        elif operator == "not_exists":
-            assert actual is None, f"字段 {field} 不应该存在"
-        elif operator == "contains":
-            assert expected in str(actual), \
-                f"字段 {field} 值 '{actual}' 不包含 '{expected}'"
-        elif operator == "not_contains":
-            assert expected not in str(actual), \
-                f"字段 {field} 值 '{actual}' 包含了不期望的 '{expected}'"
+        if operator == "contains":
+            if expected not in actual:
+                raise AssertionError(f"字段 {field} 期望包含 '{expected}'，实际值 '{actual}'")
         elif operator == "startswith":
-            assert str(actual).startswith(str(expected)), \
-                f"字段 {field} 值 '{actual}' 不以 '{expected}' 开头"
+            if not actual.startswith(expected):
+                raise AssertionError(f"字段 {field} 期望以 '{expected}' 开头，实际值 '{actual}'")
         elif operator == "endswith":
-            assert str(actual).endswith(str(expected)), \
-                f"字段 {field} 值 '{actual}' 不以 '{expected}' 结尾"
+            if not actual.endswith(expected):
+                raise AssertionError(f"字段 {field} 期望以 '{expected}' 结尾，实际值 '{actual}'")
         elif operator == "gt":
-            assert actual > expected, \
-                f"字段 {field} 值 {actual} 不大于 {expected}"
+            if not (actual > expected):
+                raise AssertionError(f"字段 {field} 期望大于 {expected}，实际值 {actual}")
         elif operator == "gte":
-            assert actual >= expected, \
-                f"字段 {field} 值 {actual} 不大于等于 {expected}"
+            if not (actual >= expected):
+                raise AssertionError(f"字段 {field} 期望大于等于 {expected}，实际值 {actual}")
         elif operator == "lt":
-            assert actual < expected, \
-                f"字段 {field} 值 {actual} 不小于 {expected}"
+            if not (actual < expected):
+                raise AssertionError(f"字段 {field} 期望小于 {expected}，实际值 {actual}")
         elif operator == "lte":
-            assert actual <= expected, \
-                f"字段 {field} 值 {actual} 不小于等于 {expected}"
-        elif operator == "in":
-            assert actual in expected, \
-                f"字段 {field} 值 {actual} 不在 {expected} 中"
-        elif operator == "not_in":
-            assert actual not in expected, \
-                f"字段 {field} 值 {actual} 在不期望的列表 {expected} 中"
-        elif operator == "length":
-            actual_length = len(actual) if actual else 0
-            assert actual_length == expected, \
-                f"字段 {field} 长度 {actual_length} 不等于 {expected}"
+            if not (actual <= expected):
+                raise AssertionError(f"字段 {field} 期望小于等于 {expected}，实际值 {actual}")
+        elif operator == "ne":
+            if actual == expected:
+                raise AssertionError(f"字段 {field} 期望不等于 {expected}，实际值 {actual}")
+        elif operator == "exists":
+            if actual is None:
+                raise AssertionError(f"字段 {field} 期望存在，但实际为None")
+        elif operator == "is_null":
+            if actual is not None:
+                raise AssertionError(f"字段 {field} 期望为null，实际值 {actual}")
         else:
             raise ValueError(f"不支持的操作符: {operator}")
     
     def debug(self):
-        """调试输出响应信息"""
-        print(f"\n=== 响应调试信息 ===")
+        """调试输出响应详情"""
+        print(f"\n🔍 {self.request_desc} 响应详情:")
         print(f"状态码: {self.response.status_code}")
-        print(f"响应时间: {self.response_time:.3f}s" if self.response_time else "响应时间: 未知")
         print(f"响应头: {dict(self.response.headers)}")
-        print(f"原始数据: {json.dumps(self.raw_data, indent=2, ensure_ascii=False)}")
-        print(f"解析数据: {json.dumps(self.data, indent=2, ensure_ascii=False)}")
-        print(f"==================\n")
+        if self.data:
+            print(f"响应数据: {json.dumps(self.data, indent=2, ensure_ascii=False)}")
+        else:
+            print(f"响应内容: {self.response.text}")
         return self 

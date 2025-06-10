@@ -1,0 +1,158 @@
+# 测试框架v2.0配置文件
+
+# 环境配置
+environments:
+  test:
+    api_base_url: "http://127.0.0.1:8000"
+    database_url: "postgresql://test:test@localhost/test_db"
+    cleanup_data: true
+    timeout: 30
+    max_retries: 3
+    
+  development:
+    api_base_url: "http://127.0.0.1:8000"
+    database_url: "postgresql://dev:dev@localhost/dev_db"
+    cleanup_data: false
+    timeout: 60
+    max_retries: 5
+    
+  ci:
+    api_base_url: "http://localhost:8000"
+    database_url: "postgresql://ci:ci@postgres:5432/ci_db"
+    cleanup_data: true
+    timeout: 120
+    max_retries: 10
+
+# 测试运行配置
+runner:
+  parallel_tests: false
+  max_workers: 4
+  log_level: "INFO"
+  console_colors: true
+  verbose: true
+  fail_fast: false
+  
+# 数据工厂配置
+data_factories:
+  user:
+    default_password: "TestPass123456"
+    admin_username_prefix: "admin_"
+    user_username_prefix: "user_"
+    
+  card:
+    default_credit_limit: 50000
+    banks:
+      - "招商银行"
+      - "工商银行"
+      - "建设银行"
+      - "农业银行"
+      - "中国银行"
+    
+  transaction:
+    default_currency: "CNY"
+    amount_range:
+      min: 1.0
+      max: 10000.0
+    categories:
+      - "餐饮"
+      - "购物"
+      - "交通"
+      - "娱乐"
+      - "生活"
+
+# 性能测试配置
+performance:
+  benchmarks:
+    api_response_time: 1.0  # 秒
+    database_query_time: 0.5  # 秒
+    file_upload_time: 5.0  # 秒
+    
+  stress_test:
+    default_iterations: 100
+    concurrent_users: 10
+    ramp_up_time: 30  # 秒
+    
+  load_test:
+    max_concurrent_users: 50
+    test_duration: 300  # 秒
+    think_time: 1  # 秒
+
+# 报告配置
+reporting:
+  console:
+    enabled: true
+    colors: true
+    verbose: true
+    
+  html:
+    enabled: true
+    output_dir: "reports/html"
+    template: "default"
+    
+  json:
+    enabled: true
+    output_dir: "reports/json"
+    pretty_print: true
+    
+  coverage:
+    enabled: true
+    min_coverage: 90
+    fail_on_low_coverage: true
+
+# 通知配置
+notifications:
+  slack:
+    enabled: false
+    webhook_url: ""
+    channel: "#testing"
+    
+  email:
+    enabled: false
+    smtp_server: ""
+    from_address: ""
+    to_addresses: []
+
+# 安全测试配置
+security:
+  auth_tests:
+    enabled: true
+    test_invalid_tokens: true
+    test_expired_tokens: true
+    test_malformed_tokens: true
+    
+  permission_tests:
+    enabled: true
+    test_unauthorized_access: true
+    test_role_escalation: true
+    
+  injection_tests:
+    enabled: true
+    test_sql_injection: true
+    test_xss: true
+    test_command_injection: true
+
+# 清理配置
+cleanup:
+  auto_cleanup: true
+  cleanup_on_failure: true
+  max_test_users: 100
+  max_test_cards: 500
+  max_test_transactions: 1000
+  cleanup_older_than_days: 7
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_enabled: true
+  file_path: "logs/test.log"
+  console_enabled: true
+  
+# 重试配置
+retry:
+  max_attempts: 3
+  backoff_factor: 2
+  retry_on_status_codes: [500, 502, 503, 504]
+  retry_on_exceptions: 
+    - "requests.exceptions.ConnectionError"
+    - "requests.exceptions.Timeout" 

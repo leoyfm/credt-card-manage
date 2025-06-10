@@ -28,7 +28,7 @@ from app.models.schemas.transaction import (
     TransactionStatus
 )
 from app.models.database.transaction import Transaction as DBTransaction
-from app.models.database.card import Card as DBCard
+from app.models.database.card import CreditCard as DBCard
 from app.utils.response import ResponseUtil
 from app.core.logging.logger import get_logger
 

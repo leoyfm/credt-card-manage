@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.logging import get_logger
 from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.database import get_db
-from app.models.schemas.user import UserProfile
+from app.models.schemas.auth import UserProfile
 from app.models.schemas.card import (
     CardCreateRequest, CardUpdateRequest, CardStatusUpdateRequest,
     CardResponse, CardDetailResponse, CardStatistics, BankListResponse,

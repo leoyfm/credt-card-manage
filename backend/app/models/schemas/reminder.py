@@ -15,7 +15,7 @@ from decimal import Decimal
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, model_validator
 from .common import BaseResponse, BasePaginatedResponse, BaseQueryParams
 
 
@@ -108,18 +108,20 @@ class ReminderSettingBase(BaseModel):
             raise ValueError("年费提醒的提前天数不应超过30天")
         return v
     
-    @root_validator
+    @model_validator(mode='before')
+    @classmethod
     def validate_channels(cls, values):
         """验证至少启用一个通知渠道"""
-        channels = [
-            values.get('email_enabled', False),
-            values.get('sms_enabled', False),
-            values.get('push_enabled', False),
-            values.get('wechat_enabled', False),
-            values.get('in_app_enabled', False)
-        ]
-        if not any(channels):
-            raise ValueError("至少需要启用一个通知渠道")
+        if isinstance(values, dict):
+            channels = [
+                values.get('email_enabled', False),
+                values.get('sms_enabled', False),
+                values.get('push_enabled', False),
+                values.get('wechat_enabled', False),
+                values.get('in_app_enabled', False)
+            ]
+            if not any(channels):
+                raise ValueError("至少需要启用一个通知渠道")
         return values
 
 

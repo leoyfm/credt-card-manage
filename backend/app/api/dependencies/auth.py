@@ -9,8 +9,8 @@ from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.core.logging.logger import get_logger
 from app.models.schemas.auth import UserProfile
 
-# 导入认证服务
-from services.auth_service import AuthService
+# 导入认证服务 - 修复导入路径
+from app.services.auth_service import AuthService
 
 logger = get_logger("auth.dependencies")
 security = HTTPBearer()

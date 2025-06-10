@@ -24,7 +24,7 @@ from app.models.schemas.statistics import (
     PeriodType,
     MetricType
 )
-from app.models.database.card import Card as DBCard
+from app.models.database.card import CreditCard as DBCard
 from app.models.database.transaction import Transaction as DBTransaction
 from app.models.database.annual_fee import AnnualFeeRecord as DBFeeRecord
 from app.models.database.reminder import ReminderRecord as DBReminderRecord

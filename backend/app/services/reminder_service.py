@@ -31,7 +31,7 @@ from app.models.database.reminder import (
     ReminderSetting as DBReminderSetting,
     ReminderRecord as DBReminderRecord
 )
-from app.models.database.card import Card as DBCard
+from app.models.database.card import CreditCard as DBCard
 from app.utils.response import ResponseUtil
 from app.core.logging.logger import get_logger
 

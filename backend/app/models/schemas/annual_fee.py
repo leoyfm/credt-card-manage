@@ -300,4 +300,52 @@ class AnnualFeeReminder(BaseModel):
     action_required: bool = Field(False, description="是否需要用户操作")
     action_url: Optional[str] = Field(None, description="操作链接")
     priority: str = Field("medium", description="优先级：low, medium, high, urgent")
-    created_at: datetime = Field(..., description="提醒创建时间") 
+    created_at: datetime = Field(..., description="提醒创建时间")
+
+# 减免分析模型
+class WaiverAnalysis(BaseModel):
+    """减免分析"""
+    card_id: UUID = Field(..., description="信用卡ID")
+    fee_year: int = Field(..., description="年费年度")
+    base_fee: Decimal = Field(..., description="基础年费")
+    waiver_eligible: bool = Field(..., description="是否符合减免条件")
+    waiver_amount: Decimal = Field(Decimal("0"), description="减免金额")
+    final_fee: Decimal = Field(..., description="最终年费")
+    analysis_details: Dict[str, Any] = Field(default_factory=dict, description="分析详情")
+
+# 年费提醒设置模型
+class FeeReminderSettings(BaseModel):
+    """年费提醒设置"""
+    rule_id: UUID = Field(..., description="年费规则ID")
+    enabled: bool = Field(True, description="是否启用")
+    advance_days: int = Field(30, description="提前天数")
+    reminder_types: List[str] = Field(default_factory=list, description="提醒类型")
+
+# 年费类型别名（兼容旧代码）
+FeeType = AnnualFeeType
+
+# 条件类型枚举
+class ConditionType(str, Enum):
+    """条件类型"""
+    amount = "amount"      # 金额条件
+    count = "count"        # 次数条件
+    points = "points"      # 积分条件
+
+# 基础年费规则模型（用于服务层）
+class AnnualFeeRule(AnnualFeeRuleResponse):
+    """基础年费规则模型（继承自AnnualFeeRuleResponse）"""
+    pass
+
+# 基础年费记录模型（用于服务层）
+class AnnualFeeRecord(AnnualFeeRecordResponse):
+    """基础年费记录模型（继承自AnnualFeeRecordResponse）"""
+    pass
+
+# 别名定义
+AnnualFeeRuleCreate = AnnualFeeRuleCreateRequest
+AnnualFeeRuleUpdate = AnnualFeeRuleUpdateRequest
+AnnualFeeRecordCreate = AnnualFeeRecordCreateRequest
+AnnualFeeRecordUpdate = AnnualFeeRecordUpdateRequest
+AnnualFeeQueryFilter = AnnualFeeListQuery
+AnnualFeeBatchOperation = AnnualFeeBatchRequest
+AnnualFeeStats = AnnualFeeStatistics 

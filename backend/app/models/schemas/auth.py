@@ -3,6 +3,15 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 from datetime import datetime
+from enum import Enum
+
+class CodeType(str, Enum):
+    """验证码类型枚举"""
+    LOGIN = "login"
+    REGISTER = "register"
+    RESET_PASSWORD = "reset_password"
+    CHANGE_PHONE = "change_phone"
+    BIND_WECHAT = "bind_wechat"
 
 class UserRegisterRequest(BaseModel):
     """用户注册请求"""
@@ -11,6 +20,7 @@ class UserRegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=30, description="密码", example="Password123")
     nickname: Optional[str] = Field(None, max_length=50, description="昵称", example="测试用户")
     phone: Optional[str] = Field(None, description="手机号", example="13800138000")
+    verification_code: Optional[str] = Field(None, description="验证码", example="123456")
 
 class LoginRequest(BaseModel):
     """登录请求基类"""
@@ -38,7 +48,7 @@ class WechatLoginRequest(LoginRequest):
 
 class UserProfile(BaseModel):
     """用户资料"""
-    user_id: str = Field(..., description="用户ID", example="489f8b55-5e75-4f18-982f-fca23b9d3ee4")
+    id: Union[str, int] = Field(..., description="用户ID", example="489f8b55-5e75-4f18-982f-fca23b9d3ee4")
     username: str = Field(..., description="用户名", example="testuser2024")
     email: str = Field(..., description="邮箱", example="user@example.com")
     nickname: Optional[str] = Field(None, description="昵称", example="测试用户")
@@ -75,13 +85,13 @@ class ResetPasswordRequest(BaseModel):
 class SendCodeRequest(BaseModel):
     """发送验证码请求"""
     phone: str = Field(..., description="手机号", example="13800138000")
-    code_type: str = Field(..., description="验证码类型", example="login")
+    code_type: CodeType = Field(..., description="验证码类型", example=CodeType.LOGIN)
 
 class VerifyCodeRequest(BaseModel):
     """验证验证码请求"""
     phone: str = Field(..., description="手机号", example="13800138000")
     code: str = Field(..., description="验证码", example="123456")
-    code_type: str = Field(..., description="验证码类型", example="login")
+    code_type: CodeType = Field(..., description="验证码类型", example=CodeType.LOGIN)
 
 class RefreshTokenRequest(BaseModel):
     """刷新令牌请求"""

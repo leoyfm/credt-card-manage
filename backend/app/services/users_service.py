@@ -19,11 +19,7 @@ from app.models.schemas.user import (
     LoginLogInfo,
     WechatBindingInfo
 )
-from app.models.database.user import User
-from app.models.database.login_log import LoginLog
-from app.models.database.wechat_binding import WechatBinding
-from app.models.database.verification_code import VerificationCode
-from app.models.database.user_session import UserSession
+from app.models.database.user import User, LoginLog, WechatBinding, VerificationCode
 from app.utils.response import ResponseUtil
 from app.core.logging.logger import get_logger
 

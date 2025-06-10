@@ -61,12 +61,29 @@ class TestDiscovery:
     
     def _load_suite_from_file(self, file_path: Path) -> Optional[TestSuite]:
         """从文件加载测试套件"""
-        # 构建模块路径
-        relative_path = file_path.relative_to(Path.cwd())
-        module_path = str(relative_path).replace(os.sep, '.').replace('.py', '')
-        
         try:
-            # 导入模块
+            # 修复Windows路径问题 - 使用绝对路径计算相对模块路径
+            file_abs_path = file_path.resolve()
+            cwd_abs_path = Path.cwd().resolve()
+            
+            # 确保文件在当前工作目录下
+            try:
+                relative_path = file_abs_path.relative_to(cwd_abs_path)
+            except ValueError:
+                print(f"文件 {file_path} 不在当前工作目录下")
+                return None
+            
+            # 转换为模块路径，统一使用点分隔符
+            module_path = str(relative_path).replace('\\', '.').replace('/', '.').replace('.py', '')
+            
+            # 动态导入模块
+            import importlib
+            import sys
+            
+            # 确保当前目录在Python路径中
+            if str(cwd_abs_path) not in sys.path:
+                sys.path.insert(0, str(cwd_abs_path))
+            
             module = importlib.import_module(module_path)
             
             # 查找测试套件类
@@ -77,7 +94,7 @@ class TestDiscovery:
                     return obj._suite
                     
         except Exception as e:
-            print(f"导入模块 {module_path} 失败: {e}")
+            print(f"导入模块失败: {e}")
             return None
         
         return None

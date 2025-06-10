@@ -13,14 +13,15 @@ class Settings(BaseModel):
     DEBUG: bool = False
     
     # 数据库配置
-    DATABASE_URL: str = "sqlite:///./credit_card.db"
+    DATABASE_URL: str = "postgresql://credit_user:credit_password@localhost:5432/credit_card_db"
     DATABASE_POOL_SIZE: int = 50
     DATABASE_MAX_OVERFLOW: int = 100
     
     # JWT配置
-    JWT_SECRET_KEY: str = "your-super-secret-jwt-key-change-this-in-production"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRE_MINUTES: int = 1440
+    SECRET_KEY: str = "sdssdfsdfesdfsdfsgesefesfsfsefse"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    
     
     # 日志配置
     LOG_LEVEL: str = "INFO"
@@ -33,6 +34,22 @@ class Settings(BaseModel):
     # 安全配置
     ALLOWED_HOSTS: List[str] = ["*"]
     CORS_ORIGINS: List[str] = ["*"]
+    
+    # 微信配置
+    WECHAT_APP_ID: str = ""
+    WECHAT_APP_SECRET: str = ""
+    WECHAT_TOKEN: str = ""
+    
+    # 短信配置
+    SMS_API_KEY: str = ""
+    SMS_API_SECRET: str = ""
+    
+    # 邮件配置
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_TLS: bool = True
 
 # 全局设置实例
 settings = Settings() 

@@ -17,7 +17,7 @@ from decimal import Decimal
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, model_validator, ConfigDict
 from .common import BaseResponse, BasePaginatedResponse, BaseQueryParams
 
 
@@ -98,7 +98,7 @@ class RecommendationContext(BaseModel):
     weight: float = Field(1.0, ge=0, le=1, description="权重，0-1之间")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "context_type": "spending_pattern",
                 "context_data": {
@@ -119,7 +119,7 @@ class RecommendationAction(BaseModel):
     difficulty_level: str = Field("medium", description="执行难度：easy/medium/hard")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "action_type": "switch_card",
                 "action_params": {
@@ -169,17 +169,19 @@ class RecommendationRuleBase(BaseModel):
             raise ValueError("有效期结束时间必须晚于开始时间")
         return v
     
-    @root_validator
+    @model_validator(mode='before')
+    @classmethod
     def validate_ml_config(cls, values):
         """验证机器学习配置"""
-        is_ml_based = values.get('is_ml_based', False)
-        ml_model_type = values.get('ml_model_type')
-        
-        if is_ml_based and not ml_model_type:
-            raise ValueError("基于机器学习的规则必须指定模型类型")
-        if not is_ml_based and ml_model_type:
-            raise ValueError("非机器学习规则不应指定模型类型")
+        if isinstance(values, dict):
+            is_ml_based = values.get('is_ml_based', False)
+            ml_model_type = values.get('ml_model_type')
             
+            if is_ml_based and not ml_model_type:
+                raise ValueError("基于机器学习的规则必须指定模型类型")
+            if not is_ml_based and ml_model_type:
+                raise ValueError("非机器学习规则不应指定模型类型")
+                
         return values
 
 
@@ -234,6 +236,8 @@ class RecommendationRuleUpdate(BaseModel):
 
 class RecommendationRuleResponse(RecommendationRuleBase):
     """推荐规则响应模型"""
+    model_config = ConfigDict(protected_namespaces=())
+    
     id: UUID = Field(..., description="规则ID")
     user_id: UUID = Field(..., description="创建用户ID")
     
@@ -618,6 +622,8 @@ class RecommendationPerformanceMetrics(BaseModel):
 
 class MLModelConfig(BaseModel):
     """机器学习模型配置模型"""
+    model_config = ConfigDict(protected_namespaces=())
+    
     model_id: str = Field(..., description="模型ID")
     model_name: str = Field(..., description="模型名称")
     model_type: MLModelType = Field(..., description="模型类型")
@@ -790,4 +796,16 @@ class BatchOperationResult(BaseModel):
                     }
                 ]
             }
-        } 
+        }
+
+
+# 基础推荐规则模型（用于服务层）
+class RecommendationRule(RecommendationRuleResponse):
+    """基础推荐规则模型（继承自RecommendationRuleResponse）"""
+    pass
+
+
+# 基础推荐记录模型（用于服务层）  
+class RecommendationRecord(RecommendationResultResponse):
+    """基础推荐记录模型（继承自RecommendationResultResponse）"""
+    pass

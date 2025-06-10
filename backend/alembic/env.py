@@ -12,11 +12,15 @@ import os
 import sys
 
 # 添加项目根目录到系统路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
-# 导入模型
-from db_models.base import Base
-from config import settings
+# 导入模型 - 使用新的应用模型路径
+from app.models.database.base import Base
+from app.core.config import settings
+
+# 导入所有模型以确保它们被注册到Base.metadata
+from app.models.database import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

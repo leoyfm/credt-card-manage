@@ -34,7 +34,7 @@ from app.models.database.annual_fee import (
     FeeWaiverRule as DBFeeRule,
     AnnualFeeRecord as DBFeeRecord
 )
-from app.models.database.card import Card as DBCard
+from app.models.database.card import CreditCard as DBCard
 from app.models.database.transaction import Transaction as DBTransaction
 from app.utils.response import ResponseUtil
 from app.core.logging.logger import get_logger

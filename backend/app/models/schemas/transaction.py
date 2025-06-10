@@ -304,4 +304,36 @@ class ExpenseAlert(BaseModel):
     threshold_amount: Decimal = Field(..., description="阈值金额")
     message: str = Field(..., description="预警消息")
     severity: str = Field(..., description="严重程度：low, medium, high")
-    created_at: datetime = Field(..., description="创建时间") 
+    created_at: datetime = Field(..., description="创建时间")
+
+# 分类统计模型
+class CategoryStats(BaseModel):
+    """分类统计"""
+    category_id: Optional[UUID] = Field(None, description="分类ID")
+    category_name: str = Field(..., description="分类名称")
+    transaction_count: int = Field(0, description="交易笔数")
+    total_amount: Decimal = Field(Decimal("0"), description="总金额")
+    percentage: float = Field(0.0, description="占比")
+    
+# 月度趋势模型
+class MonthlyTrend(BaseModel):
+    """月度趋势"""
+    year: int = Field(..., description="年份")
+    month: int = Field(..., description="月份") 
+    transaction_count: int = Field(0, description="交易笔数")
+    total_amount: Decimal = Field(Decimal("0"), description="总金额")
+    expense_amount: Decimal = Field(Decimal("0"), description="支出金额")
+    income_amount: Decimal = Field(Decimal("0"), description="收入金额")
+
+# 基础交易模型（用于服务层）
+class Transaction(TransactionResponse):
+    """基础交易模型（继承自TransactionResponse）"""
+    pass
+
+# 别名定义
+TransactionCreate = TransactionCreateRequest
+TransactionUpdate = TransactionUpdateRequest
+TransactionQueryFilter = TransactionListQuery
+TransactionBatchOperation = TransactionBatchRequest
+TransactionStats = TransactionStatistics
+TransactionSummary = TransactionResponse  # 简化的交易摘要信息 

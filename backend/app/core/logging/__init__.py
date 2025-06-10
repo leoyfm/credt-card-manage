@@ -1,5 +1,6 @@
 """日志系统初始化"""
 
+import logging
 import logging.config
 import os
 from ..config import settings
@@ -41,5 +42,20 @@ def setup_logging():
     os.makedirs(os.path.dirname(settings.LOG_FILE_PATH), exist_ok=True)
     logging.config.dictConfig(LOGGING_CONFIG)
 
+def get_logger(name: str = None) -> logging.Logger:
+    """
+    获取日志记录器
+    
+    Args:
+        name: 日志记录器名称，通常使用 __name__
+    
+    Returns:
+        配置好的日志记录器
+    """
+    return logging.getLogger(name)
+
 # 自动初始化
-setup_logging() 
+setup_logging()
+
+# 导出主要函数
+__all__ = ["setup_logging", "get_logger"] 

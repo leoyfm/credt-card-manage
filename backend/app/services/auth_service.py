@@ -24,17 +24,14 @@ from app.models.schemas.auth import (
     VerifyCodeRequest,
     ChangePasswordRequest,
     ResetPasswordRequest,
-    CodeType
+    CodeType,
+    UserProfile
 )
 from app.models.schemas.user import (
-    UserProfile,
     UserUpdateRequest,
     WechatBindingInfo
 )
-from app.models.database.user import User
-from app.models.database.verification_code import VerificationCode
-from app.models.database.wechat_binding import WechatBinding
-from app.models.database.login_log import LoginLog
+from app.models.database import User, VerificationCode, WechatBinding, LoginLog
 from app.utils.auth import AuthUtils
 from app.utils.verification import VerificationCodeUtils
 from app.utils.security import SecurityUtils

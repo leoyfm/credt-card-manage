@@ -1,129 +1,98 @@
 """
-通用响应模型 - API v1
+通用响应模型
 
-定义所有API接口使用的通用响应格式：
-- 统一成功响应格式
-- 统一错误响应格式
-- 分页响应格式
-- 其他通用模型
+提供统一的API响应格式、分页响应格式等通用模型。
 """
 
+from typing import TypeVar, Generic, List, Optional, Any, Dict
 from datetime import datetime
-from typing import Generic, TypeVar, Optional, List, Any, Dict
+from pydantic import BaseModel, Field
 from uuid import UUID
 
-from pydantic import BaseModel, Field
-from pydantic.generics import GenericModel
-
-
+# 泛型类型变量
 T = TypeVar('T')
 
-
-class ApiResponse(GenericModel, Generic[T]):
-    """统一API响应格式"""
-    
-    success: bool = Field(
-        description="请求是否成功",
-        example=True
-    )
-    
-    code: int = Field(
-        description="响应状态码",
-        example=200
-    )
-    
-    message: str = Field(
-        description="响应消息",
-        example="操作成功"
-    )
-    
-    data: Optional[T] = Field(
-        description="响应数据",
-        default=None
-    )
-    
-    timestamp: datetime = Field(
-        description="响应时间戳",
-        example="2024-12-01T10:00:00Z"
-    )
-    
-    trace_id: Optional[str] = Field(
-        description="请求追踪ID",
-        example="abc123def456",
-        default=None
-    )
-
-
 class PaginationInfo(BaseModel):
-    """分页信息"""
-    
-    current_page: int = Field(
-        description="当前页码",
-        example=1
-    )
-    
-    page_size: int = Field(
-        description="每页数量",
-        example=20
-    )
-    
-    total: int = Field(
-        description="总记录数",
-        example=100
-    )
-    
-    total_pages: int = Field(
-        description="总页数",
-        example=5
-    )
-    
-    has_next: bool = Field(
-        description="是否有下一页",
-        example=True
-    )
-    
-    has_prev: bool = Field(
-        description="是否有上一页",
-        example=False
-    )
+    """分页信息模型"""
+    page: int = Field(..., description="当前页码", example=1)
+    page_size: int = Field(..., description="每页数量", example=20)
+    total: int = Field(..., description="总记录数", example=100)
+    total_pages: int = Field(..., description="总页数", example=5)
+    has_next: bool = Field(..., description="是否有下一页", example=True)
+    has_prev: bool = Field(..., description="是否有上一页", example=False)
 
 
-class ApiPagedResponse(GenericModel, Generic[T]):
-    """分页API响应格式"""
-    
-    success: bool = Field(
-        description="请求是否成功",
-        example=True
-    )
-    
-    code: int = Field(
-        description="响应状态码",
-        example=200
-    )
-    
-    message: str = Field(
-        description="响应消息",
-        example="查询成功"
-    )
-    
-    data: List[T] = Field(
-        description="响应数据列表",
-        default=[]
-    )
-    
-    pagination: PaginationInfo = Field(
-        description="分页信息"
-    )
-    
-    timestamp: datetime = Field(
-        description="响应时间戳",
+class ApiResponse(BaseModel):
+    """通用API响应模型"""
+    success: bool = Field(..., description="请求是否成功", example=True)
+    code: int = Field(..., description="响应状态码", example=200)
+    message: str = Field(..., description="响应消息", example="操作成功")
+    data: Optional[Any] = Field(None, description="响应数据")
+    timestamp: datetime = Field(default_factory=datetime.now, description="响应时间")
+
+
+class ApiPagedResponse(BaseModel):
+    """分页响应模型"""
+    success: bool = Field(..., description="请求是否成功", example=True)
+    code: int = Field(..., description="响应状态码", example=200)
+    message: str = Field(..., description="响应消息", example="操作成功")
+    data: Optional[Any] = Field(None, description="响应数据")
+    pagination: Optional[PaginationInfo] = Field(None, description="分页信息")
+    timestamp: datetime = Field(default_factory=datetime.now, description="响应时间")
+
+
+class ListQuery(BaseModel):
+    """列表查询基础模型"""
+    page: int = Field(1, ge=1, description="页码，从1开始", example=1)
+    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", example=20)
+    keyword: str = Field("", description="搜索关键词", example="")
+
+
+class TimestampMixin(BaseModel):
+    """时间戳混入模型"""
+    created_at: datetime = Field(
+        description="创建时间",
         example="2024-12-01T10:00:00Z"
     )
     
-    trace_id: Optional[str] = Field(
-        description="请求追踪ID",
-        example="abc123def456",
-        default=None
+    updated_at: datetime = Field(
+        description="更新时间", 
+        example="2024-12-01T10:00:00Z"
+    )
+
+
+class IdMixin(BaseModel):
+    """ID混入模型"""
+    id: UUID = Field(description="唯一标识符")
+
+
+class UserInfoMixin(BaseModel):
+    """用户信息混入模型"""
+    created_by: Optional[UUID] = Field(
+        description="创建者ID",
+        example="550e8400-e29b-41d4-a716-446655440000"
+    )
+    
+    updated_by: Optional[UUID] = Field(
+        description="更新者ID",
+        example="550e8400-e29b-41d4-a716-446655440000"
+    )
+
+
+class StatusMixin(BaseModel):
+    """状态混入模型"""
+    is_active: bool = Field(
+        True,
+        description="是否激活",
+        example=True
+    )
+
+
+class AuditMixin(TimestampMixin, UserInfoMixin):
+    """审计混入模型（包含时间戳和用户信息）"""
+    last_updated: datetime = Field(
+        description="最后更新时间",
+        example="2024-12-01T10:00:00Z"
     )
 
 
@@ -349,4 +318,10 @@ class ApiMetrics(BaseModel):
     last_updated: datetime = Field(
         description="最后更新时间",
         example="2024-12-01T10:00:00Z"
-    ) 
+    )
+
+
+# 别名定义（兼容旧代码）
+BaseResponse = ApiResponse
+BasePaginatedResponse = ApiPagedResponse
+BaseQueryParams = ListQuery 

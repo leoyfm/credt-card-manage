@@ -34,9 +34,9 @@ from app.models.schemas.common import ApiResponse, ApiPagedResponse, SuccessMess
 from app.utils.response import ResponseUtil
 from app.core.logging.logger import get_logger
 
-# 导入原有服务
-from services.users_service import UsersService
-from services.auth_service import AuthService
+# 导入服务层 - 修复导入路径
+from app.services.users_service import UsersService
+from app.services.auth_service import AuthService
 from sqlalchemy.orm import Session
 
 logger = get_logger("api.user.profile")

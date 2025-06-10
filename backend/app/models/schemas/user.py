@@ -14,6 +14,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, EmailStr, validator
 
+# 重新导入UserProfile以保持向后兼容
+from app.models.schemas.auth import UserProfile
+
 
 class UserUpdateRequest(BaseModel):
     """用户资料更新请求模型"""
@@ -321,4 +324,19 @@ class UserActivityInfo(BaseModel):
     active_sessions: int = Field(
         description="活跃会话数",
         example=2
-    ) 
+    )
+
+
+# 基础用户模型（用于服务层）
+class User(UserProfileResponse):
+    """基础用户模型（继承自UserProfileResponse）"""
+    pass
+
+# 别名定义（兼容旧代码）
+UserResponse = UserProfileResponse
+UserCreate = UserUpdateRequest  # 可复用更新请求模型的字段
+UserUpdate = UserUpdateRequest
+UserQueryFilter = BaseModel  # 基础查询参数
+UserBatchOperation = BaseModel  # 批量操作模型
+UserStats = UserStatsInfo
+UserSummary = UserProfileResponse  # 简化的用户摘要信息 

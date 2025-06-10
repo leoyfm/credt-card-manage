@@ -248,4 +248,17 @@ class CardImportResponse(BaseModel):
     failed_count: int = Field(..., description="导入失败数量")
     skipped_count: int = Field(..., description="跳过数量")
     failed_items: List[Dict[str, Any]] = Field(default_factory=list, description="失败项目详情")
-    message: str = Field(..., description="导入结果消息") 
+    message: str = Field(..., description="导入结果消息")
+
+# 基础信用卡模型（用于服务层）
+class Card(CardResponse):
+    """基础信用卡模型（继承自CardResponse）"""
+    pass
+
+# 别名定义
+CardCreate = CardCreateRequest
+CardUpdate = CardUpdateRequest
+CardQueryFilter = CardListQuery
+CardBatchOperation = CardBatchUpdateRequest
+CardStats = CardStatistics
+CardSummary = CardResponse  # 简化的卡片摘要信息 
