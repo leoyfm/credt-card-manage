@@ -75,7 +75,7 @@ class AuthService:
     @staticmethod
     def create_tokens(user: User) -> dict:
         """生成JWT访问令牌和刷新令牌"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now( timezone(timedelta(hours=8)))
         access_payload = {
             "sub": str(user.id),
             "username": user.username,

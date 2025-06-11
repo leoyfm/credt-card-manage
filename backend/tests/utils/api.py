@@ -1,25 +1,61 @@
+"""
+API测试客户端
+"""
 import requests
+from typing import Optional, Dict, Any
+import json
+
 
 class APIClient:
-    def __init__(self, base_url=None):
-        self.base_url = base_url or "http://127.0.0.1:8000"
-        self.session = requests.Session()
-        self.token = None
-        self.data = None
-
-    def set_auth(self, token):
-        self.token = token
-        self.session.headers.update({"Authorization": f"Bearer {token}"})
-
-    def post(self, path, data=None):
-        resp = self.session.post(f"{self.base_url}{path}", json=data)
-        self.data = self._parse(resp)
-        return resp
-
-    def get(self, path, params=None):
-        resp = self.session.get(f"{self.base_url}{path}", params=params)
-        self.data = self._parse(resp)
-        return resp
+    """API测试客户端"""
+    
+    def __init__(self, base_url: str = "http://127.0.0.1:8000"):
+        self.base_url = base_url
+        self.headers = {"Content-Type": "application/json"}
+    
+    def set_auth(self, token: str):
+        """设置认证令牌"""
+        self.headers["Authorization"] = f"Bearer {token}"
+    
+    def get(self, url: str, params: Optional[Dict] = None):
+        """GET请求"""
+        return requests.get(
+            f"{self.base_url}{url}",
+            headers=self.headers,
+            params=params
+        )
+    
+    def post(self, url: str, data: Optional[Dict] = None):
+        """POST请求"""
+        return requests.post(
+            f"{self.base_url}{url}",
+            headers=self.headers,
+            json=data
+        )
+    
+    def put(self, url: str, data: Optional[Dict] = None):
+        """PUT请求"""
+        return requests.put(
+            f"{self.base_url}{url}",
+            headers=self.headers,
+            json=data
+        )
+    
+    def delete(self, url: str, data: Optional[Dict] = None):
+        """DELETE请求"""
+        return requests.delete(
+            f"{self.base_url}{url}",
+            headers=self.headers,
+            json=data
+        )
+    
+    def patch(self, url: str, data: Optional[Dict] = None):
+        """PATCH请求"""
+        return requests.patch(
+            f"{self.base_url}{url}",
+            headers=self.headers,
+            json=data
+        )
 
     def _parse(self, resp):
         try:

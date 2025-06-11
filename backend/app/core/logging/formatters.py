@@ -1,6 +1,6 @@
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 class ColoredFormatter(logging.Formatter):
     COLORS = {
@@ -20,7 +20,7 @@ class ColoredFormatter(logging.Formatter):
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
-            "timestamp": datetime.utcnow().isoformat() + 'Z',
+            "timestamp": datetime.now(timezone(timedelta(hours=8))).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

@@ -9,7 +9,7 @@ from app.db.database import SessionLocal
 from app.utils.response import ResponseUtil
 import jwt
 from app.core.config import settings
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter(
     prefix="/auth",
@@ -107,8 +107,8 @@ def refresh_token(
         user_id = payload["sub"]
         access_payload = {
             "sub": user_id,
-            "exp": datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
-            "iat": datetime.utcnow()
+            "exp": datetime.now(timezone(timedelta(hours=8))) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES),
+            "iat": datetime.now(timezone(timedelta(hours=8)))
         }
         access_token = jwt.encode(access_payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
         return ResponseUtil.success(

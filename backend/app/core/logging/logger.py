@@ -3,7 +3,7 @@ import logging.handlers
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', '..', 'logs')
 LOG_DIR = os.path.abspath(LOG_DIR)
@@ -15,7 +15,7 @@ LOG_FILE = os.path.join(LOG_DIR, 'app.log')
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
-            "timestamp": datetime.now(datetime.UTC).isoformat(),
+            "timestamp": datetime.now(timezone(timedelta(hours=8))).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
