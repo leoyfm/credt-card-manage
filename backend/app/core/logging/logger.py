@@ -1,45 +1,50 @@
-"""结构化日志记录器"""
-
 import logging
+import logging.handlers
+import os
+import sys
 import json
 from datetime import datetime
-from typing import Dict, Any
-from ..config import settings
+
+LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', '..', 'logs')
+LOG_DIR = os.path.abspath(LOG_DIR)
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+LOG_FILE = os.path.join(LOG_DIR, 'app.log')
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.utcnow().isoformat() + 'Z',
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "pathname": record.pathname,
+            "lineno": record.lineno,
+            "funcName": record.funcName,
+        }
+        if record.exc_info:
+            log_record["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(log_record, ensure_ascii=False)
 
 class StructuredLogger:
-    """结构化日志记录器"""
-    
-    def __init__(self, name: str):
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(getattr(logging, settings.LOG_LEVEL))
-        
-    def _format_message(self, level: str, message: str, extra: Dict[str, Any] = None) -> str:
-        """格式化日志消息为JSON"""
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "level": level,
-            "logger": self.logger.name,
-            "message": message,
-            "extra": extra or {}
-        }
-        return json.dumps(log_entry, ensure_ascii=False)
-    
-    def info(self, message: str, **kwargs):
-        """记录INFO级别日志"""
-        self.logger.info(self._format_message("INFO", message, kwargs))
-    
-    def error(self, message: str, **kwargs):
-        """记录ERROR级别日志"""
-        self.logger.error(self._format_message("ERROR", message, kwargs))
-    
-    def warning(self, message: str, **kwargs):
-        """记录WARNING级别日志"""
-        self.logger.warning(self._format_message("WARNING", message, kwargs))
-    
-    def debug(self, message: str, **kwargs):
-        """记录DEBUG级别日志"""
-        self.logger.debug(self._format_message("DEBUG", message, kwargs))
+    @staticmethod
+    def get_logger(name: str = "app", level: int = logging.INFO) -> logging.Logger:
+        logger = logging.getLogger(name)
+        if logger.handlers:
+            return logger
+        logger.setLevel(level)
+        # 控制台
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setFormatter(JsonFormatter())
+        logger.addHandler(console_handler)
+        # 文件轮转
+        file_handler = logging.handlers.TimedRotatingFileHandler(
+            LOG_FILE, when="midnight", backupCount=30, encoding="utf-8"
+        )
+        file_handler.setFormatter(JsonFormatter())
+        logger.addHandler(file_handler)
+        return logger
 
-def get_logger(name: str) -> StructuredLogger:
-    """获取结构化日志记录器"""
-    return StructuredLogger(name) 
+# 默认应用日志
+app_logger = StructuredLogger.get_logger("app") 

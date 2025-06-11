@@ -1,55 +1,29 @@
-"""应用配置管理"""
+"""
+应用配置模块
+"""
+from pydantic_settings import BaseSettings
 
-from pydantic import BaseModel
-from typing import Optional, List
-import os
-
-class Settings(BaseModel):
-    """应用设置"""
-    
-    # 应用配置
-    APP_NAME: str = "信用卡管理系统"
-    VERSION: str = "2.0.0"
-    DEBUG: bool = False
-    
+class Settings(BaseSettings):
     # 数据库配置
     DATABASE_URL: str = "postgresql://credit_user:credit_password@localhost:5432/credit_card_db"
-    DATABASE_POOL_SIZE: int = 50
-    DATABASE_MAX_OVERFLOW: int = 100
-    
-    # JWT配置
-    SECRET_KEY: str = "sdssdfsdfesdfsdfsgesefesfsfsefse"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    
-    
-    # 日志配置
-    LOG_LEVEL: str = "INFO"
-    LOG_FORMAT: str = "json"
-    LOG_FILE_PATH: str = "logs/app.log"
-    
-    # Redis配置
-    REDIS_URL: Optional[str] = None
-    
-    # 安全配置
-    ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[str] = ["*"]
-    
-    # 微信配置
-    WECHAT_APP_ID: str = ""
-    WECHAT_APP_SECRET: str = ""
-    WECHAT_TOKEN: str = ""
-    
-    # 短信配置
-    SMS_API_KEY: str = ""
-    SMS_API_SECRET: str = ""
-    
-    # 邮件配置
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USER: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_TLS: bool = True
+    TEST_DATABASE_URL: str = "postgresql://credit_user:credit_password@localhost:5432/test"
 
-# 全局设置实例
+    # JWT配置
+    JWT_SECRET_KEY: str = "super-secret-key"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # 邮箱配置（可扩展）
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = ""
+    MAIL_PORT: int = 465
+    MAIL_SERVER: str = ""
+    MAIL_TLS: bool = True
+    MAIL_SSL: bool = False
+
+    class Config:
+        env_file = ".env"
+
 settings = Settings() 

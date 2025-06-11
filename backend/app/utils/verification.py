@@ -1,2 +1,0 @@
-class VerificationCodeUtils:
-    pass
