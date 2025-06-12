@@ -121,7 +121,7 @@ class UserService:
         try:
             # 验证确认密码
             if password_data.new_password != password_data.confirm_password:
-                raise BusinessRuleError("新密码与确认密码不匹配")
+                raise ValidationError("新密码与确认密码不匹配")
             
             user = self.db.query(User).filter(User.id == user_id).first()
             if not user:
@@ -134,7 +134,7 @@ class UserService:
                 user.password_hash.encode('utf-8')
             ):
                 logger.warning(f"密码修改失败，当前密码错误: {user_id}")
-                raise BusinessRuleError("当前密码错误")
+                raise AuthenticationError("当前密码错误")
             
             # 加密新密码
             salt = bcrypt.gensalt()
@@ -281,7 +281,7 @@ class UserService:
                 user.password_hash.encode('utf-8')
             ):
                 logger.warning(f"账户注销失败，密码错误: {user_id}")
-                raise BusinessRuleError("密码错误")
+                raise AuthenticationError("密码错误")
             
             # 软删除：禁用账户
             user.is_active = False

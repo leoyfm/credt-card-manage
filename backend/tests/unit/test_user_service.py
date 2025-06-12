@@ -15,6 +15,9 @@ from app.models.schemas.user import (
     ChangePasswordRequest,
     AccountDeletionRequest
 )
+from app.core.exceptions.custom import (
+    AuthenticationError, ValidationError, ResourceNotFoundError
+)
 from tests.utils.db import create_test_session
 
 @pytest.fixture
@@ -130,11 +133,11 @@ class TestUserService:
             confirm_password="NewPass123456"
         )
         
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AuthenticationError) as exc_info:
             user_service.change_password(str(test_user.id), password_data)
         
         assert exc_info.value.status_code == 401
-        assert "当前密码错误" in str(exc_info.value.detail)
+        assert "当前密码错误" in str(exc_info.value.detail["message"])
 
     def test_change_password_mismatch(self, user_service: UserService, test_user: User):
         """测试新密码不匹配"""
@@ -144,11 +147,11 @@ class TestUserService:
             confirm_password="DifferentPass123456"
         )
         
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             user_service.change_password(str(test_user.id), password_data)
         
         assert exc_info.value.status_code == 422
-        assert "新密码与确认密码不匹配" in str(exc_info.value.detail)
+        assert "新密码与确认密码不匹配" in str(exc_info.value.detail["message"])
 
     def test_get_user_login_logs(self, user_service: UserService, test_user: User, db_session: Session):
         """测试获取用户登录日志"""
@@ -213,11 +216,11 @@ class TestUserService:
             reason="测试注销"
         )
         
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(AuthenticationError) as exc_info:
             user_service.delete_user_account(str(test_user.id), deletion_data)
         
         assert exc_info.value.status_code == 401
-        assert "密码错误" in str(exc_info.value.detail)
+        assert "密码错误" in str(exc_info.value.detail["message"])
 
     def test_record_login_log_success(self, user_service: UserService, test_user: User):
         """测试记录登录日志成功"""
