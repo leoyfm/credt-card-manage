@@ -4,6 +4,7 @@ FastAPI应用入口
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.public import auth as auth_router
+from app.api.v1.public import system as system_router
 from app.api.v1.user import user_router
 from app.core.logging import app_logger
 from contextlib import asynccontextmanager
@@ -31,8 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # 注册API路由
-app.include_router(auth_router.router, prefix="/api/v1/public")  # Level 1 - 公开接口
+app.include_router(auth_router.router, prefix="/api/v1/public")  # Level 1 - 公开接口  
+app.include_router(system_router.router, prefix="/api/v1/public")  # Level 1 - 系统信息
 app.include_router(user_router, prefix="/api/v1")  # Level 2 - 用户接口
 
 if __name__ == "__main__":

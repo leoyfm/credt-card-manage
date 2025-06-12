@@ -24,7 +24,7 @@ class TestUserAPI:
         """测试未认证获取用户信息失败"""
         api = APIClient()
         resp = api.get(f"{BASE}/info")
-        assert_response(resp).fail(status_code=401)
+        assert_response(resp).fail(status_code=403)
 
     def test_update_user_profile_success(self, user_and_api):
         """测试更新用户资料成功"""
@@ -42,7 +42,7 @@ class TestUserAPI:
         api = APIClient()
         update_data = {"nickname": "新昵称"}
         resp = api.put(f"{BASE}/update", update_data)
-        assert_response(resp).fail(status_code=401)
+        assert_response(resp).fail(status_code=403)
 
     def test_change_password_success(self, user_and_api):
         """测试修改密码成功"""

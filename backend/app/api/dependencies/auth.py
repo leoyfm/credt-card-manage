@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional
 from uuid import UUID
-import jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 
 from app.db.database import get_db
 from app.models.database.user import User
@@ -14,12 +14,13 @@ from app.core.config import settings
 from app.core.exceptions.custom import AuthenticationError, AuthorizationError
 from app.core.logging.logger import app_logger as logger
 
-# JWT安全方案
-security = HTTPBearer()
+# JWT安全方案 - 自动模式会在没有Authorization头时抛出403
+# 我们使用非自动模式来自己处理认证逻辑
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
     """
@@ -36,6 +37,14 @@ async def get_current_user(
         AuthenticationError: 认证失败
     """
     try:
+        # 检查是否提供了认证头
+        if credentials is None:
+            logger.warning("缺少认证头")
+            raise AuthenticationError("需要认证")
+        
+        if not credentials.credentials:
+            logger.warning("认证令牌为空")
+            raise AuthenticationError("无效的认证令牌")
         # 解码JWT令牌
         payload = jwt.decode(
             credentials.credentials, 
@@ -49,10 +58,10 @@ async def get_current_user(
             logger.warning(f"JWT令牌缺少必要字段: user_id={user_id}, username={username}")
             raise AuthenticationError("无效的认证令牌")
             
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         logger.warning("JWT令牌已过期")
         raise AuthenticationError("认证令牌已过期")
-    except jwt.JWTError as e:
+    except JWTError as e:
         logger.warning(f"JWT解码失败: {str(e)}")
         raise AuthenticationError("无效的认证令牌")
     

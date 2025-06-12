@@ -121,7 +121,7 @@ class UserService:
         try:
             # 验证确认密码
             if password_data.new_password != password_data.confirm_password:
-                raise ValidationError("新密码与确认密码不匹配")
+                raise BusinessRuleError("新密码与确认密码不匹配")
             
             user = self.db.query(User).filter(User.id == user_id).first()
             if not user:
@@ -134,7 +134,7 @@ class UserService:
                 user.password_hash.encode('utf-8')
             ):
                 logger.warning(f"密码修改失败，当前密码错误: {user_id}")
-                raise AuthenticationError("当前密码错误")
+                raise BusinessRuleError("当前密码错误")
             
             # 加密新密码
             salt = bcrypt.gensalt()
@@ -241,7 +241,7 @@ class UserService:
             self.db.refresh(login_log)
             
             logger.info(f"创建登录日志成功: {user_id}, 类型: {login_type}, 成功: {is_success}")
-            return LoginLogResponse.from_orm(login_log)
+            return LoginLogResponse.model_validate(login_log)
             
         except Exception as e:
             self.db.rollback()
@@ -281,7 +281,7 @@ class UserService:
                 user.password_hash.encode('utf-8')
             ):
                 logger.warning(f"账户注销失败，密码错误: {user_id}")
-                raise AuthenticationError("密码错误")
+                raise BusinessRuleError("密码错误")
             
             # 软删除：禁用账户
             user.is_active = False
@@ -374,6 +374,7 @@ class UserService:
                 # 交易统计 - 需要从transactions表查询
                 total_transactions=0,
                 total_spending=0.0,
+                this_month_spending=0.0,
                 total_income=0.0,
                 avg_transaction=0.0,
                 

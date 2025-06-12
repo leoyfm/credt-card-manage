@@ -1,5 +1,5 @@
 import uuid
-
+ 
 def build_user(**kwargs):
     username = kwargs.get("username") or f"user_{uuid.uuid4().hex[:8]}"
     email = kwargs.get("email") or f"{username}@example.com"

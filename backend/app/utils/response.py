@@ -127,11 +127,21 @@ class ResponseUtil:
         if data is None:
             return None
         
+        # 处理UUID
+        if isinstance(data, UUID):
+            return str(data)
+        
+        # 处理datetime
+        if isinstance(data, datetime):
+            return data.isoformat()
+        
         # 处理Pydantic模型
         if hasattr(data, 'model_dump'):
-            return data.model_dump()
+            dumped = data.model_dump()
+            return ResponseUtil._serialize_data(dumped)  # 递归处理转换后的字典
         elif hasattr(data, 'dict'):
-            return data.dict()
+            dumped = data.dict()
+            return ResponseUtil._serialize_data(dumped)  # 递归处理转换后的字典
         
         # 处理列表
         if isinstance(data, list):
@@ -140,14 +150,6 @@ class ResponseUtil:
         # 处理字典
         if isinstance(data, dict):
             return {key: ResponseUtil._serialize_data(value) for key, value in data.items()}
-        
-        # 处理UUID
-        if isinstance(data, UUID):
-            return str(data)
-        
-        # 处理datetime
-        if isinstance(data, datetime):
-            return data.isoformat()
         
         return data
     

@@ -40,12 +40,16 @@ async def get_user_info(
 ):
     """获取用户个人信息"""
     try:
-        profile = user_service.get_user_profile(str(current_user.id))
+        app_logger.info(f"开始获取用户信息: user_id={current_user.id}, type={type(current_user.id)}")
+        profile = user_service.get_user_profile(current_user.id)
+        app_logger.info(f"用户服务返回数据: {type(profile)}")
         return ResponseUtil.success(data=profile, message="获取个人信息成功")
     except HTTPException:
         raise
     except Exception as e:
         app_logger.error(f"获取个人信息失败: {str(e)}")
+        import traceback
+        app_logger.error(f"错误详情: {traceback.format_exc()}")
         return ResponseUtil.error(message="获取个人信息失败")
 
 @router.put(
@@ -61,7 +65,7 @@ async def update_user_profile(
 ):
     """更新用户个人资料"""
     try:
-        profile = user_service.update_user_profile(str(current_user.id), update_data)
+        profile = user_service.update_user_profile(current_user.id, update_data)
         return ResponseUtil.success(data=profile, message="个人资料更新成功")
     except HTTPException:
         raise
@@ -82,7 +86,7 @@ async def change_password(
 ):
     """修改用户密码"""
     try:
-        success = user_service.change_password(str(current_user.id), password_data)
+        success = user_service.change_password(current_user.id, password_data)
         return ResponseUtil.success(data=success, message="密码修改成功")
     except HTTPException:
         raise
@@ -104,10 +108,12 @@ async def get_login_logs(
 ):
     """获取用户登录日志"""
     try:
+        app_logger.info(f"开始获取用户登录日志: user_id={current_user.id}, page={page}, page_size={page_size}")
         logs, total = user_service.get_user_login_logs(
-            str(current_user.id), page, page_size
+            current_user.id, page, page_size
         )
         
+        app_logger.info(f"用户服务返回: logs={len(logs) if logs else 0}, total={total}")
         return ResponseUtil.paginated(
             items=logs,
             total=total,
@@ -117,6 +123,8 @@ async def get_login_logs(
         )
     except Exception as e:
         app_logger.error(f"获取登录日志失败: {str(e)}")
+        import traceback
+        app_logger.error(f"错误详情: {traceback.format_exc()}")
         return ResponseUtil.error(message="获取登录日志失败")
 
 @router.post(
@@ -136,8 +144,8 @@ async def logout(
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
         
-        user_service.record_login_log(
-            user_id=str(current_user.id),
+        user_service.create_login_log(
+            user_id=current_user.id,
             login_type="logout",
             login_method="api",
             ip_address=ip_address,
@@ -167,7 +175,7 @@ async def delete_account(
 ):
     """注销用户账户"""
     try:
-        success = user_service.delete_user_account(str(current_user.id), deletion_data)
+        success = user_service.delete_user_account(current_user.id, deletion_data)
         return ResponseUtil.success(data=success, message="账户注销成功")
     except HTTPException:
         raise
@@ -187,7 +195,7 @@ async def get_wechat_bindings(
 ):
     """获取用户微信绑定信息"""
     try:
-        bindings = user_service.get_user_wechat_bindings(str(current_user.id))
+        bindings = user_service.get_wechat_bindings(current_user.id)
         return ResponseUtil.success(data=bindings, message="获取微信绑定信息成功")
     except Exception as e:
         app_logger.error(f"获取微信绑定信息失败: {str(e)}")
@@ -205,7 +213,7 @@ async def get_user_statistics(
 ):
     """获取用户统计信息"""
     try:
-        stats = user_service.get_user_statistics(str(current_user.id))
+        stats = user_service.get_user_statistics(current_user.id)
         return ResponseUtil.success(data=stats, message="获取统计信息成功")
     except Exception as e:
         app_logger.error(f"获取统计信息失败: {str(e)}")

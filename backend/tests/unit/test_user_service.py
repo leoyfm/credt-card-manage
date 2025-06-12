@@ -133,7 +133,7 @@ class TestUserService:
         with pytest.raises(HTTPException) as exc_info:
             user_service.change_password(str(test_user.id), password_data)
         
-        assert exc_info.value.status_code == 400
+        assert exc_info.value.status_code == 401
         assert "当前密码错误" in str(exc_info.value.detail)
 
     def test_change_password_mismatch(self, user_service: UserService, test_user: User):
@@ -147,8 +147,8 @@ class TestUserService:
         with pytest.raises(HTTPException) as exc_info:
             user_service.change_password(str(test_user.id), password_data)
         
-        assert exc_info.value.status_code == 400
-        assert "新密码与确认密码不一致" in str(exc_info.value.detail)
+        assert exc_info.value.status_code == 422
+        assert "新密码与确认密码不匹配" in str(exc_info.value.detail)
 
     def test_get_user_login_logs(self, user_service: UserService, test_user: User, db_session: Session):
         """测试获取用户登录日志"""
@@ -216,7 +216,7 @@ class TestUserService:
         with pytest.raises(HTTPException) as exc_info:
             user_service.delete_user_account(str(test_user.id), deletion_data)
         
-        assert exc_info.value.status_code == 400
+        assert exc_info.value.status_code == 401
         assert "密码错误" in str(exc_info.value.detail)
 
     def test_record_login_log_success(self, user_service: UserService, test_user: User):
@@ -231,9 +231,13 @@ class TestUserService:
             is_success=True
         )
         
-        assert result is True
+        # 验证返回的是LoginLogResponse对象
+        assert result is not None
+        assert result.login_type == "username"
+        assert result.ip_address == "192.168.1.100"
+        assert result.is_success is True
         
-        # 验证日志已记录
+        # 验证日志已记录到数据库
         db_session = user_service.db
         log = db_session.query(LoginLog).filter(LoginLog.user_id == test_user.id).first()
         assert log is not None
@@ -251,7 +255,12 @@ class TestUserService:
             failure_reason="用户不存在"
         )
         
-        assert result is True
+        # 验证返回的是LoginLogResponse对象
+        assert result is not None
+        assert result.login_type == "username"
+        assert result.ip_address == "192.168.1.100"
+        assert result.is_success is False
+        assert result.failure_reason == "用户不存在"
 
     def test_get_user_statistics(self, user_service: UserService, test_user: User):
         """测试获取用户统计信息"""

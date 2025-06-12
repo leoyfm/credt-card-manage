@@ -180,6 +180,7 @@ class UserStatisticsResponse(BaseModel):
     # 交易统计
     total_transactions: int = Field(..., description="总交易笔数")
     total_spending: float = Field(..., description="总支出金额")
+    this_month_spending: float = Field(..., description="本月支出金额")
     total_income: float = Field(..., description="总收入金额")
     avg_transaction: float = Field(..., description="平均交易金额")
     
@@ -209,6 +210,7 @@ class UserStatisticsResponse(BaseModel):
                 "credit_utilization": 30.0,
                 "total_transactions": 156,
                 "total_spending": 25680.50,
+                "this_month_spending": 3240.80,
                 "total_income": 3200.00,
                 "avg_transaction": 185.67,
                 "total_annual_fees": 1200.00,
