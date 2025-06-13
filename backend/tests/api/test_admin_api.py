@@ -233,7 +233,8 @@ class TestAdminAPI:
     def test_admin_delete_user_success(self):
         """测试管理员删除用户成功"""
         # 创建一个临时用户用于删除测试
-        temp_user = build_user(username_prefix="temp_delete")
+        import time
+        temp_user = build_user(username=f"temp_delete_user_{int(time.time())}")
         temp_api = APIClient()
         
         # 注册临时用户
@@ -295,7 +296,8 @@ class TestAdminAPI:
     def test_admin_cannot_delete_other_admin(self):
         """测试管理员不能删除其他管理员"""
         # 创建另一个管理员用户
-        other_admin = build_user(username_prefix="other_admin")
+        import time
+        other_admin = build_user(username=f"other_admin_user_{int(time.time())}")
         other_api = APIClient()
         
         # 注册另一个管理员
