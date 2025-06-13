@@ -45,6 +45,36 @@ class FeeWaiverRule(Base):
     card = relationship("CreditCard", back_populates="fee_waiver_rules")
     annual_fee_records = relationship("AnnualFeeRecord", back_populates="waiver_rule")
 
+
+class AnnualFeeRule(Base):
+    """年费规则表 - 简化版本，与服务层兼容"""
+    __tablename__ = "annual_fee_rules"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, comment="规则ID")
+    card_id = Column(UUID(as_uuid=True), ForeignKey("credit_cards.id", ondelete="CASCADE"), nullable=False, comment="信用卡ID")
+    
+    # 年费信息
+    fee_year = Column(Integer, nullable=False, comment="年费年份")
+    base_fee = Column(DECIMAL(10, 2), nullable=False, comment="基础年费金额")
+    
+    # 减免条件
+    waiver_type = Column(String(20), nullable=False, comment="减免类型: rigid, spending_amount, transaction_count, points_redemption")
+    waiver_condition_value = Column(DECIMAL(15, 2), comment="减免条件数值")
+    waiver_condition_unit = Column(String(10), comment="减免条件单位")
+    points_per_yuan = Column(DECIMAL(5, 2), default=1.00, comment="积分倍率")
+    
+    # 状态
+    is_active = Column(Boolean, default=True, comment="是否启用")
+    notes = Column(Text, comment="备注")
+    
+    # 时间戳
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), comment="创建时间")
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
+
+    # 关系
+    card = relationship("CreditCard", back_populates="annual_fee_rules")
+    fee_records = relationship("AnnualFeeRecord", back_populates="rule")
+
     def __repr__(self):
         return f"<FeeWaiverRule(id={self.id}, name={self.rule_name}, type={self.condition_type})>"
 
@@ -56,6 +86,7 @@ class AnnualFeeRecord(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, comment="记录ID")
     card_id = Column(UUID(as_uuid=True), ForeignKey("credit_cards.id", ondelete="CASCADE"), nullable=False, comment="信用卡ID")
     waiver_rule_id = Column(UUID(as_uuid=True), ForeignKey("fee_waiver_rules.id"), comment="减免规则ID")
+    rule_id = Column(UUID(as_uuid=True), ForeignKey("annual_fee_rules.id"), comment="年费规则ID")
     
     # 年费信息
     fee_year = Column(Integer, nullable=False, comment="年费年份")
@@ -85,6 +116,7 @@ class AnnualFeeRecord(Base):
     # 关系
     card = relationship("CreditCard", back_populates="annual_fee_records")
     waiver_rule = relationship("FeeWaiverRule", back_populates="annual_fee_records")
+    rule = relationship("AnnualFeeRule", back_populates="fee_records")
 
     def __repr__(self):
         return f"<AnnualFeeRecord(id={self.id}, year={self.fee_year}, status={self.status})>" 
