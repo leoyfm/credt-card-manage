@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status, Request
 from sqlalchemy.orm import Session
 from app.models.schemas.auth import RegisterRequest, LoginRequest, TokenResponse, AuthResponse, RefreshTokenRequest
 from app.services.auth_service import AuthService
-from app.db.database import SessionLocal
+from app.db.database import SessionLocal, get_db
 from app.utils.response import ResponseUtil
 import jwt
 from app.core.config import settings
@@ -16,13 +16,6 @@ router = APIRouter(
     tags=["认证"],
     responses={404: {"description": "未找到"}}
 )
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.post("/register", response_model=AuthResponse, summary="用户注册", response_description="注册成功返回用户信息和令牌")
 def register(

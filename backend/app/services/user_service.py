@@ -324,7 +324,7 @@ class UserService:
                             .filter(WechatBinding.is_active == True)\
                             .all()
             
-            binding_responses = [WechatBindingResponse.from_orm(binding) for binding in bindings]
+            binding_responses = [WechatBindingResponse.model_validate(binding) for binding in bindings]
             
             logger.info(f"获取用户微信绑定成功: {user_id}, 数量: {len(binding_responses)}")
             return binding_responses
@@ -460,7 +460,7 @@ class UserService:
                         .limit(page_size)\
                         .all()
             
-            user_responses = [UserProfileResponse.from_orm(user) for user in users]
+            user_responses = [UserProfileResponse.model_validate(user) for user in users]
             
             logger.info(f"用户搜索成功, 关键词: {search_params.keyword}, 总数: {total}")
             return user_responses, total
@@ -504,7 +504,7 @@ class UserService:
             self.db.refresh(user)
             
             logger.info(f"更新用户状态成功: {user_id}, 字段: {list(update_dict.keys())}")
-            return UserProfileResponse.from_orm(user)
+            return UserProfileResponse.model_validate(user)
             
         except Exception as e:
             self.db.rollback()
