@@ -26,15 +26,6 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_test_db() -> Generator[Session, None, None]:
-    """获取测试数据库会话"""
-    db = TestSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 def create_all_tables():
     """创建所有表（用于测试）"""
     Base.metadata.create_all(bind=TestEngine)

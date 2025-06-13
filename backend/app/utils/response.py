@@ -5,109 +5,17 @@
 from fastapi.responses import JSONResponse
 from fastapi import status
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional, Type, List, Dict, Generic, TypeVar
-from pydantic import BaseModel, ConfigDict
+from typing import Any, Optional, Type, List, Dict
+from pydantic import BaseModel
 from uuid import UUID
-import json
 
-T = TypeVar('T')
-
-
-class PaginationInfo(BaseModel):
-    """分页信息模型"""
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "current_page": 1,
-                "page_size": 20,
-                "total": 100,
-                "total_pages": 5,
-                "has_next": True,
-                "has_prev": False
-            }
-        }
-    )
-    
-    current_page: int
-    page_size: int
-    total: int
-    total_pages: int
-    has_next: bool
-    has_prev: bool
-
-
-class ApiResponse(BaseModel, Generic[T]):
-    """标准API响应模型"""
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "success": True,
-                "code": 200,
-                "message": "操作成功",
-                "data": {},
-                "timestamp": "2024-12-05T10:30:00.123Z"
-            }
-        }
-    )
-    
-    success: bool
-    code: int
-    message: str
-    data: Optional[T] = None
-    timestamp: str
-
-
-class ApiPagedResponse(BaseModel, Generic[T]):
-    """分页API响应模型"""
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "success": True,
-                "code": 200,
-                "message": "查询成功",
-                "data": [],
-                "pagination": {
-                    "current_page": 1,
-                    "page_size": 20,
-                    "total": 100,
-                    "total_pages": 5,
-                    "has_next": True,
-                    "has_prev": False
-                },
-                "timestamp": "2024-12-05T10:30:00.123Z"
-            }
-        }
-    )
-    
-    success: bool
-    code: int
-    message: str
-    data: List[T]
-    pagination: PaginationInfo
-    timestamp: str
-
-
-class ApiErrorResponse(BaseModel):
-    """错误API响应模型"""
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "success": False,
-                "code": 400,
-                "message": "请求参数错误",
-                "error_detail": "用户名不能为空",
-                "error_code": "VALIDATION_ERROR",
-                "timestamp": "2024-12-05T10:30:00.123Z"
-            }
-        }
-    )
-    
-    success: bool
-    code: int
-    message: str
-    error_detail: Optional[str] = None
-    error_code: Optional[str] = None
-    timestamp: str
+# 从common模块导入响应模型
+from app.models.schemas.common import (
+    PaginationInfo, 
+    ApiResponse, 
+    ApiPagedResponse, 
+    ApiErrorResponse
+)
 
 
 class ResponseUtil:

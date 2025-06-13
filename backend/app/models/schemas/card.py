@@ -7,7 +7,7 @@
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from uuid import UUID
 
 from app.models.schemas.common import PaginationInfo
@@ -71,7 +71,8 @@ class CreditCardBase(BaseModel):
     is_primary: bool = Field(False, description="是否主卡", example=False)
     notes: Optional[str] = Field(None, description="备注", example="主要用于日常消费")
 
-    @validator('expiry_year')
+    @field_validator('expiry_year')
+    @classmethod
     def validate_expiry_year(cls, v):
         """验证有效期年份不能是过去的年份"""
         from datetime import datetime
@@ -80,11 +81,12 @@ class CreditCardBase(BaseModel):
             raise ValueError('有效期年份不能是过去的年份')
         return v
 
-    @validator('due_date')
-    def validate_due_date(cls, v, values):
+    @field_validator('due_date')
+    @classmethod
+    def validate_due_date(cls, v, info):
         """验证还款日必须在账单日之后"""
-        if v is not None and 'billing_date' in values and values['billing_date'] is not None:
-            billing_date = values['billing_date']
+        if v is not None and info.data.get('billing_date') is not None:
+            billing_date = info.data['billing_date']
             if v <= billing_date:
                 raise ValueError('还款日必须在账单日之后')
         return v
@@ -126,7 +128,8 @@ class CreditCardStatusUpdate(BaseModel):
     status: str = Field(..., description="状态", example="active")
     reason: Optional[str] = Field(None, description="状态变更原因", example="用户申请冻结")
 
-    @validator('status')
+    @field_validator('status')
+    @classmethod
     def validate_status(cls, v):
         """验证状态值"""
         valid_statuses = ['active', 'frozen', 'closed']

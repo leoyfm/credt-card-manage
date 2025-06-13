@@ -17,7 +17,7 @@ from app.core.exceptions.custom import (
     ResourceNotFoundError, BusinessRuleError, ValidationError
 )
 from app.core.logging.logger import app_logger as logger
-from app.utils.pagination import get_pagination_info
+from app.models.schemas.common import PaginationInfo
 
 
 class AdminUserService:
@@ -119,7 +119,7 @@ class AdminUserService:
                 user_summaries.append(user_summary)
             
             # 分页信息
-            pagination_info = get_pagination_info(page, page_size, total)
+            pagination_info = PaginationInfo(page, page_size, total)
             
             logger.info(f"管理员查询用户列表成功: total={total}, page={page}, size={page_size}")
             return user_summaries, pagination_info
@@ -320,7 +320,7 @@ class AdminUserService:
             ]
             
             # 分页信息
-            pagination_info = get_pagination_info(page, page_size, total)
+            pagination_info = PaginationInfo(page, page_size, total)
             
             logger.info(f"管理员查询用户登录日志成功: user_id={user_id}, total={total}")
             return log_responses, pagination_info
