@@ -71,13 +71,13 @@ class CreditCardBase(BaseModel):
     expiry_year: int = Field(..., ge=2024, description="有效期年份", json_schema_extra={"example": 2027})
     billing_date: Optional[int] = Field(None, ge=1, le=31, description="账单日", json_schema_extra={"example": 5})
     due_date: Optional[int] = Field(None, ge=1, le=31, description="还款日", json_schema_extra={"example": 25})
-    annual_fee: Decimal = Field(0, ge=0, description="年费金额", json_schema_extra={"example": 300.00})
+    annual_fee: Decimal = Field(Decimal("0"), ge=0, description="年费金额", json_schema_extra={"example": 300.00})
     fee_waivable: bool = Field(False, description="年费是否可减免", json_schema_extra={"example": True})
     fee_auto_deduct: bool = Field(False, description="是否自动扣费", json_schema_extra={"example": False})
     fee_due_month: Optional[int] = Field(None, ge=1, le=12, description="年费到期月份", json_schema_extra={"example": 12})
     features: List[str] = Field(default_factory=list, description="特色功能", json_schema_extra={"example": ["积分兑换", "免费洗车"]})
-    points_rate: Decimal = Field(1.00, ge=0, description="积分倍率", json_schema_extra={"example": 1.50})
-    cashback_rate: Decimal = Field(0.00, ge=0, le=100, description="返现比例", json_schema_extra={"example": 1.00})
+    points_rate: Decimal = Field(Decimal("1.00"), ge=0, description="积分倍率", json_schema_extra={"example": 1.50})
+    cashback_rate: Decimal = Field(Decimal("0.00"), ge=0, le=100, description="返现比例", json_schema_extra={"example": 1.00})
     is_primary: bool = Field(False, description="是否主卡", json_schema_extra={"example": False})
     notes: Optional[str] = Field(None, description="备注", json_schema_extra={"example": "主要用于日常消费"})
 
@@ -100,6 +100,14 @@ class CreditCardBase(BaseModel):
             if v <= billing_date:
                 raise ValueError('还款日必须在账单日之后')
         return v
+
+    @field_validator('credit_limit', 'annual_fee', 'points_rate', 'cashback_rate')
+    @classmethod
+    def validate_decimal_fields(cls, v):
+        """自动转换数值类型为Decimal，避免序列化警告"""
+        if v is None:
+            return v
+        return Decimal(str(v))
 
 
 class CreditCardCreate(CreditCardBase):
@@ -132,6 +140,14 @@ class CreditCardUpdate(BaseModel):
     is_primary: Optional[bool] = Field(None, description="是否主卡")
     notes: Optional[str] = Field(None, description="备注")
 
+    @field_validator('credit_limit', 'available_limit', 'used_limit', 'annual_fee', 'points_rate', 'cashback_rate')
+    @classmethod
+    def validate_decimal_fields(cls, v):
+        """自动转换数值类型为Decimal，避免序列化警告"""
+        if v is None:
+            return v
+        return Decimal(str(v))
+
 
 class CreditCardStatusUpdate(BaseModel):
     """信用卡状态更新模型"""
@@ -160,18 +176,18 @@ class CreditCardResponse(BaseModel):
     card_level: Optional[str] = Field(None, max_length=20, description="卡片等级", json_schema_extra={"example": "白金卡"})
     credit_limit: Decimal = Field(..., ge=0, description="信用额度", json_schema_extra={"example": 50000.00})
     available_limit: Optional[Decimal] = Field(None, description="可用额度", json_schema_extra={"example": 45000.00})
-    used_limit: Decimal = Field(0, description="已用额度", json_schema_extra={"example": 5000.00})
+    used_limit: Decimal = Field(Decimal("0"), description="已用额度", json_schema_extra={"example": 5000.00})
     expiry_month: int = Field(..., ge=1, le=12, description="有效期月份", json_schema_extra={"example": 12})
     expiry_year: int = Field(..., description="有效期年份（响应模型不验证过期）", json_schema_extra={"example": 2027})
     billing_date: Optional[int] = Field(None, ge=1, le=31, description="账单日", json_schema_extra={"example": 5})
     due_date: Optional[int] = Field(None, ge=1, le=31, description="还款日", json_schema_extra={"example": 25})
-    annual_fee: Decimal = Field(0, ge=0, description="年费金额", json_schema_extra={"example": 300.00})
+    annual_fee: Decimal = Field(Decimal("0"), ge=0, description="年费金额", json_schema_extra={"example": 300.00})
     fee_waivable: bool = Field(False, description="年费是否可减免", json_schema_extra={"example": True})
     fee_auto_deduct: bool = Field(False, description="是否自动扣费", json_schema_extra={"example": False})
     fee_due_month: Optional[int] = Field(None, ge=1, le=12, description="年费到期月份", json_schema_extra={"example": 12})
     features: List[str] = Field(default_factory=list, description="特色功能", json_schema_extra={"example": ["积分兑换", "免费洗车"]})
-    points_rate: Decimal = Field(1.00, ge=0, description="积分倍率", json_schema_extra={"example": 1.50})
-    cashback_rate: Decimal = Field(0.00, ge=0, le=100, description="返现比例", json_schema_extra={"example": 1.00})
+    points_rate: Decimal = Field(Decimal("1.00"), ge=0, description="积分倍率", json_schema_extra={"example": 1.50})
+    cashback_rate: Decimal = Field(Decimal("0.00"), ge=0, le=100, description="返现比例", json_schema_extra={"example": 1.00})
     status: str = Field("active", description="状态", json_schema_extra={"example": "active"})
     is_primary: bool = Field(False, description="是否主卡", json_schema_extra={"example": False})
     notes: Optional[str] = Field(None, description="备注", json_schema_extra={"example": "主要用于日常消费"})
@@ -185,6 +201,14 @@ class CreditCardResponse(BaseModel):
     expiry_display: Optional[str] = Field(None, description="有效期显示", json_schema_extra={"example": "12/27"})
     is_expired: Optional[bool] = Field(None, description="是否已过期", json_schema_extra={"example": False})
     credit_utilization_rate: Optional[float] = Field(None, description="信用额度使用率", json_schema_extra={"example": 10.0})
+
+    @field_validator('credit_limit', 'available_limit', 'used_limit', 'annual_fee', 'points_rate', 'cashback_rate')
+    @classmethod
+    def validate_decimal_fields(cls, v):
+        """自动转换数值类型为Decimal，避免序列化警告"""
+        if v is None:
+            return v
+        return Decimal(str(v))
 
     @model_serializer
     def serialize_model(self) -> dict:
@@ -215,6 +239,14 @@ class CreditCardSummary(BaseModel):
     total_available_limit: Decimal = Field(..., description="总可用额度", json_schema_extra={"example": 225000.00})
     average_utilization_rate: float = Field(..., description="平均使用率", json_schema_extra={"example": 10.0})
     cards_expiring_soon: int = Field(..., description="即将过期卡片数", json_schema_extra={"example": 1})
+
+    @field_validator('total_credit_limit', 'total_used_limit', 'total_available_limit')
+    @classmethod
+    def validate_decimal_fields(cls, v):
+        """自动转换数值类型为Decimal，避免序列化警告"""
+        if v is None:
+            return v
+        return Decimal(str(v))
 
 
 # ============ 查询参数模型 ============
