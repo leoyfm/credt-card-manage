@@ -36,6 +36,7 @@ class User(Base):
     login_logs = relationship("LoginLog", back_populates="user")
     wechat_bindings = relationship("WechatBinding", back_populates="user", cascade="all, delete-orphan")
     credit_cards = relationship("CreditCard", back_populates="user", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
 
 class VerificationCode(Base):
     """

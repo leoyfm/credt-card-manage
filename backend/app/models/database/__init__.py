@@ -6,6 +6,8 @@
 
 from .user import User, VerificationCode, LoginLog, WechatBinding
 from .card import Bank, CreditCard
+from .transaction import TransactionCategory, Transaction
+from .annual_fee import FeeWaiverRule, AnnualFeeRecord
 
 __all__ = [
     "User",
@@ -13,5 +15,9 @@ __all__ = [
     "LoginLog",
     "WechatBinding",
     "Bank",
-    "CreditCard"
+    "CreditCard",
+    "TransactionCategory",
+    "Transaction",
+    "FeeWaiverRule",
+    "AnnualFeeRecord"
 ] 

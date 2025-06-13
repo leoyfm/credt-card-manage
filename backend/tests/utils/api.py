@@ -61,4 +61,33 @@ class APIClient:
         try:
             return resp.json()
         except Exception:
-            return None 
+            return None
+
+
+class BaseAPITest:
+    """API测试基类"""
+    
+    def __init__(self, client):
+        self.client = client
+    
+    def assert_api_success(self, response, expected_code: int = 200):
+        """断言API调用成功"""
+        assert response.status_code == expected_code, f"期望状态码{expected_code}，实际{response.status_code}"
+        
+        try:
+            data = response.json()
+            assert data.get("success", True) is True, f"API调用失败: {data}"
+        except Exception:
+            # 如果不是JSON响应，只检查状态码
+            pass
+    
+    def assert_api_error(self, response, expected_code: int = 400):
+        """断言API调用失败"""
+        assert response.status_code == expected_code, f"期望错误状态码{expected_code}，实际{response.status_code}"
+        
+        try:
+            data = response.json()
+            assert data.get("success", False) is False, f"期望API调用失败，但成功了: {data}"
+        except Exception:
+            # 如果不是JSON响应，只检查状态码
+            pass 

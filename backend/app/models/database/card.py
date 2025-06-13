@@ -85,10 +85,9 @@ class CreditCard(Base):
     # 关联关系
     user = relationship("User", back_populates="credit_cards")
     bank = relationship("Bank", back_populates="credit_cards")
-    # TODO: 添加其他模块的关系
-    # transactions = relationship("Transaction", back_populates="card", cascade="all, delete-orphan")
-    # annual_fee_records = relationship("AnnualFeeRecord", back_populates="card", cascade="all, delete-orphan")
-    # fee_waiver_rules = relationship("FeeWaiverRule", back_populates="card", cascade="all, delete-orphan")
+    transactions = relationship("Transaction", back_populates="card", cascade="all, delete-orphan")
+    annual_fee_records = relationship("AnnualFeeRecord", back_populates="card", cascade="all, delete-orphan")
+    fee_waiver_rules = relationship("FeeWaiverRule", back_populates="card", cascade="all, delete-orphan")
 
     @property
     def expiry_display(self) -> str:

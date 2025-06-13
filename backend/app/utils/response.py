@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Type, List, Dict
 from pydantic import BaseModel
 from uuid import UUID
+from decimal import Decimal
 
 # 从common模块导入响应模型
 from app.models.schemas.common import (
@@ -38,6 +39,10 @@ class ResponseUtil:
         # 处理UUID
         if isinstance(data, UUID):
             return str(data)
+        
+        # 处理Decimal
+        if isinstance(data, Decimal):
+            return float(data)
         
         # 处理datetime
         if isinstance(data, datetime):
