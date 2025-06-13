@@ -77,7 +77,7 @@ class SortOrder(BaseModel):
 
 class QueryFilter(BaseModel):
     """查询过滤器基类"""
-    keyword: str = Field("", description="搜索关键词", example="")
-    page: int = Field(1, ge=1, description="页码，从1开始", example=1)
-    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", example=20)
+    keyword: str = Field("", description="搜索关键词", json_schema_extra={"example": ""})
+    page: int = Field(1, ge=1, description="页码，从1开始", json_schema_extra={"example": 1})
+    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", json_schema_extra={"example": 20})
     sort: Optional[SortOrder] = Field(None, description="排序设置") 

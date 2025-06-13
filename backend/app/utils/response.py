@@ -48,7 +48,7 @@ class ResponseUtil:
             dumped = data.model_dump()
             return ResponseUtil._serialize_data(dumped)  # 递归处理转换后的字典
         elif hasattr(data, 'dict'):
-            dumped = data.dict()
+            dumped = data.model_dump()
             return ResponseUtil._serialize_data(dumped)  # 递归处理转换后的字典
         
         # 处理列表

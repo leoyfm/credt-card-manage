@@ -41,7 +41,7 @@ class CardService:
                 raise BusinessRuleError(f"银行代码 {bank_data.bank_code} 已存在")
 
             # 创建银行
-            bank = Bank(**bank_data.dict())
+            bank = Bank(**bank_data.model_dump())
             self.db.add(bank)
             self.db.commit()
             self.db.refresh(bank)
