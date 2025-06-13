@@ -154,7 +154,7 @@ async def get_user_login_logs(
     
     return ResponseUtil.paginated(
         items=login_logs,
-        total=pagination_info['total'],
+        total=pagination_info.total,
         page=page,
         page_size=page_size,
         message="登录日志查询成功"

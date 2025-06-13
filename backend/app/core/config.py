@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     MAIL_TLS: bool = True
     MAIL_SSL: bool = False
 
+    DEBUG: bool = True
+
     model_config = ConfigDict(env_file=".env")
 
 settings = Settings() 

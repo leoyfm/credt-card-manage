@@ -1,134 +1,88 @@
 #!/usr/bin/env python3
 """
-调试管理员API
+管理员API调试脚本
 """
-import requests
-import json
 import sys
 import os
-
-# 添加项目路径
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+import requests
+import json
+from tests.utils.api import APIClient
+from tests.factories.user_factory import build_user
+
 def test_admin_api():
-    # 登录管理员
-    login_resp = requests.post('http://localhost:8000/api/v1/public/auth/login/username', json={
-        'username': 'admin',
-        'password': 'Admin123456'
-    })
+    """测试管理员API并捕获错误"""
+    print("🧪 开始测试管理员API...")
     
-    print(f"登录状态: {login_resp.status_code}")
-    if login_resp.status_code != 200:
-        print(f"登录失败: {login_resp.text}")
-        return
-    
-    token = login_resp.json()['data']['access_token']
-    print(f"Token获取成功: {token[:50]}...")
-    
-    # 测试用户列表API
-    headers = {'Authorization': f'Bearer {token}'}
-    list_resp = requests.get('http://localhost:8000/api/v1/admin/users/list', headers=headers)
-    
-    print(f"用户列表状态: {list_resp.status_code}")
-    print(f"用户列表响应: {list_resp.text}")
-
-def test_service_directly():
-    """直接测试服务层"""
-    print("\n=== 测试服务层 ===")
     try:
-        print("开始测试服务层...")
-        from app.db.database import SessionLocal
-        from app.services.admin_service import AdminUserService
-        from app.utils.response import ResponseUtil
+        # 1. 登录管理员用户
+        print("\n1. 尝试登录管理员用户...")
+        api = APIClient()
         
-        db = SessionLocal()
-        admin_service = AdminUserService(db)
+        login_resp = api.post("/api/v1/public/auth/login/username", {
+            "username": "admin",
+            "password": "Admin123456"
+        })
         
-        users, pagination_info = admin_service.get_users_list(
-            page=1,
-            page_size=20,
-            search=None,
-            is_active=None,
-            is_admin=None,
-            is_verified=None
-        )
-        
-        print(f"服务层测试成功: 找到 {len(users)} 个用户")
-        print(f"分页信息: {pagination_info}")
-        
-        # 测试ResponseUtil.paginated
-        response = ResponseUtil.paginated(
-            items=users,
-            total=pagination_info['total'],
-            page=pagination_info['page'],
-            page_size=pagination_info['page_size'],
-            message="测试成功"
-        )
-        print("服务层测试成功: ResponseUtil.paginated 调用正常")
-        print(f"响应状态: {response.status_code}")
-        
-        db.close()
-        
-    except Exception as e:
-        print(f"服务层测试失败: {e}")
-        import traceback
-        traceback.print_exc()
-
-def test_route_directly():
-    """直接测试路由层"""
-    print("\n=== 测试路由层 ===")
-    try:
-        from app.db.database import SessionLocal
-        from app.models.database.user import User
-        from app.services.admin_service import AdminUserService
-        from app.utils.response import ResponseUtil
-        
-        db = SessionLocal()
-        
-        # 查找管理员用户
-        admin_user = db.query(User).filter(User.username == "admin").first()
-        if not admin_user:
-            print("未找到管理员用户")
+        print(f"   登录响应状态码: {login_resp.status_code}")
+        if login_resp.status_code != 200:
+            print(f"   登录失败: {login_resp.text}")
             return
         
-        print(f"找到管理员用户: {admin_user.username}")
+        login_data = login_resp.json()
+        print(f"   登录成功: {login_data.get('success', False)}")
         
-        # 测试服务层
-        admin_service = AdminUserService(db)
-        users, pagination_info = admin_service.get_users_list(
-            page=1,
-            page_size=20,
-            search=None,
-            is_active=None,
-            is_admin=None,
-            is_verified=None
-        )
+        if not login_data.get("success"):
+            print(f"   登录响应: {login_data}")
+            return
+            
+        token = login_data["data"]["access_token"]
+        api.set_auth(token)
+        print(f"   获取到token: {token[:20]}...")
         
-        # 测试ResponseUtil.paginated
-        response = ResponseUtil.paginated(
-            items=users,
-            total=pagination_info['total'],
-            page=pagination_info['page'],
-            page_size=pagination_info['page_size'],
-            message="测试成功"
-        )
+        # 2. 测试获取用户列表
+        print("\n2. 测试获取用户列表...")
+        response = api.get("/api/v1/admin/users/list?page=1&page_size=5")
+        print(f"   响应状态码: {response.status_code}")
         
-        print(f"路由层测试成功: {type(response)}")
-        print(f"响应数据: {response}")
+        if response.status_code == 500:
+            print(f"   ❌ 500错误详情:")
+            print(f"   响应头: {dict(response.headers)}")
+            print(f"   响应体: {response.text}")
+            
+            # 检查是否有详细错误信息
+            try:
+                error_data = response.json()
+                print(f"   错误JSON: {json.dumps(error_data, indent=2, ensure_ascii=False)}")
+            except:
+                print("   无法解析错误JSON")
         
-        db.close()
+        elif response.status_code == 200:
+            print(f"   ✅ 请求成功")
+            data = response.json()
+            print(f"   返回数据: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        else:
+            print(f"   其他错误: {response.status_code}")
+            print(f"   响应: {response.text}")
+        
+        # 3. 测试用户统计接口
+        print("\n3. 测试用户统计接口...")
+        response = api.get("/api/v1/admin/users/statistics")
+        print(f"   响应状态码: {response.status_code}")
+        
+        if response.status_code == 500:
+            print(f"   ❌ 500错误详情:")
+            print(f"   响应体: {response.text}")
+        elif response.status_code == 200:
+            print(f"   ✅ 请求成功")
+            data = response.json()
+            print(f"   统计数据: {json.dumps(data, indent=2, ensure_ascii=False)}")
         
     except Exception as e:
-        print(f"路由层测试失败: {str(e)}")
+        print(f"❌ 测试过程中发生异常: {str(e)}")
         import traceback
         traceback.print_exc()
 
 if __name__ == "__main__":
-    print("=== 测试API ===")
-    test_admin_api()
-    
-    print("\n=== 测试服务层 ===")
-    test_service_directly()
-    
-    print("\n=== 测试路由层 ===")
-    test_route_directly() 
+    test_admin_api() 

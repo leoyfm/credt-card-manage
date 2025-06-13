@@ -8,6 +8,13 @@ from app.api.v1.public import system as system_router
 from app.api.v1.user import user_router
 from app.api.v1.admin import users as admin_users_router
 from app.core.logging import app_logger
+from app.core.middleware import (
+    RequestLoggingMiddleware,
+    PerformanceMiddleware,
+    ExceptionHandlerMiddleware,
+    SecurityMiddleware
+)
+from app.core.config import settings
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -24,13 +31,48 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS配置
+# 中间件配置（按执行顺序添加，后添加的先执行）
+
+# 1. 安全中间件（最外层）
+app.add_middleware(
+    SecurityMiddleware,
+    enable_security_headers=True,
+    enable_rate_limiting=True,
+    rate_limit_requests=100,  # 每分钟100次请求
+    rate_limit_window=60,
+    enable_ip_blocking=True,
+    max_failed_attempts=5,
+    block_duration=300  # 阻止5分钟
+)
+
+# 2. CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # 生产环境应该限制具体域名
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# 3. 性能监控中间件
+app.add_middleware(
+    PerformanceMiddleware,
+    slow_request_threshold=2.0,  # 2秒以上为慢请求
+    enable_system_metrics=True,
+    log_all_requests=False  # 只记录慢请求
+)
+
+# 4. 请求日志中间件
+app.add_middleware(
+    RequestLoggingMiddleware,
+    log_body=False,  # 生产环境建议关闭
+    max_body_size=1024
+)
+
+# 5. 全局异常处理中间件（最内层）
+app.add_middleware(
+    ExceptionHandlerMiddleware,
+    debug=settings.DEBUG if hasattr(settings, 'DEBUG') else False
 )
 
 
