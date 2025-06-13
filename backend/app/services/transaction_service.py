@@ -20,9 +20,7 @@ from app.models.schemas.transaction import (
 from app.core.exceptions.custom import (
     ResourceNotFoundError, ValidationError, BusinessRuleError
 )
-from app.core.logging.logger import get_logger
-
-logger = get_logger(__name__)
+from app.core.logging.logger import app_logger as  logger
 
 
 class TransactionService:
@@ -358,7 +356,7 @@ class TransactionService:
         ).order_by(desc(func.sum(Transaction.amount))).all()
         
         # 计算总支出用于百分比计算
-        total_expense = sum(stat.total_amount or 0 for stat in category_stats)
+        total_expense = sum(float(stat.total_amount or 0) for stat in category_stats)
         
         # 构建分类分布
         category_distribution = []

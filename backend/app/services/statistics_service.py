@@ -17,9 +17,7 @@ from app.models.database.reminder import ReminderSetting, ReminderRecord
 from app.core.exceptions.custom import (
     ResourceNotFoundError, ValidationError, BusinessRuleError
 )
-from app.core.logging.logger import get_logger
-
-logger = get_logger(__name__)
+from app.core.logging.logger import app_logger as logger
 
 
 class StatisticsService:
