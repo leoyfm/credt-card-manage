@@ -7,7 +7,7 @@
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_serializer, ConfigDict
 from uuid import UUID
 
 from app.models.schemas.common import PaginationInfo
@@ -39,15 +39,22 @@ class BankUpdate(BaseModel):
 
 class BankResponse(BankBase):
     """银行响应模型"""
+    model_config = ConfigDict(from_attributes=True)
+    
     id: UUID = Field(..., description="银行ID")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            Decimal: lambda v: float(v) if v is not None else None
-        }
+    @model_serializer
+    def serialize_model(self) -> dict:
+        """自定义序列化器，处理Decimal类型"""
+        data = {}
+        for field_name, field_value in self.__dict__.items():
+            if isinstance(field_value, Decimal):
+                data[field_name] = float(field_value) if field_value is not None else None
+            else:
+                data[field_name] = field_value
+        return data
 
 
 # ============ 信用卡相关模型 ============
@@ -179,11 +186,18 @@ class CreditCardResponse(BaseModel):
     is_expired: Optional[bool] = Field(None, description="是否已过期", json_schema_extra={"example": False})
     credit_utilization_rate: Optional[float] = Field(None, description="信用额度使用率", json_schema_extra={"example": 10.0})
 
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            Decimal: lambda v: float(v) if v is not None else None
-        }
+    @model_serializer
+    def serialize_model(self) -> dict:
+        """自定义序列化器，处理Decimal类型"""
+        data = {}
+        for field_name, field_value in self.__dict__.items():
+            if isinstance(field_value, Decimal):
+                data[field_name] = float(field_value) if field_value is not None else None
+            else:
+                data[field_name] = field_value
+        return data
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CreditCardListResponse(BaseModel):

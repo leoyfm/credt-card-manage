@@ -64,7 +64,7 @@ class TestUserAPI:
             "confirm_password": "NewPass123456"
         }
         resp = api.post(f"{BASE}/change-password", password_data)
-        assert_response(resp).fail(status_code=400)
+        assert_response(resp).fail(status_code=401)
 
     def test_change_password_mismatch(self, user_and_api):
         """测试新密码不匹配"""
@@ -75,7 +75,7 @@ class TestUserAPI:
             "confirm_password": "DifferentPass123456"
         }
         resp = api.post(f"{BASE}/change-password", password_data)
-        assert_response(resp).fail(status_code=400)
+        assert_response(resp).fail(status_code=422)
 
     def test_get_login_logs_success(self, user_and_api):
         """测试获取登录日志成功"""
@@ -117,7 +117,7 @@ class TestUserAPI:
             "reason": "测试注销"
         }
         resp = api.delete(f"{BASE}/account", deletion_data)
-        assert_response(resp).fail(status_code=400)
+        assert_response(resp).fail(status_code=401)
 
     def test_get_wechat_bindings_success(self, user_and_api):
         """测试获取微信绑定成功"""

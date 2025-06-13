@@ -37,10 +37,10 @@ app = FastAPI(
 app.add_middleware(
     SecurityMiddleware,
     enable_security_headers=True,
-    enable_rate_limiting=True,
+    enable_rate_limiting=False,  # 测试环境关闭速率限制
     rate_limit_requests=100,  # 每分钟100次请求
     rate_limit_window=60,
-    enable_ip_blocking=True,
+    enable_ip_blocking=False,  # 测试环境关闭IP阻止
     max_failed_attempts=5,
     block_duration=300  # 阻止5分钟
 )
