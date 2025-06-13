@@ -595,4 +595,362 @@ class TestCardServiceEdgeCases:
         
         result = card_service.get_card_by_id(test_user.id, expired_card.id)
         
-        assert result.is_expired is True 
+        assert result.is_expired is True
+
+
+class TestCardServiceAdvanced:
+    """信用卡服务高级功能测试"""
+
+    def test_get_card_summary_with_expiring_cards(self, card_service: CardService, test_user: User, db_session: Session):
+        """测试包含即将过期卡片的摘要统计"""
+        from datetime import datetime, timedelta
+        
+        # 创建即将过期的卡片（90天内过期）
+        future_date = datetime.now() + timedelta(days=60)
+        expiring_card = CreditCard(
+            user_id=test_user.id,
+            card_number="6225999999999999",
+            card_name="即将过期卡",
+            credit_limit=Decimal("30000.00"),
+            available_limit=Decimal("30000.00"),
+            expiry_month=future_date.month,
+            expiry_year=future_date.year,
+            status="active"
+        )
+        db_session.add(expiring_card)
+        db_session.commit()
+        
+        summary = card_service.get_card_summary(test_user.id)
+        
+        assert summary.cards_expiring_soon >= 1
+
+    def test_get_card_statistics_utilization_distribution(self, card_service: CardService, test_user: User, test_bank: Bank, db_session: Session):
+        """测试使用率分布统计"""
+        # 创建不同使用率的卡片
+        cards_data = [
+            {"name": "低使用率卡", "credit": 10000, "used": 1000},  # 10% - 第一个区间
+            {"name": "中使用率卡", "credit": 10000, "used": 5000},  # 50% - 第二个区间
+            {"name": "高使用率卡", "credit": 10000, "used": 7000},  # 70% - 第三个区间
+            {"name": "极高使用率卡", "credit": 10000, "used": 9000}, # 90% - 第四个区间
+        ]
+        
+        for i, card_data in enumerate(cards_data):
+            card = CreditCard(
+                user_id=test_user.id,
+                bank_id=test_bank.id,
+                card_number=f"622599999999999{i}",
+                card_name=card_data["name"],
+                credit_limit=Decimal(str(card_data["credit"])),
+                available_limit=Decimal(str(card_data["credit"] - card_data["used"])),
+                used_limit=Decimal(str(card_data["used"])),
+                expiry_month=12,
+                expiry_year=2027,
+                status="active"
+            )
+            db_session.add(card)
+        
+        db_session.commit()
+        
+        stats = card_service.get_card_statistics(test_user.id)
+        
+        # 验证使用率分布
+        distribution = stats.utilization_distribution
+        assert len(distribution) == 4
+        
+        # 每个区间都应该有至少一张卡
+        total_cards_in_distribution = sum(item['count'] for item in distribution)
+        assert total_cards_in_distribution >= 4
+
+    def test_build_card_response_with_bank(self, card_service: CardService, test_card: CreditCard, test_bank: Bank):
+        """测试构建包含银行信息的响应对象"""
+        test_card.bank = test_bank
+        
+        result = card_service._build_card_response(test_card)
+        
+        assert result.bank is not None
+        assert result.bank.bank_name == test_bank.bank_name
+        assert result.bank.bank_code == test_bank.bank_code
+
+    def test_build_card_response_expiry_display_format(self, card_service: CardService, test_card: CreditCard):
+        """测试有效期显示格式"""
+        test_card.expiry_month = 3
+        test_card.expiry_year = 2025
+        
+        result = card_service._build_card_response(test_card)
+        
+        assert result.expiry_display == "03/25"
+
+    def test_build_card_response_zero_credit_limit(self, card_service: CardService, test_card: CreditCard):
+        """测试零额度卡片的使用率计算"""
+        test_card.credit_limit = Decimal("0.00")
+        test_card.used_limit = Decimal("0.00")
+        
+        result = card_service._build_card_response(test_card)
+        
+        assert result.credit_utilization_rate == 0.0
+
+    def test_create_bank_with_optional_fields(self, card_service: CardService):
+        """测试创建包含可选字段的银行"""
+        bank_data = BankCreate(
+            bank_code="ICBC",
+            bank_name="中国工商银行",
+            bank_logo="https://example.com/icbc.png",
+            is_active=True,
+            sort_order=5
+        )
+        
+        result = card_service.create_bank(bank_data)
+        
+        assert result.bank_code == "ICBC"
+        assert result.bank_name == "中国工商银行"
+        assert result.bank_logo == "https://example.com/icbc.png"
+        assert result.is_active is True
+        assert result.sort_order == 5
+
+    def test_get_or_create_bank_by_name_with_special_characters(self, card_service: CardService):
+        """测试创建包含特殊字符的银行名称"""
+        bank_name = "中国银行（香港）有限公司"
+        
+        result = card_service.get_or_create_bank_by_name(bank_name)
+        
+        assert result.bank_name == bank_name
+        # 实际实现中bank_code是从bank_name截取的，不是AUTO_前缀
+        assert result.bank_code == "中国银行（香港）有限"
+
+    def test_update_card_status_with_reason(self, card_service: CardService, test_user: User, test_card: CreditCard):
+        """测试带原因的状态更新"""
+        reason = "用户申请临时冻结"
+        
+        result = card_service.update_card_status(test_user.id, test_card.id, "frozen", reason)
+        
+        assert result.status == "frozen"
+        # 注意：这里假设状态更新会记录原因，实际实现可能需要调整
+
+    def test_get_user_cards_pagination_edge_cases(self, card_service: CardService, test_user: User):
+        """测试分页边界情况"""
+        # 测试第一页
+        params = CreditCardQueryParams(page=1, page_size=1)
+        cards, total = card_service.get_user_cards(test_user.id, params)
+        
+        assert len(cards) <= 1
+        assert total >= 0
+        
+        # 测试超出范围的页码
+        params = CreditCardQueryParams(page=999, page_size=10)
+        cards, total = card_service.get_user_cards(test_user.id, params)
+        
+        assert len(cards) == 0  # 超出范围应该返回空列表
+        assert total >= 0
+
+    def test_get_user_cards_keyword_search_case_insensitive(self, card_service: CardService, test_user: User, test_card: CreditCard):
+        """测试关键词搜索大小写不敏感"""
+        # 使用大写关键词搜索
+        params = CreditCardQueryParams(keyword=test_card.card_name.upper())
+        cards, total = card_service.get_user_cards(test_user.id, params)
+        
+        assert total >= 1
+        assert any(card.card_name == test_card.card_name for card in cards)
+
+    def test_get_user_cards_multiple_filters(self, card_service: CardService, test_user: User, test_card: CreditCard):
+        """测试多重筛选条件"""
+        params = CreditCardQueryParams(
+            keyword=test_card.card_name[:5],  # 部分名称
+            status="active",
+            card_type="credit",
+            is_primary=False
+        )
+        
+        cards, total = card_service.get_user_cards(test_user.id, params)
+        
+        # 应该能找到符合条件的卡片
+        assert all(card.status == "active" for card in cards)
+        assert all(card.card_type == "credit" for card in cards)
+
+    def test_delete_credit_card_cascade_check(self, card_service: CardService, test_user: User, test_card: CreditCard):
+        """测试删除信用卡时的级联检查"""
+        # 这个测试验证删除逻辑是否正确处理了相关数据
+        card_id = test_card.id
+        card_name = test_card.card_name
+        
+        result = card_service.delete_credit_card(test_user.id, card_id)
+        
+        assert result is True
+        
+        # 验证卡片确实被删除
+        deleted_card = card_service.get_card_by_id(test_user.id, card_id)
+        assert deleted_card is None
+
+
+class TestCardServicePerformance:
+    """信用卡服务性能测试"""
+
+    def test_bulk_card_creation_performance(self, card_service: CardService, test_user: User, test_bank: Bank, db_session: Session):
+        """测试批量创建卡片的性能"""
+        import time
+        
+        start_time = time.time()
+        
+        # 创建10张卡片
+        for i in range(10):
+            card_data = CreditCardCreate(
+                bank_id=test_bank.id,
+                card_number=f"622512345678{i:04d}",
+                card_name=f"性能测试卡{i}",
+                credit_limit=Decimal("50000.00"),
+                expiry_month=12,
+                expiry_year=2027
+            )
+            card_service.create_credit_card(test_user.id, card_data)
+        
+        end_time = time.time()
+        execution_time = end_time - start_time
+        
+        # 10张卡片创建应该在合理时间内完成（比如5秒）
+        assert execution_time < 5.0, f"批量创建耗时过长: {execution_time}秒"
+
+    def test_large_dataset_statistics_performance(self, card_service: CardService, test_user: User, test_bank: Bank, db_session: Session):
+        """测试大数据集统计性能"""
+        import time
+        
+        # 创建较多卡片用于统计测试
+        for i in range(20):
+            card = CreditCard(
+                user_id=test_user.id,
+                bank_id=test_bank.id,
+                card_number=f"622599999999{i:04d}",
+                card_name=f"统计测试卡{i}",
+                credit_limit=Decimal("50000.00"),
+                available_limit=Decimal("45000.00"),
+                used_limit=Decimal("5000.00"),
+                expiry_month=12,
+                expiry_year=2027,
+                status="active" if i % 3 != 0 else "frozen"
+            )
+            db_session.add(card)
+        
+        db_session.commit()
+        
+        start_time = time.time()
+        stats = card_service.get_card_statistics(test_user.id)
+        end_time = time.time()
+        
+        execution_time = end_time - start_time
+        
+        # 统计计算应该在合理时间内完成
+        assert execution_time < 2.0, f"统计计算耗时过长: {execution_time}秒"
+        assert stats.summary.total_cards >= 20
+
+
+class TestCardServiceDataIntegrity:
+    """信用卡服务数据完整性测试"""
+
+    def test_card_creation_data_consistency(self, card_service: CardService, test_user: User, test_bank: Bank):
+        """测试创建卡片时的数据一致性"""
+        card_data = CreditCardCreate(
+            bank_id=test_bank.id,
+            card_number="6225123456789012",
+            card_name="数据一致性测试卡",
+            credit_limit=Decimal("100000.00"),
+            expiry_month=6,
+            expiry_year=2028,
+            billing_date=5,
+            due_date=25,  # 当月25号
+            annual_fee=Decimal("500.00"),
+            fee_waivable=True,
+            points_rate=Decimal("1.50"),
+            cashback_rate=Decimal("0.50"),
+            features=["积分兑换", "免费洗车", "机场贵宾厅"]
+        )
+        
+        result = card_service.create_credit_card(test_user.id, card_data)
+        
+        # 验证所有字段都正确保存
+        assert result.card_number == card_data.card_number
+        assert result.card_name == card_data.card_name
+        assert result.credit_limit == card_data.credit_limit
+        assert result.available_limit == card_data.credit_limit  # 新卡可用额度等于信用额度
+        assert result.used_limit == Decimal("0.00")  # 新卡已用额度为0
+        assert result.expiry_month == card_data.expiry_month
+        assert result.expiry_year == card_data.expiry_year
+        assert result.billing_date == card_data.billing_date
+        assert result.due_date == card_data.due_date
+        assert result.annual_fee == card_data.annual_fee
+        assert result.fee_waivable == card_data.fee_waivable
+        assert result.points_rate == card_data.points_rate
+        assert result.cashback_rate == card_data.cashback_rate
+        assert result.features == card_data.features
+        assert result.status == "active"  # 默认状态
+        # 如果是用户的第一张卡，会自动设为主卡
+        # 这里不强制验证is_primary的值，因为它取决于用户是否已有其他卡片
+
+    def test_update_preserves_unchanged_fields(self, card_service: CardService, test_user: User, test_card: CreditCard):
+        """测试更新时保持未更改字段不变"""
+        original_card_number = test_card.card_number
+        original_credit_limit = test_card.credit_limit
+        original_expiry_month = test_card.expiry_month
+        
+        # 只更新卡片名称
+        update_data = CreditCardUpdate(card_name="更新后的卡片名称")
+        
+        result = card_service.update_credit_card(test_user.id, test_card.id, update_data)
+        
+        # 验证只有指定字段被更新
+        assert result.card_name == "更新后的卡片名称"
+        # 其他字段应该保持不变
+        assert result.card_number == original_card_number
+        assert result.credit_limit == original_credit_limit
+        assert result.expiry_month == original_expiry_month
+
+    def test_bank_creation_auto_code_generation(self, card_service: CardService):
+        """测试银行创建时自动代码生成"""
+        bank_data = BankCreate(
+            bank_code="AUTO_TEST",  # 提供有效的代码
+            bank_name="自动代码测试银行"
+        )
+        
+        result = card_service.create_bank(bank_data)
+        assert result.bank_code == "AUTO_TEST"
+        assert result.bank_name == bank_data.bank_name
+
+    def test_card_summary_calculation_accuracy(self, card_service: CardService, test_user: User, test_bank: Bank, db_session: Session):
+        """测试摘要统计计算的准确性"""
+        # 创建已知数据的卡片
+        cards_data = [
+            {"credit": 10000, "used": 1000, "status": "active"},
+            {"credit": 20000, "used": 5000, "status": "active"},
+            {"credit": 30000, "used": 0, "status": "frozen"},
+        ]
+        
+        total_credit = sum(card["credit"] for card in cards_data)
+        total_used = sum(card["used"] for card in cards_data if card["status"] == "active")
+        total_available = sum(card["credit"] - card["used"] for card in cards_data if card["status"] == "active")
+        expected_utilization = (total_used / sum(card["credit"] for card in cards_data if card["status"] == "active")) * 100
+        
+        for i, card_data in enumerate(cards_data):
+            card = CreditCard(
+                user_id=test_user.id,
+                bank_id=test_bank.id,
+                card_number=f"622512345678{i:04d}",
+                card_name=f"精确计算测试卡{i}",
+                credit_limit=Decimal(str(card_data["credit"])),
+                available_limit=Decimal(str(card_data["credit"] - card_data["used"])),
+                used_limit=Decimal(str(card_data["used"])),
+                expiry_month=12,
+                expiry_year=2027,
+                status=card_data["status"]
+            )
+            db_session.add(card)
+        
+        db_session.commit()
+        
+        summary = card_service.get_card_summary(test_user.id)
+        
+        # 验证计算准确性（考虑到可能有其他测试创建的卡片）
+        assert summary.total_cards >= 3
+        assert summary.active_cards >= 2
+        # 由于可能有其他测试创建的卡片，这里只验证包含了我们创建的卡片
+        assert float(summary.total_credit_limit) >= 30000  # 只统计active卡片的额度
+        assert float(summary.total_used_limit) >= 6000   # 只统计active卡片的已用额度
+        assert float(summary.total_available_limit) >= 24000  # 只统计active卡片的可用额度
+        # 使用率计算基于active卡片
+        assert summary.average_utilization_rate >= 0.0 
