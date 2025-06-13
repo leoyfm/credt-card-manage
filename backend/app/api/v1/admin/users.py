@@ -51,7 +51,7 @@ async def get_users_list(
     
     return ResponseUtil.paginated(
         items=users,
-        total=pagination_info['total'],
+        total=pagination_info.total,
         page=page,
         page_size=page_size,
         message="用户列表查询成功"

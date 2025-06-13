@@ -34,7 +34,7 @@ class AdminUserService:
         is_active: Optional[bool] = None,
         is_admin: Optional[bool] = None,
         is_verified: Optional[bool] = None
-    ) -> Tuple[List[UserSummaryResponse], Dict[str, Any]]:
+    ) -> Tuple[List[UserSummaryResponse], PaginationInfo]:
         """
         获取用户列表（管理员权限）
         
@@ -47,7 +47,7 @@ class AdminUserService:
             is_verified: 过滤验证状态
             
         Returns:
-            Tuple[List[UserSummaryResponse], Dict[str, Any]]: 用户列表和分页信息
+            Tuple[List[UserSummaryResponse], PaginationInfo]: 用户列表和分页信息
         """
         try:
             query = self.db.query(User)
@@ -118,8 +118,19 @@ class AdminUserService:
                 )
                 user_summaries.append(user_summary)
             
-            # 分页信息
-            pagination_info = PaginationInfo(page, page_size, total)
+            # 计算分页信息
+            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+            has_next = page < total_pages
+            has_prev = page > 1
+            
+            pagination_info = PaginationInfo(
+                current_page=page,
+                page_size=page_size,
+                total=total,
+                total_pages=total_pages,
+                has_next=has_next,
+                has_prev=has_prev
+            )
             
             logger.info(f"管理员查询用户列表成功: total={total}, page={page}, size={page_size}")
             return user_summaries, pagination_info
@@ -278,7 +289,7 @@ class AdminUserService:
         user_id: UUID, 
         page: int = 1, 
         page_size: int = 20
-    ) -> Tuple[List[LoginLogResponse], Dict[str, Any]]:
+    ) -> Tuple[List[LoginLogResponse], PaginationInfo]:
         """
         获取用户登录日志（管理员权限）
         
@@ -288,7 +299,7 @@ class AdminUserService:
             page_size: 每页大小
             
         Returns:
-            Tuple[List[LoginLogResponse], Dict[str, Any]]: 登录日志列表和分页信息
+            Tuple[List[LoginLogResponse], PaginationInfo]: 登录日志列表和分页信息
         """
         try:
             # 验证用户存在
@@ -319,8 +330,19 @@ class AdminUserService:
                 for log in logs
             ]
             
-            # 分页信息
-            pagination_info = PaginationInfo(page, page_size, total)
+            # 计算分页信息
+            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+            has_next = page < total_pages
+            has_prev = page > 1
+            
+            pagination_info = PaginationInfo(
+                current_page=page,
+                page_size=page_size,
+                total=total,
+                total_pages=total_pages,
+                has_next=has_next,
+                has_prev=has_prev
+            )
             
             logger.info(f"管理员查询用户登录日志成功: user_id={user_id}, total={total}")
             return log_responses, pagination_info
