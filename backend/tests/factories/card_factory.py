@@ -32,9 +32,15 @@ def build_card(**kwargs) -> Dict[str, Any]:
     expiry_month = kwargs.get("expiry_month") or expiry_date.month
     expiry_year = kwargs.get("expiry_year") or expiry_date.year
     
-    # 生成账单日和还款日
+    # 生成账单日和还款日（确保还款日在账单日之后）
     billing_date = kwargs.get("billing_date") or random.randint(1, 28)
-    due_date = kwargs.get("due_date") or (billing_date + 20) % 28 + 1
+    if "due_date" in kwargs:
+        due_date = kwargs["due_date"]
+    else:
+        # 还款日在账单日后20天，如果超过28号则下月
+        due_date = billing_date + 20
+        if due_date > 28:
+            due_date = due_date - 28
     
     return {
         "card_number": card_number,
@@ -43,20 +49,18 @@ def build_card(**kwargs) -> Dict[str, Any]:
         "card_type": kwargs.get("card_type", "credit"),
         "card_network": kwargs.get("card_network") or random.choice(["VISA", "MasterCard", "银联"]),
         "card_level": kwargs.get("card_level") or random.choice(["普卡", "金卡", "白金卡", "钻石卡"]),
-        "credit_limit": kwargs.get("credit_limit", Decimal("50000.00")),
-        "available_limit": kwargs.get("available_limit", Decimal("45000.00")),
-        "used_limit": kwargs.get("used_limit", Decimal("5000.00")),
+        "credit_limit": str(kwargs.get("credit_limit", Decimal("50000.00"))),
         "expiry_month": expiry_month,
         "expiry_year": expiry_year,
         "billing_date": billing_date,
         "due_date": due_date,
-        "annual_fee": kwargs.get("annual_fee", Decimal("200.00")),
+        "annual_fee": str(kwargs.get("annual_fee", Decimal("200.00"))),
         "fee_waivable": kwargs.get("fee_waivable", True),
         "fee_auto_deduct": kwargs.get("fee_auto_deduct", False),
         "fee_due_month": kwargs.get("fee_due_month", random.randint(1, 12)),
         "features": kwargs.get("features", ["积分返现", "机场贵宾厅", "免费洗车"]),
-        "points_rate": kwargs.get("points_rate", Decimal("1.00")),
-        "cashback_rate": kwargs.get("cashback_rate", Decimal("0.01")),
+        "points_rate": str(kwargs.get("points_rate", Decimal("1.00"))),
+        "cashback_rate": str(kwargs.get("cashback_rate", Decimal("0.01"))),
         "status": kwargs.get("status", "active"),
         "is_primary": kwargs.get("is_primary", False),
         "notes": kwargs.get("notes", "测试信用卡")
@@ -78,7 +82,7 @@ def build_simple_card(**kwargs) -> Dict[str, Any]:
         "card_number": card_number,
         "card_name": kwargs.get("card_name", f"测试卡_{uuid.uuid4().hex[:8]}"),
         "bank_name": kwargs.get("bank_name", "测试银行"),
-        "credit_limit": kwargs.get("credit_limit", Decimal("10000.00")),
+        "credit_limit": str(kwargs.get("credit_limit", Decimal("10000.00"))),
         "expiry_month": kwargs.get("expiry_month", 12),
         "expiry_year": kwargs.get("expiry_year", 2027)
     }
@@ -93,6 +97,11 @@ def build_premium_card(**kwargs) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: 高端信用卡数据字典
     """
+    # 确保还款日在账单日之后
+    if "billing_date" not in kwargs and "due_date" not in kwargs:
+        kwargs["billing_date"] = 5
+        kwargs["due_date"] = 25
+    
     base_card = build_card(**kwargs)
     
     # 高端卡特有属性
@@ -103,10 +112,10 @@ def build_premium_card(**kwargs) -> Dict[str, Any]:
     
     base_card.update({
         "card_level": kwargs.get("card_level", "无限卡"),
-        "credit_limit": kwargs.get("credit_limit", Decimal("1000000.00")),
-        "annual_fee": kwargs.get("annual_fee", Decimal("3600.00")),
-        "points_rate": kwargs.get("points_rate", Decimal("2.00")),
-        "cashback_rate": kwargs.get("cashback_rate", Decimal("0.02")),
+        "credit_limit": str(kwargs.get("credit_limit", Decimal("1000000.00"))),
+        "annual_fee": str(kwargs.get("annual_fee", Decimal("3600.00"))),
+        "points_rate": str(kwargs.get("points_rate", Decimal("2.00"))),
+        "cashback_rate": str(kwargs.get("cashback_rate", Decimal("0.02"))),
         "features": kwargs.get("features", premium_features)
     })
     
@@ -166,9 +175,11 @@ CARD_TEMPLATES = {
         "card_name": "招商银行经典白金卡",
         "card_level": "白金卡",
         "card_network": "VISA",
-        "credit_limit": Decimal("100000.00"),
-        "annual_fee": Decimal("580.00"),
-        "points_rate": Decimal("1.00"),
+        "credit_limit": "100000.00",
+        "annual_fee": "580.00",
+        "points_rate": "1.00",
+        "billing_date": 5,
+        "due_date": 25,
         "features": ["积分永久有效", "机场贵宾厅", "道路救援"]
     },
     "建行龙卡": {
@@ -176,9 +187,11 @@ CARD_TEMPLATES = {
         "card_name": "建设银行龙卡信用卡",
         "card_level": "金卡",
         "card_network": "银联",
-        "credit_limit": Decimal("50000.00"),
-        "annual_fee": Decimal("200.00"),
-        "points_rate": Decimal("1.00"),
+        "credit_limit": "50000.00",
+        "annual_fee": "200.00",
+        "points_rate": "1.00",
+        "billing_date": 10,
+        "due_date": 28,
         "features": ["积分兑换", "分期免息", "消费返现"]
     },
     "浦发AE白": {
@@ -186,9 +199,11 @@ CARD_TEMPLATES = {
         "card_name": "浦发银行AE白金卡",
         "card_level": "白金卡",
         "card_network": "American Express",
-        "credit_limit": Decimal("200000.00"),
-        "annual_fee": Decimal("3600.00"),
-        "points_rate": Decimal("1.50"),
+        "credit_limit": "200000.00",
+        "annual_fee": "3600.00",
+        "points_rate": "1.50",
+        "billing_date": 5,
+        "due_date": 25,  # 当月25号
         "features": ["全球机场贵宾厅", "酒店升房", "租车优惠", "高端餐厅优惠"]
     }
 }

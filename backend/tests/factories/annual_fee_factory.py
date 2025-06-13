@@ -21,16 +21,16 @@ def build_fee_waiver_rule(**kwargs) -> Dict[str, Any]:
     
     # 根据条件类型设置默认值
     if condition_type == "spending_amount":
-        condition_value = kwargs.get("condition_value", Decimal("50000.00"))
+        condition_value = str(kwargs.get("condition_value", Decimal("50000.00")))
         condition_count = kwargs.get("condition_count")
     elif condition_type == "transaction_count":
         condition_value = kwargs.get("condition_value")
         condition_count = kwargs.get("condition_count", 100)
     elif condition_type == "points_redeem":
-        condition_value = kwargs.get("condition_value", Decimal("10000.00"))
+        condition_value = str(kwargs.get("condition_value", Decimal("10000.00")))
         condition_count = kwargs.get("condition_count")
     else:  # specific_category
-        condition_value = kwargs.get("condition_value", Decimal("20000.00"))
+        condition_value = str(kwargs.get("condition_value", Decimal("20000.00")))
         condition_count = kwargs.get("condition_count", 50)
     
     return {
@@ -60,7 +60,7 @@ def build_simple_fee_rule(**kwargs) -> Dict[str, Any]:
     return {
         "rule_name": kwargs.get("rule_name", "简单测试规则"),
         "condition_type": kwargs.get("condition_type", "spending_amount"),
-        "condition_value": kwargs.get("condition_value", Decimal("30000.00")),
+        "condition_value": str(kwargs.get("condition_value", Decimal("30000.00"))),
         "condition_period": kwargs.get("condition_period", "yearly")
     }
 
@@ -79,7 +79,7 @@ def build_spending_rule(**kwargs) -> Dict[str, Any]:
     base_rule.update({
         "rule_name": kwargs.get("rule_name", "年消费满额减免"),
         "condition_type": "spending_amount",
-        "condition_value": kwargs.get("condition_value", Decimal("50000.00")),
+        "condition_value": str(kwargs.get("condition_value", Decimal("50000.00"))),
         "condition_period": kwargs.get("condition_period", "yearly"),
         "description": kwargs.get("description", "年消费满5万元免年费")
     })
@@ -123,7 +123,7 @@ def build_points_redeem_rule(**kwargs) -> Dict[str, Any]:
     base_rule.update({
         "rule_name": kwargs.get("rule_name", "积分兑换年费"),
         "condition_type": "points_redeem",
-        "condition_value": kwargs.get("condition_value", Decimal("20000.00")),
+        "condition_value": str(kwargs.get("condition_value", Decimal("20000.00"))),
         "condition_period": kwargs.get("condition_period", "yearly"),
         "description": kwargs.get("description", "2万积分兑换年费")
     })
@@ -148,9 +148,9 @@ def build_annual_fee_record(**kwargs) -> Dict[str, Any]:
     
     return {
         "fee_year": fee_year,
-        "base_fee": base_fee,
-        "actual_fee": actual_fee,
-        "waiver_amount": waiver_amount,
+        "base_fee": str(base_fee),
+        "actual_fee": str(actual_fee),
+        "waiver_amount": str(waiver_amount),
         "waiver_rules_applied": kwargs.get("waiver_rules_applied", []),
         "rule_evaluation_result": kwargs.get("rule_evaluation_result"),
         "waiver_reason": kwargs.get("waiver_reason"),
@@ -201,8 +201,8 @@ def build_waived_fee_record(**kwargs) -> Dict[str, Any]:
     base_record = build_annual_fee_record(**kwargs)
     
     base_record.update({
-        "actual_fee": Decimal("0.00"),
-        "waiver_amount": waiver_amount,
+        "actual_fee": "0.00",
+        "waiver_amount": str(waiver_amount),
         "waiver_reason": kwargs.get("waiver_reason", "满足消费条件"),
         "waiver_rules_applied": kwargs.get("waiver_rules_applied", ["年消费满额减免"]),
         "status": kwargs.get("status", "waived"),
@@ -288,27 +288,27 @@ def build_fee_rules_batch(count: int = 3, **kwargs) -> List[Dict[str, Any]]:
 # 预定义的年费模板
 FEE_TEMPLATES = {
     "普通年费": {
-        "base_fee": Decimal("200.00"),
-        "actual_fee": Decimal("200.00"),
-        "waiver_amount": Decimal("0.00"),
+        "base_fee": "200.00",
+        "actual_fee": "200.00",
+        "waiver_amount": "0.00",
         "status": "pending"
     },
     "白金卡年费": {
-        "base_fee": Decimal("580.00"),
-        "actual_fee": Decimal("580.00"),
-        "waiver_amount": Decimal("0.00"),
+        "base_fee": "580.00",
+        "actual_fee": "580.00",
+        "waiver_amount": "0.00",
         "status": "pending"
     },
     "钻石卡年费": {
-        "base_fee": Decimal("3600.00"),
-        "actual_fee": Decimal("3600.00"),
-        "waiver_amount": Decimal("0.00"),
+        "base_fee": "3600.00",
+        "actual_fee": "3600.00",
+        "waiver_amount": "0.00",
         "status": "pending"
     },
     "已减免年费": {
-        "base_fee": Decimal("580.00"),
-        "actual_fee": Decimal("0.00"),
-        "waiver_amount": Decimal("580.00"),
+        "base_fee": "580.00",
+        "actual_fee": "0.00",
+        "waiver_amount": "580.00",
         "status": "waived",
         "waiver_reason": "满足消费条件"
     }
@@ -318,7 +318,7 @@ RULE_TEMPLATES = {
     "消费减免": {
         "rule_name": "年消费满额减免",
         "condition_type": "spending_amount",
-        "condition_value": Decimal("50000.00"),
+        "condition_value": "50000.00",
         "condition_period": "yearly",
         "description": "年消费满5万元免年费"
     },
@@ -332,7 +332,7 @@ RULE_TEMPLATES = {
     "积分兑换": {
         "rule_name": "积分兑换年费",
         "condition_type": "points_redeem",
-        "condition_value": Decimal("20000.00"),
+        "condition_value": "20000.00",
         "condition_period": "yearly",
         "description": "2万积分兑换年费"
     }
