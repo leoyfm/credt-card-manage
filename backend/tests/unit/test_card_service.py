@@ -430,6 +430,8 @@ class TestCreditCardStatistics:
         assert summary.active_cards >= 1
         assert summary.total_credit_limit >= test_card.credit_limit
         assert summary.average_utilization_rate >= 0
+        assert hasattr(summary, 'max_interest_free_days')
+        assert summary.max_interest_free_days >= 0
 
     def test_get_card_summary_empty_user(self, card_service: CardService):
         """测试无信用卡用户的摘要统计"""
@@ -481,6 +483,74 @@ class TestCreditCardStatistics:
         status_counts = {item['status']: item['count'] for item in stats.by_status}
         assert status_counts.get('active', 0) >= 2
         assert status_counts.get('frozen', 0) >= 1
+
+    def test_max_interest_free_days_calculation(self, card_service: CardService, test_user: User, test_bank: Bank, db_session: Session):
+        """测试最长免息天数计算"""
+        # 创建有账单日和还款日的信用卡
+        card1 = CreditCard(
+            user_id=test_user.id,
+            bank_id=test_bank.id,
+            card_number="6225111111111111",
+            card_name="测试卡1",
+            credit_limit=Decimal("50000.00"),
+            available_limit=Decimal("50000.00"),
+            billing_date=5,  # 账单日：每月5号
+            due_date=25,     # 还款日：每月25号
+            expiry_month=12,
+            expiry_year=2027,
+            status="active"
+        )
+        
+        card2 = CreditCard(
+            user_id=test_user.id,
+            bank_id=test_bank.id,
+            card_number="6225222222222222",
+            card_name="测试卡2",
+            credit_limit=Decimal("100000.00"),
+            available_limit=Decimal("100000.00"),
+            billing_date=15,  # 账单日：每月15号
+            due_date=5,      # 还款日：下月5号（跨月）
+            expiry_month=12,
+            expiry_year=2027,
+            status="active"
+        )
+        
+        db_session.add(card1)
+        db_session.add(card2)
+        db_session.commit()
+        
+        summary = card_service.get_card_summary(test_user.id)
+        
+        # 验证免息天数计算
+        # card1: 25-5+30 = 50天
+        # card2: 30-15+5+30 = 50天
+        # 最大值应该是50天
+        assert summary.max_interest_free_days == 50
+
+    def test_max_interest_free_days_no_billing_info(self, card_service: CardService, test_user: User, test_bank: Bank, db_session: Session):
+        """测试没有账单日和还款日信息时的免息天数计算"""
+        # 创建没有账单日和还款日的信用卡
+        card = CreditCard(
+            user_id=test_user.id,
+            bank_id=test_bank.id,
+            card_number="6225333333333333",
+            card_name="无账单日卡",
+            credit_limit=Decimal("50000.00"),
+            available_limit=Decimal("50000.00"),
+            billing_date=None,  # 无账单日
+            due_date=None,      # 无还款日
+            expiry_month=12,
+            expiry_year=2027,
+            status="active"
+        )
+        
+        db_session.add(card)
+        db_session.commit()
+        
+        summary = card_service.get_card_summary(test_user.id)
+        
+        # 没有账单日和还款日信息时，免息天数应该为0
+        assert summary.max_interest_free_days == 0
 
 
 class TestCardServiceErrorHandling:

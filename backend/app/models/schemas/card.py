@@ -239,6 +239,7 @@ class CreditCardSummary(BaseModel):
     total_available_limit: Decimal = Field(..., description="总可用额度", json_schema_extra={"example": 225000.00})
     average_utilization_rate: float = Field(..., description="平均使用率", json_schema_extra={"example": 10.0})
     cards_expiring_soon: int = Field(..., description="即将过期卡片数", json_schema_extra={"example": 1})
+    max_interest_free_days: int = Field(..., description="最长免息天数", json_schema_extra={"example": 56})
 
     @field_validator('total_credit_limit', 'total_used_limit', 'total_available_limit')
     @classmethod

@@ -394,6 +394,9 @@ class CardService:
                 )
             ).count()
 
+            # 计算最长免息天数
+            max_interest_free_days = self._calculate_max_interest_free_days(user_id)
+
             return CreditCardSummary(
                 total_cards=total_cards,
                 active_cards=active_cards,
@@ -401,7 +404,8 @@ class CardService:
                 total_used_limit=total_used_limit,
                 total_available_limit=total_available_limit,
                 average_utilization_rate=round(average_utilization_rate, 2),
-                cards_expiring_soon=cards_expiring_soon
+                cards_expiring_soon=cards_expiring_soon,
+                max_interest_free_days=max_interest_free_days
             )
 
         except Exception as e:
@@ -528,4 +532,44 @@ class CardService:
             
         except Exception as e:
             logger.error(f"构建信用卡响应对象失败: {str(e)}")
-            raise 
+            raise
+
+    def _calculate_max_interest_free_days(self, user_id: UUID) -> int:
+        """计算用户所有信用卡中的最长免息天数"""
+        try:
+            # 获取用户所有有账单日和还款日的活跃信用卡
+            cards = self.db.query(CreditCard).filter(
+                and_(
+                    CreditCard.user_id == user_id,
+                    CreditCard.status == 'active',
+                    CreditCard.billing_date.isnot(None),
+                    CreditCard.due_date.isnot(None)
+                )
+            ).all()
+
+            if not cards:
+                return 0
+
+            max_days = 0
+            for card in cards:
+                # 计算免息天数
+                # 免息天数 = 还款日 - 账单日 + 30天（下个月的账单周期）
+                # 如果还款日小于账单日，说明还款日在下个月
+                if card.due_date > card.billing_date:
+                    # 同月内：还款日 - 账单日
+                    interest_free_days = card.due_date - card.billing_date
+                else:
+                    # 跨月：30 - 账单日 + 还款日
+                    interest_free_days = 30 - card.billing_date + card.due_date
+
+                # 加上一个完整的账单周期（30天）
+                # 因为在账单日当天消费，可以享受到下个账单周期的免息期
+                total_interest_free_days = interest_free_days + 30
+
+                max_days = max(max_days, total_interest_free_days)
+
+            return max_days
+
+        except Exception as e:
+            logger.error(f"计算最长免息天数失败: {str(e)}")
+            return 0 
