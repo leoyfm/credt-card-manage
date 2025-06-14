@@ -1,31 +1,26 @@
 <!-- 信用卡管理首页 -->
-<route lang="json5" type="home">
+<!-- <route lang="json5" type="home">
 {
   style: {
     navigationStyle: 'custom',
     navigationBarTitleText: '信用卡管家',
   },
 }
-</route>
+</route> -->
 
 <template>
   <view class="index-container safe-area bg-gray-50 min-h-screen">
     <!-- 顶部状态栏区域 -->
-    <HeaderSection 
-      :cards="creditCards"
-    />
+    <HeaderSection :cards="creditCards" />
 
     <!-- 今日推荐 -->
     <view class="p-4 pt-2">
-      <TodayRecommendation 
-        :cards="creditCards"
-        @recommendationClick="handleRecommendationClick"
-      />
+      <TodayRecommendation :cards="creditCards" @recommendationClick="handleRecommendationClick" />
     </view>
 
     <!-- 年费概览 -->
     <view class="p-4 pt-2">
-      <FeeOverview 
+      <FeeOverview
         :cards="creditCards"
         :showDetail="true"
         :showActions="true"
@@ -36,7 +31,10 @@
 
     <!-- 添加信用卡按钮 -->
     <view class="px-4 pb-4">
-      <view class="add-card-btn bg-black text-white rounded-xl p-4 text-center" @click="handleAddCard">
+      <view
+        class="add-card-btn bg-black text-white rounded-xl p-4 text-center"
+        @click="handleAddCard"
+      >
         <text class="text-lg font-semibold">+ 添加信用卡</text>
       </view>
     </view>
@@ -48,9 +46,9 @@
         <text class="text-sm text-blue-600" @click="handleViewAll">查看全部</text>
       </view>
       <view class="space-y-3">
-        <CreditCard 
-          v-for="(card, index) in creditCards" 
-          :key="card.id" 
+        <CreditCard
+          v-for="(card, index) in creditCards"
+          :key="card.id"
           :card="card"
           :isBestCard="index === 0"
           @cardClick="handleCardClick"
@@ -109,7 +107,7 @@ const creditCards = ref<CreditCardType[]>([
     feeType: 'waivable',
     waiverProgress: 75,
     annualFee: 680,
-    dueDate: 15
+    dueDate: 15,
   },
   {
     id: '2',
@@ -127,7 +125,7 @@ const creditCards = ref<CreditCardType[]>([
     feeType: 'waivable',
     waiverProgress: 100,
     annualFee: 580,
-    dueDate: 8
+    dueDate: 8,
   },
   {
     id: '3',
@@ -145,7 +143,7 @@ const creditCards = ref<CreditCardType[]>([
     feeType: 'waivable',
     waiverProgress: 45,
     annualFee: 480,
-    dueDate: 20
+    dueDate: 20,
   },
   {
     id: '4',
@@ -163,7 +161,7 @@ const creditCards = ref<CreditCardType[]>([
     feeType: 'waivable',
     waiverProgress: 100,
     annualFee: 360,
-    dueDate: 25
+    dueDate: 25,
   },
   {
     id: '5',
@@ -181,7 +179,7 @@ const creditCards = ref<CreditCardType[]>([
     feeType: 'rigid',
     waiverProgress: 0,
     annualFee: 200,
-    dueDate: 10
+    dueDate: 10,
   },
   {
     id: '6',
@@ -199,13 +197,16 @@ const creditCards = ref<CreditCardType[]>([
     feeType: 'waivable',
     waiverProgress: 67,
     annualFee: 300,
-    dueDate: 18
-  }
+    dueDate: 18,
+  },
 ])
 
 // 计算属性
-const pendingFeeCards = computed(() => 
-  creditCards.value.filter(card => card.annualFeeStatus === 'pending' || card.annualFeeStatus === 'overdue').length
+const pendingFeeCards = computed(
+  () =>
+    creditCards.value.filter(
+      (card) => card.annualFeeStatus === 'pending' || card.annualFeeStatus === 'overdue',
+    ).length,
 )
 
 // 事件处理
@@ -219,7 +220,7 @@ const handleEditCard = (card: CreditCardType) => {
   // 可以导航到编辑页面
   uni.showToast({
     title: '编辑功能开发中',
-    icon: 'none'
+    icon: 'none',
   })
 }
 
@@ -230,27 +231,27 @@ const handleDeleteCard = (cardId: string) => {
     content: '确定要删除这张信用卡吗？',
     success: (res) => {
       if (res.confirm) {
-        const index = creditCards.value.findIndex(card => card.id === cardId)
+        const index = creditCards.value.findIndex((card) => card.id === cardId)
         if (index > -1) {
           creditCards.value.splice(index, 1)
           uni.showToast({
             title: '删除成功',
-            icon: 'success'
+            icon: 'success',
           })
         }
       }
-    }
+    },
   })
 }
 
 const handleToggleActiveCard = (cardId: string) => {
   console.log('Toggle active card:', cardId)
-  const card = creditCards.value.find(card => card.id === cardId)
+  const card = creditCards.value.find((card) => card.id === cardId)
   if (card) {
     card.isActive = !card.isActive
     uni.showToast({
       title: card.isActive ? '已启用' : '已停用',
-      icon: 'success'
+      icon: 'success',
     })
   }
 }
@@ -259,21 +260,21 @@ const handleAddCard = () => {
   console.log('Add card clicked')
   // 跳转到添加卡片页面
   uni.navigateTo({
-    url: '/pages/cards/add'
+    url: '/pages/cards/add',
   })
 }
 
 const handleViewAll = () => {
   console.log('View all clicked')
   uni.navigateTo({
-    url: '/pages/cards/index'
+    url: '/pages/cards/index',
   })
 }
 
 const handleViewFeeDetail = () => {
   console.log('View fee detail clicked')
   uni.navigateTo({
-    url: '/pages/fees/index'
+    url: '/pages/fees/index',
   })
 }
 
@@ -282,7 +283,7 @@ const handleManageWaiver = () => {
   // 可以导航到年费减免管理页面
   uni.showToast({
     title: '减免管理功能开发中',
-    icon: 'none'
+    icon: 'none',
   })
 }
 
@@ -291,7 +292,7 @@ const handleRecommendationClick = (card: CreditCardType) => {
   // 可以跳转到推荐卡片的详情页面或使用建议
   uni.showToast({
     title: `推荐使用${card.bankName}${card.cardName}`,
-    icon: 'success'
+    icon: 'success',
   })
 }
 
@@ -304,12 +305,12 @@ const handleTabClick = (tab: string) => {
     cards: '/pages/cards/index',
     transactions: '/pages/transactions/index',
     fees: '/pages/fees/index',
-    mine: '/pages/mine/index'
+    mine: '/pages/mine/index',
   }
-  
+
   if (routes[tab] && routes[tab] !== '/pages/index/index') {
     uni.navigateTo({
-      url: routes[tab]
+      url: routes[tab],
     })
   }
 }
@@ -327,17 +328,29 @@ onMounted(() => {
 
 // 如果没有iconfont，可以使用文本替代
 .iconfont {
-  &.icon-notification::before { content: '🔔'; }
-  &.icon-setting::before { content: '⚙️'; }
-  &.icon-add::before { content: '➕'; }
-  &.icon-transaction::before { content: '💳'; }
-  &.icon-chart::before { content: '📊'; }
-  &.icon-remind::before { content: '⏰'; }
+  &.icon-notification::before {
+    content: '🔔';
+  }
+  &.icon-setting::before {
+    content: '⚙️';
+  }
+  &.icon-add::before {
+    content: '➕';
+  }
+  &.icon-transaction::before {
+    content: '💳';
+  }
+  &.icon-chart::before {
+    content: '📊';
+  }
+  &.icon-remind::before {
+    content: '⏰';
+  }
 }
 
 .card-item {
   transition: transform 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }

@@ -59,11 +59,7 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "type": "home",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "信用卡管家"
-      }
+      "type": "home"
     },
     {
       "path": "pages/about/about",
