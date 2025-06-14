@@ -28,8 +28,24 @@
         </view>
       </view>
 
-      <!-- 快速统计 -->
-      <view v-if="!isLoading && summary" class="grid grid-cols-3 gap-3 mb-4">
+      <!-- 未登录状态 -->
+      <view v-if="!userStore.isLoggedIn" class="grid grid-cols-3 gap-3 mb-4">
+        <view class="text-center">
+          <text class="text-lg font-bold text-gray-400 block">--</text>
+          <text class="text-xs text-gray-500">活跃卡片</text>
+        </view>
+        <view class="text-center">
+          <text class="text-lg font-bold text-gray-400 block">--</text>
+          <text class="text-xs text-gray-500">可用额度</text>
+        </view>
+        <view class="text-center">
+          <text class="text-lg font-bold text-gray-400 block">--</text>
+          <text class="text-xs text-gray-500">免息天数</text>
+        </view>
+      </view>
+
+      <!-- 已登录 - 快速统计 -->
+      <view v-else-if="!isLoading && summary" class="grid grid-cols-3 gap-3 mb-4">
         <view class="text-center">
           <text class="text-lg font-bold text-blue-600 block">{{ summary.active_cards }}</text>
           <text class="text-xs text-gray-500">活跃卡片</text>
@@ -48,8 +64,8 @@
         </view>
       </view>
 
-      <!-- 加载状态 -->
-      <view v-if="isLoading" class="grid grid-cols-3 gap-3 mb-4">
+      <!-- 已登录 - 加载状态 -->
+      <view v-else-if="userStore.isLoggedIn && isLoading" class="grid grid-cols-3 gap-3 mb-4">
         <view class="text-center">
           <text class="text-lg font-bold text-gray-400 block">--</text>
           <text class="text-xs text-gray-500">活跃卡片</text>
@@ -64,8 +80,8 @@
         </view>
       </view>
 
-      <!-- 错误状态 -->
-      <view v-if="isError && !isLoading" class="text-center py-4">
+      <!-- 已登录 - 错误状态 -->
+      <view v-else-if="userStore.isLoggedIn && isError && !isLoading" class="text-center py-4">
         <text class="text-sm text-gray-500">数据加载失败，请稍后重试</text>
       </view>
     </view>
@@ -73,8 +89,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useUserStore } from '@/store/user'
 import {
   getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions,
   getUnreadRemindersCountApiV1UserRemindersUnreadCountGetQueryOptions,
@@ -83,21 +100,47 @@ import type * as API from '@/service/app/types'
 
 // 移除props，组件自己获取数据
 
-// 使用Vue Query获取卡片摘要数据
+// 获取用户状态
+const userStore = useUserStore()
+
+// 使用Vue Query获取卡片摘要数据 - 只有在已登录时才启用
 const {
   data: summaryResponse,
   isLoading,
   isError,
   refetch,
-} = useQuery(getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions({}))
+} = useQuery({
+  ...getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions({}),
+  enabled: computed(() => userStore.isLoggedIn), // 只有在已登录时才启用查询
+})
 
-// 使用Vue Query获取未读提醒数量
+// 使用Vue Query获取未读提醒数量 - 只有在已登录时才启用
 const {
   data: unreadCountResponse,
   isLoading: isUnreadCountLoading,
   isError: isUnreadCountError,
   refetch: refetchUnreadCount,
-} = useQuery(getUnreadRemindersCountApiV1UserRemindersUnreadCountGetQueryOptions({}))
+} = useQuery({
+  ...getUnreadRemindersCountApiV1UserRemindersUnreadCountGetQueryOptions({}),
+  enabled: computed(() => userStore.isLoggedIn), // 只有在已登录时才启用查询
+})
+
+// 监听用户登录状态变化，登录成功后自动刷新数据
+watch(
+  () => userStore.isLoggedIn,
+  (newValue, oldValue) => {
+    console.log('用户登录状态变化:', { oldValue, newValue })
+    if (newValue && !oldValue) {
+      // 从未登录变为已登录，刷新数据
+      console.log('用户登录成功，刷新HeaderSection数据')
+      setTimeout(() => {
+        refetch()
+        refetchUnreadCount()
+      }, 100) // 稍微延迟确保token已设置
+    }
+  },
+  { immediate: false },
+)
 
 // 计算属性 - 从API响应中提取摘要数据
 const summary = computed(() => {
