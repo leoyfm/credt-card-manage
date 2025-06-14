@@ -6,12 +6,15 @@
 
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_current_user
 from app.db.database import get_db
 from app.models.database.user import User
+from app.core.exceptions import (
+    ResourceNotFoundError, DatabaseError, BusinessRuleError
+)
 from app.models.schemas.recommendation import (
     RecommendationRecordResponse, RecommendationRecordListResponse,
     RecommendationQuery, RecommendationFeedback, SmartRecommendationRequest,
@@ -62,9 +65,9 @@ async def get_smart_recommendations(
         )
         
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"生成推荐失败: {str(e)}"
+        raise DatabaseError(
+            message="生成推荐失败",
+            error_detail=str(e)
         )
 
 
@@ -113,9 +116,9 @@ async def get_recommendation_history(
         )
         
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"查询推荐历史失败: {str(e)}"
+        raise DatabaseError(
+            message="查询推荐历史失败",
+            error_detail=str(e)
         )
 
 
@@ -136,9 +139,9 @@ async def get_recommendation_detail(
         
         recommendation = service.get_recommendation_by_id(recommendation_id, current_user.id)
         if not recommendation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="推荐记录不存在"
+            raise ResourceNotFoundError(
+                message="推荐记录不存在",
+                error_detail=f"推荐ID: {recommendation_id}"
             )
         
         # 标记为已读
@@ -149,12 +152,12 @@ async def get_recommendation_detail(
             message="获取推荐详情成功"
         )
         
-    except HTTPException:
+    except (ResourceNotFoundError, BusinessRuleError):
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取推荐详情失败: {str(e)}"
+        raise DatabaseError(
+            message="获取推荐详情失败",
+            error_detail=str(e)
         )
 
 
@@ -184,9 +187,9 @@ async def submit_recommendation_feedback(
         
         recommendation = service.submit_feedback(recommendation_id, current_user.id, feedback)
         if not recommendation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="推荐记录不存在"
+            raise ResourceNotFoundError(
+                message="推荐记录不存在",
+                error_detail=f"推荐ID: {recommendation_id}"
             )
         
         return ResponseUtil.success(
@@ -194,12 +197,12 @@ async def submit_recommendation_feedback(
             message="反馈提交成功"
         )
         
-    except HTTPException:
+    except (ResourceNotFoundError, BusinessRuleError):
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"提交反馈失败: {str(e)}"
+        raise DatabaseError(
+            message="提交反馈失败",
+            error_detail=str(e)
         )
 
 
@@ -223,9 +226,9 @@ async def update_recommendation(
             recommendation_id, current_user.id, update_data
         )
         if not recommendation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="推荐记录不存在"
+            raise ResourceNotFoundError(
+                message="推荐记录不存在",
+                error_detail=f"推荐ID: {recommendation_id}"
             )
         
         return ResponseUtil.success(
@@ -233,12 +236,12 @@ async def update_recommendation(
             message="推荐记录更新成功"
         )
         
-    except HTTPException:
+    except (ResourceNotFoundError, BusinessRuleError):
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"更新推荐记录失败: {str(e)}"
+        raise DatabaseError(
+            message="更新推荐记录失败",
+            error_detail=str(e)
         )
 
 
@@ -272,9 +275,9 @@ async def get_recommendation_stats(
         )
         
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取推荐统计失败: {str(e)}"
+        raise DatabaseError(
+            message="获取推荐统计失败",
+            error_detail=str(e)
         )
 
 
@@ -304,9 +307,9 @@ async def evaluate_recommendation_rules(
         )
         
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"评估推荐规则失败: {str(e)}"
+        raise DatabaseError(
+            message="评估推荐规则失败",
+            error_detail=str(e)
         )
 
 
