@@ -38,6 +38,21 @@ export type ApiPagedResponseLoginLogResponse_ = {
   timestamp: string;
 };
 
+export type ApiPagedResponseRecommendationRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: RecommendationRecordResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
 export type ApiPagedResponseReminderRecordResponse_ = {
   /** Success 操作是否成功 */
   success?: boolean;
@@ -107,6 +122,19 @@ export type ApiResponseDict_ = {
   timestamp: string;
 };
 
+export type ApiResponseListRecommendationRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: RecommendationRecordResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
 export type ApiResponseListReminderRecordResponse_ = {
   /** Success 操作是否成功 */
   success?: boolean;
@@ -116,6 +144,19 @@ export type ApiResponseListReminderRecordResponse_ = {
   message?: string;
   /** Data 响应数据 */
   data?: ReminderRecordResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseListStr_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: string[] | null;
   /** Timestamp 响应时间戳 */
   timestamp: string;
 };
@@ -142,6 +183,32 @@ export type ApiResponseMarkAllReadResponse_ = {
   message?: string;
   /** 响应数据 */
   data?: MarkAllReadResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseRecommendationRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: RecommendationRecordResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseRecommendationStats_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: RecommendationStats | null;
   /** Timestamp 响应时间戳 */
   timestamp: string;
 };
@@ -454,6 +521,24 @@ export type getRecentRemindersApiV1UserRemindersRecentGetParams = {
   limit?: number;
 };
 
+export type getRecommendationDetailApiV1UserRecommendationsRecommendationIdGetParams =
+  {
+    recommendation_id: string;
+  };
+
+export type getRecommendationHistoryApiV1UserRecommendationsHistoryGetParams = {
+  /** 推荐类型筛选 */
+  recommendation_type?: string | null;
+  /** 状态筛选 */
+  status?: string | null;
+  /** 用户行动筛选 */
+  user_action?: string | null;
+  /** 页码 */
+  page?: number;
+  /** 每页数量 */
+  page_size?: number;
+};
+
 export type getReminderRecordApiV1UserRemindersRecordsRecordIdGetParams = {
   /** 提醒记录ID */
   record_id: string;
@@ -490,6 +575,15 @@ export type getReminderSettingsApiV1UserRemindersSettingsGetParams = {
   reminder_type?: string | null;
   /** 启用状态筛选 */
   is_enabled?: boolean | null;
+};
+
+export type getSmartRecommendationsApiV1UserRecommendationsSmartGetParams = {
+  /** 推荐类型列表 */
+  recommendation_types?: string[] | null;
+  /** 推荐数量限制 */
+  limit?: number;
+  /** 是否包含历史推荐 */
+  include_history?: boolean;
 };
 
 export type getUpcomingRemindersApiV1UserRemindersUpcomingGetParams = {
@@ -587,6 +681,64 @@ export type PaginationInfo = {
   has_next: boolean;
   /** Has Prev 是否有上一页 */
   has_prev: boolean;
+};
+
+export type RecommendationFeedback = {
+  /** User Action 用户行动 */
+  user_action: string;
+  /** Feedback 用户反馈 */
+  feedback?: string | null;
+};
+
+export type RecommendationRecordResponse = {
+  /** Recommendation Type 推荐类型 */
+  recommendation_type: string;
+  /** Title 标题 */
+  title: string;
+  /** Content 内容 */
+  content: string;
+  /** Action Data 行动数据 */
+  action_data?: Record<string, unknown> | null;
+  /** Id 记录ID */
+  id: string;
+  /** User Id 用户ID */
+  user_id: string;
+  /** Rule Id 规则ID */
+  rule_id?: string | null;
+  /** User Action 用户行动 */
+  user_action?: string | null;
+  /** Feedback 用户反馈 */
+  feedback?: string | null;
+  /** Status 状态 */
+  status: string;
+  /** Created At 创建时间 */
+  created_at: string;
+  /** Updated At 更新时间 */
+  updated_at: string;
+};
+
+export type RecommendationRecordUpdate = {
+  /** User Action 用户行动 */
+  user_action?: string | null;
+  /** Feedback 用户反馈 */
+  feedback?: string | null;
+  /** Status 状态 */
+  status?: string | null;
+};
+
+export type RecommendationStats = {
+  /** Total Recommendations 总推荐数 */
+  total_recommendations: number;
+  /** Pending Recommendations 待处理推荐数 */
+  pending_recommendations: number;
+  /** Accepted Recommendations 已接受推荐数 */
+  accepted_recommendations: number;
+  /** Rejected Recommendations 已拒绝推荐数 */
+  rejected_recommendations: number;
+  /** Type Distribution 类型分布 */
+  type_distribution: Record<string, unknown>;
+  /** Recent Recommendations 最近推荐 */
+  recent_recommendations: RecommendationRecordResponse[];
 };
 
 export type RefreshTokenRequest = {
@@ -695,6 +847,11 @@ export type ReminderStatisticsResponse = {
   recent_reminders: ReminderRecordResponse[];
 };
 
+export type submitRecommendationFeedbackApiV1UserRecommendationsRecommendationIdFeedbackPostParams =
+  {
+    recommendation_id: string;
+  };
+
 export type TokenResponse = {
   /** Access Token 访问令牌 */
   access_token: string;
@@ -737,6 +894,11 @@ export type updateCreditCardApiV1UserCardsCardIdPutParams = {
   /** 信用卡ID */
   card_id: string;
 };
+
+export type updateRecommendationApiV1UserRecommendationsRecommendationIdPutParams =
+  {
+    recommendation_id: string;
+  };
 
 export type updateReminderSettingApiV1UserRemindersSettingsSettingIdPutParams =
   {

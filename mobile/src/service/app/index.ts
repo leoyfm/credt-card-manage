@@ -14,6 +14,8 @@ export * from './xinyongkaguanli';
 export * from './xinyongkaguanli.vuequery';
 export * from './yonghutixingguanli';
 export * from './yonghutixingguanli.vuequery';
+export * from './yonghutuijian';
+export * from './yonghutuijian.vuequery';
 export * from './guanliyuan';
 export * from './guanliyuan.vuequery';
 export * from './guanliyuanyonghuguanli';
