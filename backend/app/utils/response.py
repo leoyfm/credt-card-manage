@@ -18,6 +18,9 @@ from app.models.schemas.common import (
     ApiErrorResponse
 )
 
+# 导入分页工具函数
+from app.utils.pagination import calculate_skip, validate_pagination_params
+
 
 class ResponseUtil:
     """统一响应工具类"""
@@ -331,42 +334,6 @@ class ResponseUtil:
         )
     
     # ========== 工具方法 ==========
-    
-    @staticmethod
-    def calculate_skip(page: int, page_size: int) -> int:
-        """
-        计算分页偏移量
-        
-        Args:
-            page: 页码（从1开始）
-            page_size: 每页大小
-            
-        Returns:
-            int: 偏移量
-        """
-        return (page - 1) * page_size
-    
-    @staticmethod
-    def validate_pagination(page: int, page_size: int, max_page_size: int = 100):
-        """
-        验证分页参数
-        
-        Args:
-            page: 页码
-            page_size: 每页大小
-            max_page_size: 最大每页大小
-            
-        Raises:
-            ValueError: 参数验证失败
-        """
-        if page < 1:
-            raise ValueError("页码必须大于0")
-        
-        if page_size < 1:
-            raise ValueError("每页大小必须大于0")
-        
-        if page_size > max_page_size:
-            raise ValueError(f"每页大小不能超过{max_page_size}")
     
     @staticmethod
     def format_validation_errors(validation_errors: List) -> List[Dict]:
