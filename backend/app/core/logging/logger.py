@@ -14,6 +14,7 @@ LOG_FILE = os.path.join(LOG_DIR, 'app.log')
 
 class JsonFormatter(logging.Formatter):
     def format(self, record):
+        # 基础日志字段
         log_record = {
             "timestamp": datetime.now(timezone(timedelta(hours=8))).isoformat(),
             "level": record.levelname,
@@ -23,8 +24,30 @@ class JsonFormatter(logging.Formatter):
             "lineno": record.lineno,
             "funcName": record.funcName,
         }
+        
+        # 添加异常信息
         if record.exc_info:
             log_record["exc_info"] = self.formatException(record.exc_info)
+        
+        # 添加extra参数中的所有额外字段
+        # 排除标准的LogRecord属性
+        standard_attrs = {
+            'name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 'filename',
+            'module', 'lineno', 'funcName', 'created', 'msecs', 'relativeCreated',
+            'thread', 'threadName', 'processName', 'process', 'getMessage',
+            'exc_info', 'exc_text', 'stack_info', 'message'
+        }
+        
+        for key, value in record.__dict__.items():
+            if key not in standard_attrs and not key.startswith('_'):
+                # 确保值可以JSON序列化
+                try:
+                    json.dumps(value)
+                    log_record[key] = value
+                except (TypeError, ValueError):
+                    # 如果不能序列化，转换为字符串
+                    log_record[key] = str(value)
+        
         return json.dumps(log_record, ensure_ascii=False)
 
 class StructuredLogger:
