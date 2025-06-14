@@ -397,10 +397,30 @@ class AnnualFeeService:
                 evaluation_message="刚性年费，无法减免"
             )
         
-        # 计算当前年度的交易数据（使用当前年份）
-        current_year = datetime.now().year
-        year_start = datetime(current_year, 1, 1)
-        year_end = datetime(current_year, 12, 31, 23, 59, 59)
+        # 计算当前年度的交易数据
+        # 优先使用规则的有效期，如果没有则使用当前年份
+        if rule.effective_from and rule.effective_to:
+            # 使用规则的有效期范围
+            year_start = datetime.combine(rule.effective_from, datetime.min.time())
+            year_end = datetime.combine(rule.effective_to, datetime.max.time())
+        else:
+            # 如果没有有效期，查询所有年份的交易数据来确定合适的年份
+            all_transactions = self.db.query(Transaction).filter(
+                and_(
+                    Transaction.card_id == rule.card_id,
+                    Transaction.transaction_type == 'expense'
+                )
+            ).order_by(Transaction.transaction_date.desc()).limit(1).first()
+            
+            if all_transactions and all_transactions.transaction_date:
+                # 使用最近交易的年份
+                target_year = all_transactions.transaction_date.year
+            else:
+                # 如果没有交易，使用当前年份
+                target_year = datetime.now().year
+            
+            year_start = datetime(target_year, 1, 1)
+            year_end = datetime(target_year, 12, 31, 23, 59, 59)
         
         transactions = self.db.query(Transaction).filter(
             and_(
@@ -589,6 +609,7 @@ class AnnualFeeService:
         """转换为年费记录响应模型"""
         return AnnualFeeRecordResponse(
             id=record.id,
+            card_id=record.card_id,
             waiver_rule_id=record.waiver_rule_id,
             fee_year=record.fee_year,
             base_fee=record.base_fee,

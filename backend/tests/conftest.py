@@ -16,15 +16,33 @@ from tests.utils.db import create_test_session
 def create_all_tables():
     """创建测试数据库表"""
     try:
-        from app.db.database import Base
-        session = create_test_session()
-        engine = session.get_bind()
-        Base.metadata.create_all(bind=engine)
+        # 导入Base和所有模型
+        from app.db.database import Base, TestEngine
+        # 导入所有数据库模型以确保它们被注册到Base.metadata中
+        import app.models.database  # 这会触发__init__.py中的所有导入
+        
+        print("正在创建测试数据库表...")
+        
+        # 删除所有现有表（如果存在）
+        Base.metadata.drop_all(bind=TestEngine)
+        
+        # 创建所有表
+        Base.metadata.create_all(bind=TestEngine)
+        
+        print(f"成功创建了 {len(Base.metadata.tables)} 个表:")
+        for table_name in Base.metadata.tables.keys():
+            print(f"  - {table_name}")
+        
         yield
-        Base.metadata.drop_all(bind=engine)
-        session.close()
+        
+        # 测试完成后清理
+        print("清理测试数据库表...")
+        Base.metadata.drop_all(bind=TestEngine)
+        
     except Exception as e:
         print(f"数据库初始化失败: {e}")
+        import traceback
+        traceback.print_exc()
         yield
 
 @pytest.fixture
