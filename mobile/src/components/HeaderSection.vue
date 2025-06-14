@@ -36,15 +36,15 @@
         </view>
         <view class="text-center">
           <text class="text-lg font-bold text-green-600 block">
-            {{ formatMoney(summary.total_credit_limit - summary.total_used_limit) }}
+            {{ formatMoney(summary.total_available_limit) }}
           </text>
           <text class="text-xs text-gray-500">可用额度</text>
         </view>
         <view class="text-center">
           <text class="text-lg font-bold text-orange-600 block">
-            {{ Math.round(summary.credit_utilization) }}%
+            {{ summary.max_interest_free_days }}
           </text>
-          <text class="text-xs text-gray-500">使用率</text>
+          <text class="text-xs text-gray-500">免息天数</text>
         </view>
       </view>
 
@@ -60,7 +60,7 @@
         </view>
         <view class="text-center">
           <text class="text-lg font-bold text-gray-400 block">--</text>
-          <text class="text-xs text-gray-500">使用率</text>
+          <text class="text-xs text-gray-500">免息天数</text>
         </view>
       </view>
 
@@ -76,7 +76,7 @@
 import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
-import type { UserStatisticsResponse } from '@/service/app/types'
+import type * as API from '@/service/app/types'
 
 // 移除props，组件自己获取数据
 
@@ -89,21 +89,13 @@ const {
   isLoading,
   isError,
   refetch,
-} = useQuery(
-  getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions({
-    options: {
-      url: '', // 这个字段会被拦截器覆盖
-      method: 'GET',
-    } as any,
-  }),
-)
+} = useQuery(getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions({}))
 
 // 计算属性 - 从API响应中提取摘要数据
 const summary = computed(() => {
-  if (!summaryResponse.value?.success || !summaryResponse.value?.data) {
-    return null
-  }
-  return summaryResponse.value.data as UserStatisticsResponse
+  console.log('summaryResponse', summaryResponse.value)
+
+  return summaryResponse.value as any
 })
 
 // 工具函数

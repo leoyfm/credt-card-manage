@@ -112,32 +112,34 @@ const usernameLoginMutation = useLoginUsernameApiV1PublicAuthLoginUsernamePostMu
   onSuccess: (data: API.AuthResponse) => {
     console.log('登录成功:', data)
 
+    userStore.setAuthData(data)
+
     // 直接保存用户信息到 store，简化数据结构
-    userStore.userInfo = {
-      id: data.user_id,
-      username: data.username,
-      email: data.email,
-      nickname: data.nickname,
-      phone: data.phone,
-      avatar_url: data.avatar_url,
-      is_active: data.is_active || false,
-      is_verified: data.is_verified || false,
-      timezone: data.timezone || 'Asia/Shanghai',
-      language: data.language || 'zh-CN',
-      currency: data.currency || 'CNY',
-      last_login_at: data.last_login_at,
-      email_verified_at: data.email_verified_at,
-      created_at: data.created_at || new Date().toISOString(),
-    }
+    // userStore.userInfo = {
+    //   id: data.user_id,
+    //   username: data.username,
+    //   email: data.email,
+    //   nickname: data.nickname,
+    //   phone: data.phone,
+    //   avatar_url: data.avatar_url,
+    //   is_active: data.is_active || false,
+    //   is_verified: data.is_verified || false,
+    //   timezone: data.timezone || 'Asia/Shanghai',
+    //   language: data.language || 'zh-CN',
+    //   currency: data.currency || 'CNY',
+    //   last_login_at: data.last_login_at,
+    //   email_verified_at: data.email_verified_at,
+    //   created_at: data.created_at || new Date().toISOString(),
+    // }
 
-    userStore.token = data.access_token
-    userStore.refreshToken = data.refresh_token
-    userStore.isLoggedIn = true
+    // userStore.token = data.access_token
+    // userStore.refreshToken = data.refresh_token
+    // userStore.isLoggedIn = true
 
-    // 保存到本地存储
-    uni.setStorageSync('token', data.access_token)
-    uni.setStorageSync('userInfo', userStore.userInfo)
-    uni.setStorageSync('isLoggedIn', true)
+    // // 保存到本地存储
+    // uni.setStorageSync('token', data.access_token)
+    // uni.setStorageSync('userInfo', userStore.userInfo)
+    // uni.setStorageSync('isLoggedIn', true)
 
     toast.success('登录成功')
 
