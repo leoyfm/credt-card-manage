@@ -75,11 +75,7 @@
     },
     {
       "path": "pages/auth/login",
-      "type": "page",
-      "style": {
-        "navigationBarTitleText": "登录",
-        "navigationStyle": "custom"
-      }
+      "type": "page"
     },
     {
       "path": "pages/auth/register",

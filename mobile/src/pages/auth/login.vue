@@ -1,12 +1,3 @@
-<route lang="json5" type="page">
-{
-  style: {
-    navigationBarTitleText: '登录',
-    navigationStyle: 'custom',
-  },
-}
-</route>
-
 <template>
   <view class="login-page">
     <!-- 背景装饰 -->
