@@ -1,17 +1,20 @@
 /* eslint-disable */
 // @ts-ignore
 export * from './types';
-export * from './displayEnumLabel';
 
-export * from './yonghurenzheng';
-export * from './yonghurenzheng.vuequery';
-export * from './nianfeiguanli';
-export * from './nianfeiguanli.vuequery';
-export * from './xinyongka';
-export * from './xinyongka.vuequery';
-export * from './haikuantixing';
-export * from './haikuantixing.vuequery';
-export * from './zhinengtuijian';
-export * from './zhinengtuijian.vuequery';
-export * from './xitong';
-export * from './xitong.vuequery';
+export * from './renzheng';
+export * from './renzheng.vuequery';
+export * from './v1Xitongxinxi';
+export * from './v1Xitongxinxi.vuequery';
+export * from './v1Yonghugongneng';
+export * from './v1Yonghugongneng.vuequery';
+export * from './v1Yonghugerenziliao';
+export * from './v1Yonghugerenziliao.vuequery';
+export * from './xinyongkaguanli';
+export * from './xinyongkaguanli.vuequery';
+export * from './guanliyuan';
+export * from './guanliyuan.vuequery';
+export * from './guanliyuanyonghuguanli';
+export * from './guanliyuanyonghuguanli.vuequery';
+export * from './guanliyuanxinyongkaguanli';
+export * from './guanliyuanxinyongkaguanli.vuequery';
