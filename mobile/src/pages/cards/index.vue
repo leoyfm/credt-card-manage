@@ -27,11 +27,13 @@
     <!-- 筛选栏 -->
     <view class="filter-bar bg-white px-4 py-3 border-b border-gray-100">
       <view class="flex space-x-3">
-        <view 
-          v-for="filter in filterOptions" 
+        <view
+          v-for="filter in filterOptions"
           :key="filter.key"
           class="filter-item px-3 py-1 rounded-full text-sm transition-all"
-          :class="activeFilter === filter.key ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'"
+          :class="
+            activeFilter === filter.key ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
+          "
           @click="setFilter(filter.key)"
         >
           {{ filter.label }}
@@ -49,8 +51,8 @@
 
     <!-- 卡片列表 -->
     <view class="card-list px-4 py-2">
-      <view 
-        v-for="card in filteredCards" 
+      <view
+        v-for="card in filteredCards"
         :key="card.id"
         class="card-item bg-white rounded-xl p-4 mb-4 shadow-sm"
         @click="goToCardDetail(card.id)"
@@ -58,7 +60,7 @@
         <!-- 银行头部 -->
         <view class="flex items-center justify-between mb-4">
           <view class="flex items-center">
-            <view 
+            <view
               class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
               :style="{ backgroundColor: card.bankColor }"
             >
@@ -68,7 +70,9 @@
               <text class="font-semibold text-gray-800 text-base">{{ card.bankName }}</text>
               <view class="flex items-center mt-1">
                 <text class="text-sm text-gray-600">{{ card.cardName }}</text>
-                <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded ml-2">{{ card.cardLevel }}</text>
+                <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded ml-2">
+                  {{ card.cardLevel }}
+                </text>
               </view>
             </view>
           </view>
@@ -98,23 +102,27 @@
         <view class="mb-4">
           <view class="flex justify-between items-center mb-2">
             <text class="text-sm text-gray-600">信用额度</text>
-            <text class="text-lg font-bold text-gray-800">¥{{ formatMoney(card.creditLimit) }}</text>
+            <text class="text-lg font-bold text-gray-800">
+              ¥{{ formatMoney(card.creditLimit) }}
+            </text>
           </view>
-          
+
           <!-- 额度使用进度条 -->
           <view class="mb-2">
             <view class="bg-gray-200 rounded-full h-3 relative overflow-hidden">
-              <view 
+              <view
                 class="h-3 rounded-full transition-all duration-500"
                 :class="getUsageColorClass(card.usedAmount / card.creditLimit)"
-                :style="{ width: (card.usedAmount / card.creditLimit * 100) + '%' }"
+                :style="{ width: (card.usedAmount / card.creditLimit) * 100 + '%' }"
               ></view>
-              <text class="absolute inset-0 text-xs text-white flex items-center justify-center font-medium">
-                {{ Math.round(card.usedAmount / card.creditLimit * 100) }}%
+              <text
+                class="absolute inset-0 text-xs text-white flex items-center justify-center font-medium"
+              >
+                {{ Math.round((card.usedAmount / card.creditLimit) * 100) }}%
               </text>
             </view>
           </view>
-          
+
           <view class="flex justify-between text-sm">
             <text class="text-green-600">可用 ¥{{ formatMoney(card.availableAmount) }}</text>
             <text class="text-red-600">已用 ¥{{ formatMoney(card.usedAmount) }}</text>
@@ -133,7 +141,9 @@
           </view>
           <view class="flex-1 text-right">
             <text class="text-sm text-gray-600">下次账单</text>
-            <text class="text-sm text-blue-600 ml-2">{{ formatDate(card.nextBillingDate, 'MM-DD') }}</text>
+            <text class="text-sm text-blue-600 ml-2">
+              {{ formatDate(card.nextBillingDate, 'MM-DD') }}
+            </text>
           </view>
         </view>
 
@@ -150,7 +160,7 @@
             <text class="text-xs text-gray-500">{{ card.waiverCondition }}</text>
             <view class="flex items-center mt-1">
               <view class="w-16 bg-gray-200 rounded-full h-1 mr-2">
-                <view 
+                <view
                   class="bg-blue-500 h-1 rounded-full transition-all duration-300"
                   :style="{ width: card.waiverProgress + '%' }"
                 ></view>
@@ -166,7 +176,9 @@
     <view v-if="filteredCards.length === 0" class="empty-state text-center py-16">
       <text class="text-4xl mb-4 block">💳</text>
       <text class="text-gray-500 text-base mb-4 block">
-        {{ searchKeyword || activeFilter !== 'all' ? '没有找到符合条件的卡片' : '还没有添加信用卡' }}
+        {{
+          searchKeyword || activeFilter !== 'all' ? '没有找到符合条件的卡片' : '还没有添加信用卡'
+        }}
       </text>
       <button v-if="!searchKeyword && activeFilter === 'all'" class="btn-primary" @click="addCard">
         添加第一张信用卡
@@ -174,14 +186,12 @@
     </view>
 
     <!-- 底部操作栏 -->
-    <view class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom">
+    <view
+      class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom"
+    >
       <view class="flex space-x-3">
-        <button class="btn-secondary flex-1" @click="importCards">
-          批量导入
-        </button>
-        <button class="btn-primary flex-1" @click="addCard">
-          添加卡片
-        </button>
+        <button class="btn-secondary flex-1" @click="importCards">批量导入</button>
+        <button class="btn-primary flex-1" @click="addCard">添加卡片</button>
       </view>
     </view>
 
@@ -192,7 +202,7 @@
 
 <script lang="ts" setup>
 import { cardApi } from '@/service/api'
-import '@/mock'
+// import '@/mock' // 暂时注释掉Mock数据引用
 
 defineOptions({
   name: 'CardsPage',
@@ -220,26 +230,27 @@ const filteredCards = computed(() => {
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter(card => 
-      card.bankName.toLowerCase().includes(keyword) ||
-      card.cardName.toLowerCase().includes(keyword) ||
-      card.cardNumberLast4.includes(keyword)
+    filtered = filtered.filter(
+      (card) =>
+        card.bankName.toLowerCase().includes(keyword) ||
+        card.cardName.toLowerCase().includes(keyword) ||
+        card.cardNumberLast4.includes(keyword),
     )
   }
 
   // 状态过滤
   switch (activeFilter.value) {
     case 'active':
-      filtered = filtered.filter(card => card.isActive)
+      filtered = filtered.filter((card) => card.isActive)
       break
     case 'inactive':
-      filtered = filtered.filter(card => !card.isActive)
+      filtered = filtered.filter((card) => !card.isActive)
       break
     case 'high_limit':
-      filtered = filtered.filter(card => card.creditLimit >= 100000)
+      filtered = filtered.filter((card) => card.creditLimit >= 100000)
       break
     case 'fee_due':
-      filtered = filtered.filter(card => card.annualFeeStatus === 'pending')
+      filtered = filtered.filter((card) => card.annualFeeStatus === 'pending')
       break
   }
 
@@ -272,7 +283,7 @@ const loadCards = async () => {
     console.error('加载卡片失败:', error)
     uni.showToast({
       title: '加载失败',
-      icon: 'none'
+      icon: 'none',
     })
   } finally {
     loading.value = false
@@ -329,7 +340,7 @@ const getFeeStatusClass = (status: string) => {
     pending: 'text-orange-600 bg-orange-50',
     waived: 'text-green-600 bg-green-50',
     paid: 'text-blue-600 bg-blue-50',
-    overdue: 'text-red-600 bg-red-50'
+    overdue: 'text-red-600 bg-red-50',
   }
   return `px-2 py-0.5 rounded text-xs ${classes[status] || 'text-gray-600 bg-gray-50'}`
 }
@@ -339,7 +350,7 @@ const getFeeStatusText = (status: string) => {
     pending: '待缴费',
     waived: '已减免',
     paid: '已缴费',
-    overdue: '已逾期'
+    overdue: '已逾期',
   }
   return texts[status] || '未知'
 }
@@ -356,7 +367,7 @@ const addCard = () => {
 const importCards = () => {
   uni.showToast({
     title: '功能开发中',
-    icon: 'none'
+    icon: 'none',
   })
 }
 </script>
@@ -370,7 +381,7 @@ const importCards = () => {
 .filter-item {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.95);
   }
@@ -378,7 +389,7 @@ const importCards = () => {
 
 .card-item {
   transition: transform 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -393,7 +404,7 @@ const importCards = () => {
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -408,7 +419,7 @@ const importCards = () => {
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
     background: #f8f9ff;
@@ -418,4 +429,4 @@ const importCards = () => {
 .empty-state {
   margin-top: 10vh;
 }
-</style> 
+</style>

@@ -10,12 +10,18 @@
 <template>
   <view class="mine-page">
     <!-- 状态栏占位 -->
-    <view :style="{ height: safeAreaInsets?.top + 'px' }" class="bg-gradient-to-r from-indigo-500 to-purple-600"></view>
-    
+    <view
+      :style="{ height: safeAreaInsets?.top + 'px' }"
+      class="bg-gradient-to-r from-indigo-500 to-purple-600"
+    ></view>
+
     <!-- 用户信息头部 -->
     <view class="user-header bg-gradient-to-r from-indigo-500 to-purple-600 text-white pb-8">
       <view class="flex items-center px-4 py-3">
-        <view class="user-avatar w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4" @click="goToProfile">
+        <view
+          class="user-avatar w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4"
+          @click="goToProfile"
+        >
           <image v-if="userInfo.avatar" :src="userInfo.avatar" class="w-14 h-14 rounded-full" />
           <text v-else class="text-2xl">👤</text>
         </view>
@@ -47,7 +53,9 @@
               <text class="text-xs opacity-80">消费笔数</text>
             </view>
             <view class="text-center" @click="goToFees">
-              <text class="text-xl font-bold block">¥{{ formatMoney(statistics.totalSavings) }}</text>
+              <text class="text-xl font-bold block">
+                ¥{{ formatMoney(statistics.totalSavings) }}
+              </text>
               <text class="text-xs opacity-80">节省费用</text>
             </view>
           </view>
@@ -59,14 +67,14 @@
     <view class="menu-section bg-white -mt-4 mx-4 rounded-xl shadow-lg mb-4">
       <!-- 第一组菜单 -->
       <view class="menu-group border-b border-gray-100 last:border-b-0">
-        <view 
-          v-for="(item, index) in primaryMenus" 
+        <view
+          v-for="(item, index) in primaryMenus"
           :key="item.key"
           class="menu-item flex items-center px-4 py-4 transition-all"
           :class="{ 'border-t border-gray-100': index > 0 }"
           @click="handleMenuClick(item.key)"
         >
-          <view 
+          <view
             class="menu-icon w-10 h-10 rounded-full flex items-center justify-center mr-3"
             :style="{ backgroundColor: item.bgColor }"
           >
@@ -74,17 +82,22 @@
           </view>
           <view class="flex-1">
             <text class="text-gray-800 font-medium">{{ item.title }}</text>
-            <text v-if="item.subtitle" class="text-xs text-gray-500 block">{{ item.subtitle }}</text>
+            <text v-if="item.subtitle" class="text-xs text-gray-500 block">
+              {{ item.subtitle }}
+            </text>
           </view>
           <view class="flex items-center">
-            <text v-if="item.badge" class="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full mr-2">
+            <text
+              v-if="item.badge"
+              class="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full mr-2"
+            >
               {{ item.badge }}
             </text>
             <text class="text-gray-400">›</text>
           </view>
         </view>
       </view>
-      </view>
+    </view>
 
     <!-- 工具菜单 -->
     <view class="menu-section bg-white mx-4 rounded-xl shadow-sm mb-4">
@@ -92,14 +105,14 @@
         <text class="text-gray-600 font-medium">实用工具</text>
       </view>
       <view class="menu-group">
-        <view 
-          v-for="(item, index) in toolMenus" 
+        <view
+          v-for="(item, index) in toolMenus"
           :key="item.key"
           class="menu-item flex items-center px-4 py-4 transition-all"
           :class="{ 'border-t border-gray-100': index > 0 }"
           @click="handleMenuClick(item.key)"
         >
-          <view 
+          <view
             class="menu-icon w-8 h-8 rounded-lg flex items-center justify-center mr-3"
             :style="{ backgroundColor: item.bgColor }"
           >
@@ -111,7 +124,7 @@
           <text class="text-gray-400 text-sm">›</text>
         </view>
       </view>
-      </view>
+    </view>
 
     <!-- 设置菜单 -->
     <view class="menu-section bg-white mx-4 rounded-xl shadow-sm mb-4">
@@ -119,14 +132,14 @@
         <text class="text-gray-600 font-medium">设置</text>
       </view>
       <view class="menu-group">
-        <view 
-          v-for="(item, index) in settingMenus" 
+        <view
+          v-for="(item, index) in settingMenus"
           :key="item.key"
           class="menu-item flex items-center px-4 py-4 transition-all"
           :class="{ 'border-t border-gray-100': index > 0 }"
           @click="handleMenuClick(item.key)"
         >
-          <view 
+          <view
             class="menu-icon w-8 h-8 rounded-lg flex items-center justify-center mr-3"
             :style="{ backgroundColor: item.bgColor }"
           >
@@ -153,7 +166,7 @@
 
 <script lang="ts" setup>
 import { userApi, notificationApi, statisticsApi } from '@/service/api'
-import '@/mock'
+// import '@/mock' // 暂时注释掉Mock数据引用
 
 defineOptions({
   name: 'MinePage',
@@ -194,7 +207,7 @@ const primaryMenus = [
     subtitle: '账单提醒、还款通知',
     icon: '🔔',
     bgColor: '#FF6B6B',
-    badge: computed(() => notificationCount.value > 0 ? notificationCount.value : null)
+    badge: computed(() => (notificationCount.value > 0 ? notificationCount.value : null)),
   },
   {
     key: 'payment-reminders',
@@ -202,7 +215,7 @@ const primaryMenus = [
     subtitle: '智能提醒，不错过还款日',
     icon: '⏰',
     bgColor: '#4ECDC4',
-    badge: null
+    badge: null,
   },
   {
     key: 'bill-analysis',
@@ -210,7 +223,7 @@ const primaryMenus = [
     subtitle: '消费趋势，理财建议',
     icon: '📊',
     bgColor: '#45B7D1',
-    badge: null
+    badge: null,
   },
   {
     key: 'security-center',
@@ -218,7 +231,7 @@ const primaryMenus = [
     subtitle: '账户保护，隐私设置',
     icon: '🛡️',
     bgColor: '#96CEB4',
-    badge: null
+    badge: null,
   },
 ]
 
@@ -252,11 +265,11 @@ onShow(() => {
 const loadData = async () => {
   try {
     loading.value = true
-    
+
     const [userRes, statsRes, notifRes] = await Promise.all([
       userApi.getUserInfo(),
       statisticsApi.getOverview(),
-      notificationApi.getNotifications()
+      notificationApi.getNotifications(),
     ])
 
     if (userRes.code === 200) {
@@ -303,7 +316,7 @@ const getUserLevelText = (level: string) => {
     silver: '银牌会员',
     gold: '金牌会员',
     platinum: '白金会员',
-    diamond: '钻石会员'
+    diamond: '钻石会员',
   }
   return levels[level] || '普通会员'
 }
@@ -356,7 +369,7 @@ const handleMenuClick = (key: string) => {
     default:
       uni.showToast({
         title: '功能开发中',
-        icon: 'none'
+        icon: 'none',
       })
   }
 }
@@ -388,7 +401,7 @@ const goToFees = () => {
 .user-avatar {
   cursor: pointer;
   transition: transform 0.2s ease;
-  
+
   &:active {
     transform: scale(0.95);
   }
@@ -396,7 +409,7 @@ const goToFees = () => {
 
 .menu-item {
   cursor: pointer;
-  
+
   &:active {
     background: #f8f9fa;
   }
@@ -404,7 +417,7 @@ const goToFees = () => {
 
 .stats-grid {
   cursor: pointer;
-  
+
   &:active {
     transform: scale(0.98);
   }

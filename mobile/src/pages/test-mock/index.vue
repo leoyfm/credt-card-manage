@@ -11,14 +11,14 @@
     <view class="header">
       <text class="title">Mock 数据测试</text>
     </view>
-    
+
     <view class="test-section">
       <button @click="testCards" class="test-button">测试信用卡数据</button>
       <button @click="testTransactions" class="test-button">测试交易数据</button>
       <button @click="testNotifications" class="test-button">测试通知数据</button>
       <button @click="testStatistics" class="test-button">测试统计数据</button>
     </view>
-    
+
     <view class="result-section">
       <text class="result-title">测试结果:</text>
       <view class="result-content">
@@ -34,7 +34,7 @@
 
 <script lang="ts" setup>
 import { cardApi, transactionApi, notificationApi, statisticsApi } from '@/service/api'
-import '@/mock' // 引入Mock数据
+// import '@/mock' // 暂时注释掉Mock数据引用
 
 defineOptions({
   name: 'TestMockPage',
@@ -47,10 +47,10 @@ const testCards = async () => {
   try {
     resultText.value = '正在测试信用卡数据...'
     resultData.value = null
-    
+
     const response = await cardApi.getCards()
     console.log('Cards API Response:', response)
-    
+
     if (response && response.code === 200) {
       resultText.value = '✅ 信用卡数据获取成功!'
       resultData.value = response.data
@@ -67,10 +67,10 @@ const testTransactions = async () => {
   try {
     resultText.value = '正在测试交易数据...'
     resultData.value = null
-    
+
     const response = await transactionApi.getTransactions()
     console.log('Transactions API Response:', response)
-    
+
     if (response && response.code === 200) {
       resultText.value = '✅ 交易数据获取成功!'
       resultData.value = response.data
@@ -87,10 +87,10 @@ const testNotifications = async () => {
   try {
     resultText.value = '正在测试通知数据...'
     resultData.value = null
-    
+
     const response = await notificationApi.getNotifications()
     console.log('Notifications API Response:', response)
-    
+
     if (response && response.code === 200) {
       resultText.value = '✅ 通知数据获取成功!'
       resultData.value = response.data
@@ -107,10 +107,10 @@ const testStatistics = async () => {
   try {
     resultText.value = '正在测试统计数据...'
     resultData.value = null
-    
+
     const response = await statisticsApi.getOverview()
     console.log('Statistics API Response:', response)
-    
+
     if (response && response.code === 200) {
       resultText.value = '✅ 统计数据获取成功!'
       resultData.value = response.data
@@ -126,7 +126,10 @@ const testStatistics = async () => {
 // 页面加载时自动测试一个接口
 onLoad(() => {
   console.log('Mock 测试页面加载完成')
-  console.log('检查是否加载了 Mock.js:', typeof window !== 'undefined' && (window as any).Mock ? '✅ 已加载' : '❌ 未加载')
+  console.log(
+    '检查是否加载了 Mock.js:',
+    typeof window !== 'undefined' && (window as any).Mock ? '✅ 已加载' : '❌ 未加载',
+  )
 })
 </script>
 
@@ -168,7 +171,7 @@ onLoad(() => {
   background: white;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .result-title {
@@ -209,4 +212,4 @@ onLoad(() => {
   white-space: pre-wrap;
   display: block;
 }
-</style> 
+</style>

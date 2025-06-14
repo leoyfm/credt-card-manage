@@ -35,25 +35,33 @@
     <view class="function-menu bg-white mx-4 -mt-6 rounded-xl p-4 shadow-lg mb-4">
       <view class="flex justify-around">
         <view class="text-center" @click="goToAnnualFeeCalc">
-          <view class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+          <view
+            class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2"
+          >
             <text class="text-blue-600 text-xl">💰</text>
           </view>
           <text class="text-xs text-gray-600">年费计算</text>
         </view>
         <view class="text-center" @click="goToInterestCalc">
-          <view class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+          <view
+            class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2"
+          >
             <text class="text-green-600 text-xl">📊</text>
           </view>
           <text class="text-xs text-gray-600">利息计算</text>
         </view>
         <view class="text-center" @click="goToWaiverProgress">
-          <view class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
+          <view
+            class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2"
+          >
             <text class="text-orange-600 text-xl">🎯</text>
           </view>
           <text class="text-xs text-gray-600">减免进度</text>
         </view>
         <view class="text-center" @click="goToFeeStatistics">
-          <view class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+          <view
+            class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2"
+          >
             <text class="text-purple-600 text-xl">📈</text>
           </view>
           <text class="text-xs text-gray-600">费用统计</text>
@@ -64,11 +72,13 @@
     <!-- 筛选栏 -->
     <view class="filter-section bg-white px-4 py-3 shadow-sm mb-4">
       <view class="flex space-x-2">
-        <view 
-          v-for="filter in feeTypeFilters" 
+        <view
+          v-for="filter in feeTypeFilters"
           :key="filter.key"
           class="filter-tag px-3 py-1 rounded-full text-sm transition-all"
-          :class="activeFeeType === filter.key ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-600'"
+          :class="
+            activeFeeType === filter.key ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-600'
+          "
           @click="setFeeTypeFilter(filter.key)"
         >
           {{ filter.label }}
@@ -84,10 +94,10 @@
           <text class="text-lg font-semibold text-gray-800">年费管理</text>
           <text class="text-sm text-purple-600" @click="goToAnnualFeeList">查看全部</text>
         </view>
-        
+
         <view class="space-y-3">
-          <view 
-            v-for="fee in annualFeeList" 
+          <view
+            v-for="fee in annualFeeList"
             :key="fee.id"
             class="fee-card bg-white rounded-xl p-4 shadow-sm"
             @click="goToAnnualFeeDetail(fee.id)"
@@ -95,14 +105,16 @@
             <!-- 卡片信息 -->
             <view class="flex items-center justify-between mb-3">
               <view class="flex items-center">
-                <view 
+                <view
                   class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3"
                   :style="{ backgroundColor: fee.bankColor }"
                 >
                   {{ fee.bankCode }}
                 </view>
                 <view>
-                  <text class="font-semibold text-gray-800">{{ fee.bankName }}{{ fee.cardName }}</text>
+                  <text class="font-semibold text-gray-800">
+                    {{ fee.bankName }}{{ fee.cardName }}
+                  </text>
                   <text class="text-xs text-gray-500 block">**** {{ fee.cardNumberLast4 }}</text>
                 </view>
               </view>
@@ -132,7 +144,7 @@
                 <text class="text-sm font-semibold text-blue-600">{{ fee.waiverProgress }}%</text>
               </view>
               <view class="bg-gray-200 rounded-full h-2">
-                <view 
+                <view
                   class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-300"
                   :style="{ width: fee.waiverProgress + '%' }"
                 ></view>
@@ -148,19 +160,23 @@
           <text class="text-lg font-semibold text-gray-800">利息支出</text>
           <text class="text-sm text-purple-600" @click="goToInterestList">查看全部</text>
         </view>
-        
+
         <view class="bg-white rounded-xl p-4 shadow-sm">
           <view class="grid grid-cols-2 gap-4">
             <view class="interest-item text-center p-3 bg-red-50 rounded-lg">
-              <text class="text-2xl font-bold text-red-600 block">¥{{ summary.monthlyInterest }}</text>
+              <text class="text-2xl font-bold text-red-600 block">
+                ¥{{ summary.monthlyInterest }}
+              </text>
               <text class="text-sm text-gray-600">本月利息</text>
             </view>
             <view class="interest-item text-center p-3 bg-orange-50 rounded-lg">
-              <text class="text-2xl font-bold text-orange-600 block">¥{{ summary.overdueInterest }}</text>
+              <text class="text-2xl font-bold text-orange-600 block">
+                ¥{{ summary.overdueInterest }}
+              </text>
               <text class="text-sm text-gray-600">逾期利息</text>
             </view>
           </view>
-          
+
           <view class="mt-4 pt-4 border-t border-gray-100">
             <view class="flex items-center justify-between text-sm">
               <text class="text-gray-600">预计下月利息</text>
@@ -176,16 +192,16 @@
           <text class="text-lg font-semibold text-gray-800">其他费用</text>
           <text class="text-sm text-purple-600" @click="goToOtherFeesList">查看全部</text>
         </view>
-        
+
         <view class="space-y-3">
-          <view 
-            v-for="fee in otherFeesList" 
+          <view
+            v-for="fee in otherFeesList"
             :key="fee.id"
             class="fee-card bg-white rounded-xl p-4 shadow-sm"
           >
             <view class="flex items-center justify-between">
               <view class="flex items-center">
-                <view 
+                <view
                   class="w-10 h-10 rounded-full flex items-center justify-center mr-3"
                   :style="{ backgroundColor: getFeeTypeColor(fee.feeType) }"
                 >
@@ -220,7 +236,7 @@
 
 <script lang="ts" setup>
 import { feeApi } from '@/service/api'
-import '@/mock'
+// import '@/mock' // 暂时注释掉Mock数据引用
 
 defineOptions({
   name: 'FeesPage',
@@ -250,9 +266,11 @@ const feeTypeFilters = [
 
 // 计算属性
 const isEmpty = computed(() => {
-  return annualFeeList.value.length === 0 && 
-         otherFeesList.value.length === 0 && 
-         summary.value.totalInterest === 0
+  return (
+    annualFeeList.value.length === 0 &&
+    otherFeesList.value.length === 0 &&
+    summary.value.totalInterest === 0
+  )
 })
 
 // 页面生命周期
@@ -279,7 +297,7 @@ const loadData = async () => {
     console.error('加载费用数据失败:', error)
     uni.showToast({
       title: '加载失败',
-      icon: 'none'
+      icon: 'none',
     })
   } finally {
     loading.value = false
@@ -302,7 +320,7 @@ const getFeeStatusClass = (status: string) => {
     pending: 'text-orange-600',
     waived: 'text-green-600',
     paid: 'text-blue-600',
-    overdue: 'text-red-600'
+    overdue: 'text-red-600',
   }
   return classes[status] || 'text-gray-600'
 }
@@ -312,7 +330,7 @@ const getFeeStatusText = (status: string) => {
     pending: '待缴费',
     waived: '已减免',
     paid: '已缴费',
-    overdue: '已逾期'
+    overdue: '已逾期',
   }
   return texts[status] || '未知'
 }
@@ -322,7 +340,7 @@ const getDueDateText = (dueDateStr: string) => {
   const today = new Date()
   const timeDiff = dueDate.getTime() - today.getTime()
   const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24))
-  
+
   if (daysDiff < 0) {
     return `已逾期 ${Math.abs(daysDiff)} 天`
   } else if (daysDiff === 0) {
@@ -336,24 +354,24 @@ const getDueDateText = (dueDateStr: string) => {
 
 const getFeeTypeColor = (feeType: string) => {
   const colors = {
-    'withdrawal': '#FF6B6B',
-    'cash_advance': '#4ECDC4',
-    'foreign_transaction': '#45B7D1',
-    'late_payment': '#FFA726',
-    'overlimit': '#AB47BC',
-    'installment': '#66BB6A',
+    withdrawal: '#FF6B6B',
+    cash_advance: '#4ECDC4',
+    foreign_transaction: '#45B7D1',
+    late_payment: '#FFA726',
+    overlimit: '#AB47BC',
+    installment: '#66BB6A',
   }
   return colors[feeType] || '#78909C'
 }
 
 const getFeeTypeIcon = (feeType: string) => {
   const icons = {
-    'withdrawal': '💸',
-    'cash_advance': '💰',
-    'foreign_transaction': '🌍',
-    'late_payment': '⏰',
-    'overlimit': '⚠️',
-    'installment': '📅',
+    withdrawal: '💸',
+    cash_advance: '💰',
+    foreign_transaction: '🌍',
+    late_payment: '⏰',
+    overlimit: '⚠️',
+    installment: '📅',
   }
   return icons[feeType] || '💳'
 }
@@ -401,7 +419,7 @@ const goToFeeStatistics = () => {
 .filter-tag {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.95);
   }
@@ -409,7 +427,7 @@ const goToFeeStatistics = () => {
 
 .fee-card {
   transition: transform 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -433,9 +451,9 @@ const goToFeeStatistics = () => {
 .interest-item {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
 }
-</style> 
+</style>

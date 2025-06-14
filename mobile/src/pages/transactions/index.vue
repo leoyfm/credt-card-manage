@@ -32,52 +32,57 @@
     <view class="filter-section bg-white px-4 py-3 shadow-sm">
       <!-- 第一行：快速筛选 -->
       <view class="flex space-x-2 mb-3">
-        <view 
-          v-for="filter in quickFilters" 
+        <view
+          v-for="filter in quickFilters"
           :key="filter.key"
           class="filter-tag px-3 py-1 rounded-full text-sm transition-all"
-          :class="activeFilters.includes(filter.key) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'"
+          :class="
+            activeFilters.includes(filter.key)
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-100 text-gray-600'
+          "
           @click="toggleFilter(filter.key)"
         >
           {{ filter.label }}
         </view>
       </view>
-      
+
       <!-- 第二行：下拉筛选 -->
       <view class="flex space-x-3">
-        <picker 
-          :value="cardFilterIndex" 
-          :range="cardOptions" 
+        <picker
+          :value="cardFilterIndex"
+          :range="cardOptions"
           range-key="label"
           @change="onCardFilterChange"
           class="flex-1"
         >
-          <view class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+          <view
+            class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+          >
             <text class="text-sm">{{ cardOptions[cardFilterIndex].label }}</text>
             <text class="text-gray-400 text-xs">▼</text>
           </view>
         </picker>
-        
-        <picker 
-          :value="categoryFilterIndex" 
-          :range="categoryOptions" 
+
+        <picker
+          :value="categoryFilterIndex"
+          :range="categoryOptions"
           range-key="label"
           @change="onCategoryFilterChange"
           class="flex-1"
         >
-          <view class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+          <view
+            class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+          >
             <text class="text-sm">{{ categoryOptions[categoryFilterIndex].label }}</text>
             <text class="text-gray-400 text-xs">▼</text>
           </view>
         </picker>
-        
-        <picker 
-          mode="date" 
-          :value="dateFilter" 
-          @change="onDateFilterChange"
-          class="flex-1"
-        >
-          <view class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+
+        <picker mode="date" :value="dateFilter" @change="onDateFilterChange" class="flex-1">
+          <view
+            class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+          >
             <text class="text-sm">{{ dateFilter || '选择日期' }}</text>
             <text class="text-gray-400 text-xs">▼</text>
           </view>
@@ -114,53 +119,58 @@
         <!-- 日期头部 -->
         <view class="date-header flex items-center justify-between py-2">
           <text class="text-gray-800 font-medium">{{ formatGroupDate(date) }}</text>
-          <text class="text-sm text-gray-500">{{ group.length }}笔 ¥{{ formatMoney(group.reduce((sum, t) => sum + t.amount, 0)) }}</text>
+          <text class="text-sm text-gray-500">
+            {{ group.length }}笔 ¥{{ formatMoney(group.reduce((sum, t) => sum + t.amount, 0)) }}
+          </text>
         </view>
-        
+
         <!-- 该日期的交易 -->
         <view class="bg-white rounded-lg overflow-hidden shadow-sm">
-          <view 
-            v-for="(transaction, index) in group" 
+          <view
+            v-for="(transaction, index) in group"
             :key="transaction.id"
             class="transaction-item flex items-center p-4 transition-all"
             :class="{ 'border-t border-gray-100': index > 0 }"
             @click="goToTransactionDetail(transaction.id)"
           >
             <!-- 分类图标 -->
-            <view 
+            <view
               class="category-icon w-10 h-10 rounded-full flex items-center justify-center mr-3"
               :style="{ backgroundColor: getCategoryColor(transaction.category) }"
             >
               <text class="text-white text-sm">{{ getCategoryIcon(transaction.category) }}</text>
             </view>
-            
+
             <!-- 交易信息 -->
             <view class="transaction-info flex-1">
               <view class="flex items-center justify-between mb-1">
                 <text class="font-medium text-gray-800">{{ transaction.merchantName }}</text>
-                <text 
-                  class="font-bold"
-                  :class="getAmountClass(transaction.transactionType)"
-                >
-                  {{ transaction.transactionType === '退款' ? '+' : '-' }}¥{{ formatMoney(transaction.amount) }}
+                <text class="font-bold" :class="getAmountClass(transaction.transactionType)">
+                  {{ transaction.transactionType === '退款' ? '+' : '-' }}¥{{
+                    formatMoney(transaction.amount)
+                  }}
                 </text>
               </view>
-              
+
               <view class="flex items-center justify-between">
                 <view class="flex items-center space-x-2">
                   <text class="text-xs text-gray-500">{{ transaction.category }}</text>
-                  <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ transaction.transactionType }}</text>
+                  <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                    {{ transaction.transactionType }}
+                  </text>
                 </view>
-                <text class="text-xs text-gray-500">{{ formatTime(transaction.transactionDate) }}</text>
+                <text class="text-xs text-gray-500">
+                  {{ formatTime(transaction.transactionDate) }}
+                </text>
               </view>
-              
+
               <view v-if="transaction.installment > 0" class="mt-1">
                 <text class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded">
                   {{ transaction.installment }}期分期
                 </text>
               </view>
             </view>
-            
+
             <!-- 右箭头 -->
             <text class="text-gray-300 ml-2">›</text>
           </view>
@@ -180,14 +190,12 @@
     </view>
 
     <!-- 底部操作栏 -->
-    <view class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom">
+    <view
+      class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom"
+    >
       <view class="flex space-x-3">
-        <button class="btn-secondary flex-1" @click="exportRecords">
-          导出记录
-        </button>
-        <button class="btn-primary flex-1" @click="addTransaction">
-          添加消费
-        </button>
+        <button class="btn-secondary flex-1" @click="exportRecords">导出记录</button>
+        <button class="btn-primary flex-1" @click="addTransaction">添加消费</button>
       </view>
     </view>
 
@@ -198,7 +206,7 @@
 
 <script lang="ts" setup>
 import { transactionApi, cardApi } from '@/service/api'
-import '@/mock'
+// import '@/mock' // 暂时注释掉Mock数据引用
 
 defineOptions({
   name: 'TransactionsPage',
@@ -228,9 +236,7 @@ const quickFilters = [
   { key: 'installment', label: '分期交易' },
 ]
 
-const cardOptions = ref([
-  { value: 'all', label: '所有卡片' }
-])
+const cardOptions = ref([{ value: 'all', label: '所有卡片' }])
 
 const categoryOptions = [
   { value: 'all', label: '所有类别' },
@@ -253,10 +259,11 @@ const filteredTransactions = computed(() => {
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter((t: any) => 
-      t.merchantName.toLowerCase().includes(keyword) ||
-      t.description.toLowerCase().includes(keyword) ||
-      t.category.toLowerCase().includes(keyword)
+    filtered = filtered.filter(
+      (t: any) =>
+        t.merchantName.toLowerCase().includes(keyword) ||
+        t.description.toLowerCase().includes(keyword) ||
+        t.category.toLowerCase().includes(keyword),
     )
   }
 
@@ -282,14 +289,16 @@ const filteredTransactions = computed(() => {
   }
 
   // 快速过滤
-  activeFilters.value.forEach(filter => {
+  activeFilters.value.forEach((filter) => {
     switch (filter) {
       case 'this_month':
         const thisMonth = new Date()
         filtered = filtered.filter((t: any) => {
           const transactionDate = new Date(t.transactionDate)
-          return transactionDate.getMonth() === thisMonth.getMonth() &&
-                 transactionDate.getFullYear() === thisMonth.getFullYear()
+          return (
+            transactionDate.getMonth() === thisMonth.getMonth() &&
+            transactionDate.getFullYear() === thisMonth.getFullYear()
+          )
         })
         break
       case 'last_month':
@@ -297,8 +306,10 @@ const filteredTransactions = computed(() => {
         lastMonth.setMonth(lastMonth.getMonth() - 1)
         filtered = filtered.filter((t: any) => {
           const transactionDate = new Date(t.transactionDate)
-          return transactionDate.getMonth() === lastMonth.getMonth() &&
-                 transactionDate.getFullYear() === lastMonth.getFullYear()
+          return (
+            transactionDate.getMonth() === lastMonth.getMonth() &&
+            transactionDate.getFullYear() === lastMonth.getFullYear()
+          )
         })
         break
       case 'large_amount':
@@ -315,20 +326,24 @@ const filteredTransactions = computed(() => {
 
 const groupedTransactions = computed(() => {
   const groups = {}
-  filteredTransactions.value.forEach(transaction => {
+  filteredTransactions.value.forEach((transaction) => {
     const date = transaction.transactionDate.split(' ')[0] // 获取日期部分
     if (!groups[date]) {
       groups[date] = []
     }
     groups[date].push(transaction)
   })
-  
+
   // 按日期倒序排列
   const sortedGroups = {}
-  Object.keys(groups).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).forEach(date => {
-    sortedGroups[date] = groups[date].sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
-  })
-  
+  Object.keys(groups)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+    .forEach((date) => {
+      sortedGroups[date] = groups[date].sort(
+        (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime(),
+      )
+    })
+
   return sortedGroups
 })
 
@@ -337,11 +352,13 @@ const filteredTotal = computed(() => {
 })
 
 const hasFiltersActive = computed(() => {
-  return searchKeyword.value || 
-         activeFilters.value.length > 0 || 
-         cardFilterIndex.value > 0 || 
-         categoryFilterIndex.value > 0 || 
-         dateFilter.value
+  return (
+    searchKeyword.value ||
+    activeFilters.value.length > 0 ||
+    cardFilterIndex.value > 0 ||
+    categoryFilterIndex.value > 0 ||
+    dateFilter.value
+  )
 })
 
 // 页面生命周期
@@ -358,10 +375,10 @@ onPullDownRefresh(async () => {
 const loadData = async () => {
   try {
     loading.value = true
-    
+
     const [transactionsRes, cardsRes] = await Promise.all([
       transactionApi.getTransactions(),
-      cardApi.getCards()
+      cardApi.getCards(),
     ])
 
     if (transactionsRes.code === 200) {
@@ -373,17 +390,17 @@ const loadData = async () => {
       // 构建卡片选项
       cardOptions.value = [
         { value: 'all', label: '所有卡片' },
-        ...cardsRes.data.list.map(card => ({
+        ...cardsRes.data.list.map((card) => ({
           value: card.id,
-          label: `${card.bankName}${card.cardName}(${card.cardNumberLast4})`
-        }))
+          label: `${card.bankName}${card.cardName}(${card.cardNumberLast4})`,
+        })),
       ]
     }
   } catch (error) {
     console.error('加载数据失败:', error)
     uni.showToast({
       title: '加载失败',
-      icon: 'none'
+      icon: 'none',
     })
   } finally {
     loading.value = false
@@ -432,7 +449,7 @@ const formatGroupDate = (dateStr: string) => {
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
-  
+
   if (date.toDateString() === today.toDateString()) {
     return '今天'
   } else if (date.toDateString() === yesterday.toDateString()) {
@@ -449,32 +466,32 @@ const formatTime = (dateTimeStr: string) => {
 
 const getCategoryIcon = (category: string) => {
   const icons = {
-    '餐饮美食': '🍽️',
-    '购物消费': '🛍️',
-    '交通出行': '🚗',
-    '生活服务': '🏠',
-    '娱乐休闲': '🎮',
-    '医疗健康': '💊',
-    '教育培训': '📚',
-    '旅游度假': '✈️',
-    '数码3C': '📱',
-    '服装配饰': '👕',
+    餐饮美食: '🍽️',
+    购物消费: '🛍️',
+    交通出行: '🚗',
+    生活服务: '🏠',
+    娱乐休闲: '🎮',
+    医疗健康: '💊',
+    教育培训: '📚',
+    旅游度假: '✈️',
+    数码3C: '📱',
+    服装配饰: '👕',
   }
   return icons[category] || '💳'
 }
 
 const getCategoryColor = (category: string) => {
   const colors = {
-    '餐饮美食': '#FF6B6B',
-    '购物消费': '#4ECDC4',
-    '交通出行': '#45B7D1',
-    '生活服务': '#96CEB4',
-    '娱乐休闲': '#FECA57',
-    '医疗健康': '#FF9FF3',
-    '教育培训': '#54A0FF',
-    '旅游度假': '#5F27CD',
-    '数码3C': '#00D2D3',
-    '服装配饰': '#FF9F43',
+    餐饮美食: '#FF6B6B',
+    购物消费: '#4ECDC4',
+    交通出行: '#45B7D1',
+    生活服务: '#96CEB4',
+    娱乐休闲: '#FECA57',
+    医疗健康: '#FF9FF3',
+    教育培训: '#54A0FF',
+    旅游度假: '#5F27CD',
+    数码3C: '#00D2D3',
+    服装配饰: '#FF9F43',
   }
   return colors[category] || '#A4B0BE'
 }
@@ -495,7 +512,7 @@ const addTransaction = () => {
 const exportRecords = () => {
   uni.showToast({
     title: '功能开发中',
-    icon: 'none'
+    icon: 'none',
   })
 }
 </script>
@@ -509,7 +526,7 @@ const exportRecords = () => {
 .filter-tag {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.95);
   }
@@ -518,7 +535,7 @@ const exportRecords = () => {
 .filter-select {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     background: #e5e7eb;
   }
@@ -526,7 +543,7 @@ const exportRecords = () => {
 
 .transaction-item {
   cursor: pointer;
-  
+
   &:active {
     background: #f9fafb;
   }
@@ -541,7 +558,7 @@ const exportRecords = () => {
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -556,10 +573,10 @@ const exportRecords = () => {
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
     background: #f8f9ff;
   }
 }
-</style> 
+</style>
