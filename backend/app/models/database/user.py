@@ -38,6 +38,7 @@ class User(Base):
     credit_cards = relationship("CreditCard", back_populates="user", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     reminder_settings = relationship("ReminderSetting", back_populates="user", cascade="all, delete-orphan")
+    recommendation_records = relationship("RecommendationRecord", back_populates="user", cascade="all, delete-orphan")
 
 class VerificationCode(Base):
     """

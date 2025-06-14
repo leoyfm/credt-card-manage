@@ -9,6 +9,7 @@ from .card import Bank, CreditCard
 from .transaction import TransactionCategory, Transaction
 from .fee_waiver import FeeWaiverRule, AnnualFeeRecord
 from .reminder import ReminderSetting, ReminderRecord
+from .recommendation import RecommendationRule, RecommendationRecord
 
 __all__ = [
     "User",
@@ -22,5 +23,7 @@ __all__ = [
     "FeeWaiverRule",
     "AnnualFeeRecord",
     "ReminderSetting",
-    "ReminderRecord"
+    "ReminderRecord",
+    "RecommendationRule",
+    "RecommendationRecord"
 ] 
