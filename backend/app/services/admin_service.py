@@ -3,7 +3,7 @@
 """
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc
 from sqlalchemy.exc import SQLAlchemyError
@@ -218,7 +218,7 @@ class AdminUserService:
             
             # 更新状态
             user.is_active = status_update.is_active
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone(timedelta(hours=8)))
             
             self.db.commit()
             
@@ -267,7 +267,7 @@ class AdminUserService:
             # 更新权限
             user.is_admin = permissions_update.is_admin
             user.is_verified = permissions_update.is_verified
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone(timedelta(hours=8)))
             
             self.db.commit()
             
@@ -422,7 +422,7 @@ class AdminUserService:
             admin_users = self.db.query(User).filter(User.is_admin == True).count()
             
             # 时间范围统计
-            now = datetime.utcnow()
+            now = datetime.now(timezone(timedelta(hours=8)))
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             week_start = today_start - timedelta(days=now.weekday())
             month_start = today_start.replace(day=1)
