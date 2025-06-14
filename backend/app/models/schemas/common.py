@@ -22,6 +22,12 @@ class PaginationInfo(BaseModel):
     has_prev: bool = Field(..., description="是否有上一页", json_schema_extra={"example": False})
 
 
+class PaginationParams(BaseModel):
+    """分页参数基类"""
+    page: int = Field(1, ge=1, description="页码，从1开始", json_schema_extra={"example": 1})
+    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", json_schema_extra={"example": 20})
+
+
 class ApiResponse(BaseModel, Generic[T]):
     """标准API响应模型"""
     success: bool = Field(True, description="操作是否成功", json_schema_extra={"example": True})
@@ -75,9 +81,7 @@ class SortOrder(BaseModel):
     direction: str = Field("desc", description="排序方向", json_schema_extra={"example": "desc"})
 
 
-class QueryFilter(BaseModel):
+class QueryFilter(PaginationParams):
     """查询过滤器基类"""
     keyword: str = Field("", description="搜索关键词", json_schema_extra={"example": ""})
-    page: int = Field(1, ge=1, description="页码，从1开始", json_schema_extra={"example": 1})
-    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", json_schema_extra={"example": 20})
     sort: Optional[SortOrder] = Field(None, description="排序设置") 

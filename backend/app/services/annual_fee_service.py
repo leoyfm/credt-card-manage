@@ -23,6 +23,7 @@ from app.models.schemas.fee_waiver import (
 )
 from app.core.exceptions.custom import ResourceNotFoundError, BusinessRuleError
 from app.core.logging.logger import app_logger as logger
+from app.utils.pagination import apply_service_pagination
 
 
 class AnnualFeeService:
@@ -182,14 +183,13 @@ class AnnualFeeService:
         if is_enabled is not None:
             query = query.filter(FeeWaiverRule.is_enabled == is_enabled)
         
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        rules = query.order_by(desc(FeeWaiverRule.created_at))\
-                     .offset((page - 1) * page_size)\
-                     .limit(page_size)\
-                     .all()
+        # 应用分页和排序
+        rules, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=desc(FeeWaiverRule.created_at)
+        )
         
         rule_responses = [self._to_rule_response(rule) for rule in rules]
         
@@ -354,14 +354,13 @@ class AnnualFeeService:
         if status:
             query = query.filter(AnnualFeeRecord.status == status)
         
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        records = query.order_by(desc(AnnualFeeRecord.fee_year), desc(AnnualFeeRecord.created_at))\
-                       .offset((page - 1) * page_size)\
-                       .limit(page_size)\
-                       .all()
+        # 应用分页和排序
+        records, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=[desc(AnnualFeeRecord.fee_year), desc(AnnualFeeRecord.created_at)]
+        )
         
         record_responses = [self._to_record_response(record) for record in records]
         

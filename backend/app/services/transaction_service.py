@@ -21,6 +21,7 @@ from app.core.exceptions.custom import (
     ResourceNotFoundError, ValidationError, BusinessRuleError
 )
 from app.core.logging.logger import app_logger as  logger
+from app.utils.pagination import apply_service_pagination
 
 
 class TransactionService:
@@ -215,14 +216,13 @@ class TransactionService:
                 )
             )
         
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        transactions = query.order_by(desc(Transaction.transaction_date))\
-                           .offset((page - 1) * page_size)\
-                           .limit(page_size)\
-                           .all()
+        # 应用分页和排序
+        transactions, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=desc(Transaction.transaction_date)
+        )
         
         transaction_responses = [self._to_transaction_response(t) for t in transactions]
         

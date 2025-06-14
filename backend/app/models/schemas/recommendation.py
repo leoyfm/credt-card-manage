@@ -9,7 +9,7 @@ from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
-from .common import PaginationInfo
+from .common import PaginationInfo, PaginationParams
 
 
 # ==================== 推荐规则相关模型 ====================
@@ -122,15 +122,13 @@ class RecommendationRecordResponse(RecommendationRecordBase):
 
 # ==================== 推荐查询模型 ====================
 
-class RecommendationQuery(BaseModel):
+class RecommendationQuery(PaginationParams):
     """推荐查询参数模型"""
     recommendation_type: Optional[str] = Field(None, description="推荐类型筛选")
     status: Optional[str] = Field(None, description="状态筛选")
     user_action: Optional[str] = Field(None, description="用户行动筛选")
     start_date: Optional[datetime] = Field(None, description="开始时间")
     end_date: Optional[datetime] = Field(None, description="结束时间")
-    page: int = Field(1, description="页码", ge=1)
-    page_size: int = Field(20, description="每页数量", ge=1, le=100)
 
     model_config = ConfigDict(
         json_schema_extra={

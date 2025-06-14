@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, model_serializer, ConfigDict
 from uuid import UUID
 
-from app.models.schemas.common import PaginationInfo
+from app.models.schemas.common import PaginationInfo, PaginationParams
 
 
 # ============ 银行相关模型 ============
@@ -253,7 +253,7 @@ class CreditCardSummary(BaseModel):
 
 # ============ 查询参数模型 ============
 
-class CreditCardQueryParams(BaseModel):
+class CreditCardQueryParams(PaginationParams):
     """信用卡查询参数"""
     keyword: str = Field("", description="搜索关键词，支持卡片名称、银行名称模糊搜索", json_schema_extra={"example": "招商"})
     status: Optional[str] = Field(None, description="状态筛选", json_schema_extra={"example": "active"})
@@ -261,8 +261,6 @@ class CreditCardQueryParams(BaseModel):
     card_type: Optional[str] = Field(None, description="卡片类型筛选", json_schema_extra={"example": "credit"})
     is_primary: Optional[bool] = Field(None, description="是否主卡筛选", json_schema_extra={"example": True})
     expiring_soon: Optional[bool] = Field(None, description="是否即将过期", json_schema_extra={"example": False})
-    page: int = Field(1, ge=1, description="页码，从1开始", json_schema_extra={"example": 1})
-    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", json_schema_extra={"example": 20})
 
 
 # ============ 批量操作模型 ============

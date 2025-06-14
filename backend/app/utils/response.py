@@ -19,7 +19,7 @@ from app.models.schemas.common import (
 )
 
 # 导入分页工具函数
-from app.utils.pagination import calculate_skip, validate_pagination_params
+from app.utils.pagination import calculate_skip, validate_pagination_params, calculate_pagination_info
 
 
 class ResponseUtil:
@@ -174,18 +174,19 @@ class ResponseUtil:
         Returns:
             JSONResponse: 分页响应
         """
+        # 验证分页参数
+        page, page_size = validate_pagination_params(page, page_size)
+        
         # 计算分页信息
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-        has_next = page < total_pages
-        has_prev = page > 1
+        pagination_info = calculate_pagination_info(total, page, page_size)
         
         pagination = PaginationInfo(
-            current_page=page,
-            page_size=page_size,
-            total=total,
-            total_pages=total_pages,
-            has_next=has_next,
-            has_prev=has_prev
+            current_page=pagination_info["current_page"],
+            page_size=pagination_info["page_size"],
+            total=pagination_info["total"],
+            total_pages=pagination_info["total_pages"],
+            has_next=pagination_info["has_next"],
+            has_prev=pagination_info["has_prev"]
         )
         
         # 序列化数据

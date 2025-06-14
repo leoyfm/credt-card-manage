@@ -23,6 +23,7 @@ from app.core.exceptions.custom import (
     ResourceNotFoundError, BusinessRuleError, ValidationError
 )
 from app.core.logging.logger import app_logger as logger
+from app.utils.pagination import apply_service_pagination
 
 
 class CardService:
@@ -205,14 +206,13 @@ class CardService:
                     )
                 )
 
-            # 获取总数
-            total = query.count()
-
             # 应用分页和排序
-            cards = query.order_by(
-                desc(CreditCard.is_primary),
-                CreditCard.created_at.desc()
-            ).offset((params.page - 1) * params.page_size).limit(params.page_size).all()
+            cards, total = apply_service_pagination(
+                query,
+                params.page,
+                params.page_size,
+                order_by=[desc(CreditCard.is_primary), CreditCard.created_at.desc()]
+            )
 
             # 构建响应
             card_responses = [self._build_card_response(card) for card in cards]

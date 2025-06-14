@@ -22,6 +22,7 @@ from app.core.exceptions.custom import (
     ResourceNotFoundError, ValidationError, BusinessRuleError
 )
 from app.core.logging.logger import app_logger as logger
+from app.utils.pagination import apply_service_pagination
 
 
 class ReminderService:
@@ -188,14 +189,13 @@ class ReminderService:
         if is_enabled is not None:
             query = query.filter(ReminderSetting.is_enabled == is_enabled)
         
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        settings = query.order_by(desc(ReminderSetting.created_at))\
-                        .offset((page - 1) * page_size)\
-                        .limit(page_size)\
-                        .all()
+        # 应用分页和排序
+        settings, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=desc(ReminderSetting.created_at)
+        )
         
         setting_responses = [self._to_setting_response(setting) for setting in settings]
         
@@ -310,14 +310,13 @@ class ReminderService:
         if end_date:
             query = query.filter(ReminderRecord.created_at <= end_date)
         
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        records = query.order_by(desc(ReminderRecord.created_at))\
-                       .offset((page - 1) * page_size)\
-                       .limit(page_size)\
-                       .all()
+        # 应用分页和排序
+        records, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=desc(ReminderRecord.created_at)
+        )
         
         record_responses = [self._to_record_response(record) for record in records]
         
