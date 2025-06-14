@@ -38,6 +38,36 @@ export type ApiPagedResponseLoginLogResponse_ = {
   timestamp: string;
 };
 
+export type ApiPagedResponseReminderRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: ReminderRecordResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiPagedResponseReminderSettingResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: ReminderSettingResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
 export type ApiResponse = {
   /** Success 操作是否成功 */
   success?: boolean;
@@ -64,6 +94,32 @@ export type ApiResponseBool_ = {
   timestamp: string;
 };
 
+export type ApiResponseDict_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: Record<string, unknown> | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseListReminderRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: ReminderRecordResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
 export type ApiResponseListWechatBindingResponse_ = {
   /** Success 操作是否成功 */
   success?: boolean;
@@ -73,6 +129,84 @@ export type ApiResponseListWechatBindingResponse_ = {
   message?: string;
   /** Data 响应数据 */
   data?: WechatBindingResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseMarkAllReadResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: MarkAllReadResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseReminderRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: ReminderRecordResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseReminderSettingResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: ReminderSettingResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseReminderStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: ReminderStatisticsResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseUnreadRemindersCountResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: UnreadRemindersCountResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseUpcomingRemindersResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: UpcomingRemindersResponse | null;
   /** Timestamp 响应时间戳 */
   timestamp: string;
 };
@@ -255,6 +389,12 @@ export type deleteCreditCardApiV1UserCardsCardIdDeleteParams = {
   card_id: string;
 };
 
+export type deleteReminderSettingApiV1UserRemindersSettingsSettingIdDeleteParams =
+  {
+    /** 提醒设置ID */
+    setting_id: string;
+  };
+
 export type deleteUserApiV1AdminUsersUserIdDeleteDeleteParams = {
   /** 用户ID */
   user_id: string;
@@ -307,6 +447,54 @@ export type getExpiryAlertsApiV1AdminCardsExpiryAlertsGetParams = {
 export type getLoginLogsApiV1UserProfileLoginLogsGetParams = {
   page?: number;
   page_size?: number;
+};
+
+export type getRecentRemindersApiV1UserRemindersRecentGetParams = {
+  /** 返回数量限制，最大50 */
+  limit?: number;
+};
+
+export type getReminderRecordApiV1UserRemindersRecordsRecordIdGetParams = {
+  /** 提醒记录ID */
+  record_id: string;
+};
+
+export type getReminderRecordsApiV1UserRemindersRecordsGetParams = {
+  /** 页码，从1开始 */
+  page?: number;
+  /** 每页数量，最大100 */
+  page_size?: number;
+  /** 提醒设置ID筛选 */
+  setting_id?: string | null;
+  /** 状态筛选: pending, sent, read, cancelled */
+  status?: string | null;
+  /** 开始日期筛选 (YYYY-MM-DD) */
+  start_date?: string | null;
+  /** 结束日期筛选 (YYYY-MM-DD) */
+  end_date?: string | null;
+};
+
+export type getReminderSettingApiV1UserRemindersSettingsSettingIdGetParams = {
+  /** 提醒设置ID */
+  setting_id: string;
+};
+
+export type getReminderSettingsApiV1UserRemindersSettingsGetParams = {
+  /** 页码，从1开始 */
+  page?: number;
+  /** 每页数量，最大100 */
+  page_size?: number;
+  /** 信用卡ID筛选 */
+  card_id?: string | null;
+  /** 提醒类型筛选 */
+  reminder_type?: string | null;
+  /** 启用状态筛选 */
+  is_enabled?: boolean | null;
+};
+
+export type getUpcomingRemindersApiV1UserRemindersUpcomingGetParams = {
+  /** 查看未来天数，最大30天 */
+  days_ahead?: number;
 };
 
 export type getUserDetailsApiV1AdminUsersUserIdDetailsGetParams = {
@@ -371,6 +559,21 @@ export type LoginRequest = {
   password: string;
 };
 
+export type MarkAllReadResponse = {
+  /** Marked Count 标记为已读的提醒数量 */
+  marked_count: number;
+  /** Marked At 标记时间 */
+  marked_at: string;
+  /** Message 操作结果消息 */
+  message: string;
+};
+
+export type markReminderAsReadApiV1UserRemindersRecordsRecordIdReadPostParams =
+  {
+    /** 提醒记录ID */
+    record_id: string;
+  };
+
 export type PaginationInfo = {
   /** Current Page 当前页码 */
   current_page: number;
@@ -402,6 +605,96 @@ export type RegisterRequest = {
   nickname?: string | null;
 };
 
+export type ReminderRecordCreate = {
+  /** Setting Id 提醒设置ID */
+  setting_id: string;
+  /** Card Id 信用卡ID */
+  card_id?: string | null;
+  /** Reminder Type 提醒类型 */
+  reminder_type: string;
+  /** Title 提醒标题 */
+  title: string;
+  /** Content 提醒内容 */
+  content: string;
+  /** Email Sent 邮件是否发送 */
+  email_sent?: boolean;
+  /** Sms Sent 短信是否发送 */
+  sms_sent?: boolean;
+  /** Push Sent 推送是否发送 */
+  push_sent?: boolean;
+  /** Wechat Sent 微信是否发送 */
+  wechat_sent?: boolean;
+  /** Scheduled At 计划发送时间 */
+  scheduled_at?: string | null;
+};
+
+export type ReminderRecordResponse = object;
+
+export type ReminderSettingCreate = {
+  /** Card Id 信用卡ID，NULL表示全局提醒 */
+  card_id?: string | null;
+  /** Reminder Type 提醒类型: payment, annual_fee, card_expiry, custom */
+  reminder_type: string;
+  /** Advance Days 提前天数 */
+  advance_days?: number;
+  /** Reminder Time 提醒时间 */
+  reminder_time?: string | null;
+  /** Email Enabled 邮件提醒 */
+  email_enabled?: boolean;
+  /** Sms Enabled 短信提醒 */
+  sms_enabled?: boolean;
+  /** Push Enabled 推送提醒 */
+  push_enabled?: boolean;
+  /** Wechat Enabled 微信提醒 */
+  wechat_enabled?: boolean;
+  /** Is Recurring 是否循环 */
+  is_recurring?: boolean;
+  /** Frequency 频率: daily, weekly, monthly, yearly */
+  frequency?: string;
+  /** Is Enabled 是否启用 */
+  is_enabled?: boolean;
+};
+
+export type ReminderSettingResponse = object;
+
+export type ReminderSettingUpdate = {
+  /** Advance Days 提前天数 */
+  advance_days?: number | null;
+  /** Reminder Time 提醒时间 */
+  reminder_time?: string | null;
+  /** Email Enabled 邮件提醒 */
+  email_enabled?: boolean | null;
+  /** Sms Enabled 短信提醒 */
+  sms_enabled?: boolean | null;
+  /** Push Enabled 推送提醒 */
+  push_enabled?: boolean | null;
+  /** Wechat Enabled 微信提醒 */
+  wechat_enabled?: boolean | null;
+  /** Is Recurring 是否循环 */
+  is_recurring?: boolean | null;
+  /** Frequency 频率 */
+  frequency?: string | null;
+  /** Is Enabled 是否启用 */
+  is_enabled?: boolean | null;
+};
+
+export type ReminderStatisticsResponse = {
+  /** Total Settings 总设置数 */
+  total_settings: number;
+  /** Active Settings 活跃设置数 */
+  active_settings: number;
+  /** Total Reminders 30Days 30天内提醒总数 */
+  total_reminders_30days: number;
+  /** Pending Reminders 待处理提醒数 */
+  pending_reminders: number;
+  /** Read Rate 阅读率 */
+  read_rate: number;
+  /** Type Distribution 类型分布 */
+  type_distribution: Record<string, unknown>;
+  /** Recent Reminders 最近提醒 */
+  recent_reminders: ReminderRecordResponse[];
+};
+
 export type TokenResponse = {
   /** Access Token 访问令牌 */
   access_token: string;
@@ -409,6 +702,30 @@ export type TokenResponse = {
   refresh_token: string;
   /** Token Type 令牌类型 */
   token_type?: string;
+};
+
+export type UnreadRemindersCountResponse = {
+  /** Total Unread 未读提醒总数 */
+  total_unread: number;
+  /** Type Breakdown 按类型分布的未读提醒数 */
+  type_breakdown: Record<string, unknown>;
+  /** Last Check Time 最后检查时间 */
+  last_check_time: string;
+};
+
+export type UpcomingRemindersResponse = {
+  /** Total Upcoming 即将到来的提醒总数 */
+  total_upcoming: number;
+  /** High Priority Count 高优先级提醒数 */
+  high_priority_count: number;
+  /** Medium Priority Count 中优先级提醒数 */
+  medium_priority_count: number;
+  /** Low Priority Count 低优先级提醒数 */
+  low_priority_count: number;
+  /** Analysis Period 分析周期 */
+  analysis_period: string;
+  /** Reminders 提醒列表 */
+  reminders: Record<string, unknown>[];
 };
 
 export type updateCardStatusApiV1UserCardsCardIdStatusPatchParams = {
@@ -420,6 +737,12 @@ export type updateCreditCardApiV1UserCardsCardIdPutParams = {
   /** 信用卡ID */
   card_id: string;
 };
+
+export type updateReminderSettingApiV1UserRemindersSettingsSettingIdPutParams =
+  {
+    /** 提醒设置ID */
+    setting_id: string;
+  };
 
 export type updateUserPermissionsApiV1AdminUsersUserIdPermissionsPutParams = {
   /** 用户ID */

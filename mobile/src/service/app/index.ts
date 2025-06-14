@@ -12,6 +12,8 @@ export * from './v1Yonghugerenziliao';
 export * from './v1Yonghugerenziliao.vuequery';
 export * from './xinyongkaguanli';
 export * from './xinyongkaguanli.vuequery';
+export * from './yonghutixingguanli';
+export * from './yonghutixingguanli.vuequery';
 export * from './guanliyuan';
 export * from './guanliyuan.vuequery';
 export * from './guanliyuanyonghuguanli';

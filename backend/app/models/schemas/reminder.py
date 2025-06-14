@@ -12,15 +12,16 @@ from decimal import Decimal
 class ReminderSettingBase(BaseModel):
     """提醒设置基础模型"""
     card_id: Optional[UUID] = Field(None, description="信用卡ID，NULL表示全局提醒")
-    reminder_type: str = Field(..., description="提醒类型: payment_due, annual_fee, card_expiry, custom")
-    reminder_name: str = Field(..., max_length=100, description="提醒名称")
+    reminder_type: str = Field(..., description="提醒类型: payment, annual_fee, card_expiry, custom")
     advance_days: int = Field(3, ge=0, le=365, description="提前天数")
-    reminder_time: time = Field(time(9, 0), description="提醒时间")
+    reminder_time: Optional[time] = Field(time(9, 0), description="提醒时间")
+    email_enabled: bool = Field(True, description="邮件提醒")
+    sms_enabled: bool = Field(False, description="短信提醒")
+    push_enabled: bool = Field(True, description="推送提醒")
+    wechat_enabled: bool = Field(False, description="微信提醒")
+    is_recurring: bool = Field(True, description="是否循环")
+    frequency: str = Field("monthly", description="频率: daily, weekly, monthly, yearly")
     is_enabled: bool = Field(True, description="是否启用")
-    notification_methods: List[str] = Field(["app"], description="通知方式: app, email, sms")
-    custom_message: Optional[str] = Field(None, max_length=500, description="自定义消息")
-    repeat_interval: str = Field("monthly", description="重复间隔: daily, weekly, monthly, yearly")
-    notes: Optional[str] = Field(None, max_length=500, description="备注")
 
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
@@ -40,15 +41,16 @@ class ReminderSettingBase(BaseModel):
         "json_schema_extra": {
             "example": {
                 "card_id": "123e4567-e89b-12d3-a456-426614174000",
-                "reminder_type": "payment_due",
-                "reminder_name": "还款提醒",
+                "reminder_type": "payment",
                 "advance_days": 3,
                 "reminder_time": "09:00:00",
-                "is_enabled": True,
-                "notification_methods": ["app", "email"],
-                "custom_message": "请及时还款，避免逾期",
-                "repeat_interval": "monthly",
-                "notes": "重要提醒"
+                "email_enabled": True,
+                "sms_enabled": False,
+                "push_enabled": True,
+                "wechat_enabled": False,
+                "is_recurring": True,
+                "frequency": "monthly",
+                "is_enabled": True
             }
         }
     }
@@ -61,14 +63,15 @@ class ReminderSettingCreate(ReminderSettingBase):
 
 class ReminderSettingUpdate(BaseModel):
     """更新提醒设置请求模型"""
-    reminder_name: Optional[str] = Field(None, max_length=100, description="提醒名称")
     advance_days: Optional[int] = Field(None, ge=0, le=365, description="提前天数")
     reminder_time: Optional[time] = Field(None, description="提醒时间")
+    email_enabled: Optional[bool] = Field(None, description="邮件提醒")
+    sms_enabled: Optional[bool] = Field(None, description="短信提醒")
+    push_enabled: Optional[bool] = Field(None, description="推送提醒")
+    wechat_enabled: Optional[bool] = Field(None, description="微信提醒")
+    is_recurring: Optional[bool] = Field(None, description="是否循环")
+    frequency: Optional[str] = Field(None, description="频率")
     is_enabled: Optional[bool] = Field(None, description="是否启用")
-    notification_methods: Optional[List[str]] = Field(None, description="通知方式")
-    custom_message: Optional[str] = Field(None, max_length=500, description="自定义消息")
-    repeat_interval: Optional[str] = Field(None, description="重复间隔")
-    notes: Optional[str] = Field(None, max_length=500, description="备注")
 
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
@@ -118,18 +121,22 @@ class ReminderSettingResponse(ReminderSettingBase):
 class ReminderRecordBase(BaseModel):
     """提醒记录基础模型"""
     setting_id: UUID = Field(..., description="提醒设置ID")
-    reminder_date: date = Field(..., description="提醒日期")
-    reminder_time: Optional[time] = Field(None, description="提醒时间")
-    message: str = Field(..., max_length=1000, description="提醒消息")
-    status: str = Field("pending", description="状态: pending, sent, read, cancelled")
-    notes: Optional[str] = Field(None, max_length=500, description="备注")
+    card_id: Optional[UUID] = Field(None, description="信用卡ID")
+    reminder_type: str = Field(..., description="提醒类型")
+    title: str = Field(..., max_length=200, description="提醒标题")
+    content: str = Field(..., max_length=1000, description="提醒内容")
+    email_sent: bool = Field(False, description="邮件是否发送")
+    sms_sent: bool = Field(False, description="短信是否发送")
+    push_sent: bool = Field(False, description="推送是否发送")
+    wechat_sent: bool = Field(False, description="微信是否发送")
+    scheduled_at: Optional[datetime] = Field(None, description="计划发送时间")
 
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         """自定义序列化器"""
         data = {}
         for field_name, field_value in self.__dict__.items():
-            if isinstance(field_value, date):
+            if isinstance(field_value, (datetime, date)):
                 data[field_name] = field_value.isoformat() if field_value else None
             elif isinstance(field_value, time):
                 data[field_name] = field_value.strftime("%H:%M:%S") if field_value else None
@@ -144,11 +151,15 @@ class ReminderRecordBase(BaseModel):
         "json_schema_extra": {
             "example": {
                 "setting_id": "123e4567-e89b-12d3-a456-426614174000",
-                "reminder_date": "2024-01-15",
-                "reminder_time": "09:00:00",
-                "message": "您的招商银行信用卡将于3天后到期还款，请及时还款",
-                "status": "pending",
-                "notes": "自动生成的提醒"
+                "card_id": "123e4567-e89b-12d3-a456-426614174001",
+                "reminder_type": "payment",
+                "title": "还款提醒",
+                "content": "您的招商银行信用卡将于3天后到期还款，请及时还款",
+                "email_sent": False,
+                "sms_sent": False,
+                "push_sent": False,
+                "wechat_sent": False,
+                "scheduled_at": "2024-01-15T09:00:00"
             }
         }
     }
@@ -161,9 +172,13 @@ class ReminderRecordCreate(ReminderRecordBase):
 
 class ReminderRecordUpdate(BaseModel):
     """更新提醒记录请求模型"""
-    message: Optional[str] = Field(None, max_length=1000, description="提醒消息")
-    status: Optional[str] = Field(None, description="状态")
-    notes: Optional[str] = Field(None, max_length=500, description="备注")
+    title: Optional[str] = Field(None, max_length=200, description="提醒标题")
+    content: Optional[str] = Field(None, max_length=1000, description="提醒内容")
+    email_sent: Optional[bool] = Field(None, description="邮件是否发送")
+    sms_sent: Optional[bool] = Field(None, description="短信是否发送")
+    push_sent: Optional[bool] = Field(None, description="推送是否发送")
+    wechat_sent: Optional[bool] = Field(None, description="微信是否发送")
+    scheduled_at: Optional[datetime] = Field(None, description="计划发送时间")
 
     model_config = {
         "from_attributes": True
@@ -173,12 +188,10 @@ class ReminderRecordUpdate(BaseModel):
 class ReminderRecordResponse(ReminderRecordBase):
     """提醒记录响应模型"""
     id: UUID = Field(..., description="提醒记录ID")
-    reminder_type: Optional[str] = Field(None, description="提醒类型")
+    user_id: UUID = Field(..., description="用户ID")
     card_name: Optional[str] = Field(None, description="信用卡名称")
     sent_at: Optional[datetime] = Field(None, description="发送时间")
-    read_at: Optional[datetime] = Field(None, description="阅读时间")
     created_at: datetime = Field(..., description="创建时间")
-    updated_at: datetime = Field(..., description="更新时间")
 
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
@@ -216,13 +229,13 @@ class ReminderStatisticsResponse(BaseModel):
             "example": {
                 "total_settings": 5,
                 "active_settings": 4,
-                "total_reminders_30days": 12,
+                "total_reminders_30days": 15,
                 "pending_reminders": 3,
                 "read_rate": 0.85,
                 "type_distribution": {
-                    "payment_due": 8,
-                    "annual_fee": 2,
-                    "card_expiry": 2
+                    "payment": 8,
+                    "annual_fee": 4,
+                    "card_expiry": 3
                 },
                 "recent_reminders": []
             }
@@ -250,13 +263,53 @@ class UpcomingRemindersResponse(BaseModel):
                 "analysis_period": "7天",
                 "reminders": [
                     {
-                        "reminder_type": "payment_due",
-                        "priority": "high",
-                        "card_name": "招商银行信用卡",
-                        "reminder_date": "2024-01-15",
-                        "message": "还款提醒"
+                        "id": "123e4567-e89b-12d3-a456-426614174000",
+                        "title": "还款提醒",
+                        "content": "您的信用卡还款日即将到来",
+                        "reminder_type": "payment",
+                        "scheduled_at": "2024-01-15T09:00:00",
+                        "priority": "high"
                     }
                 ]
+            }
+        }
+    }
+
+
+class UnreadRemindersCountResponse(BaseModel):
+    """未读提醒个数响应模型"""
+    total_unread: int = Field(..., description="未读提醒总数")
+    type_breakdown: Dict[str, int] = Field(..., description="按类型分布的未读提醒数")
+    last_check_time: str = Field(..., description="最后检查时间")
+
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "total_unread": 3,
+                "type_breakdown": {
+                    "payment": 2,
+                    "annual_fee": 1
+                },
+                "last_check_time": "2024-01-15T10:30:00"
+            }
+        }
+    }
+
+
+class MarkAllReadResponse(BaseModel):
+    """标记所有提醒为已读响应模型"""
+    marked_count: int = Field(..., description="标记为已读的提醒数量")
+    marked_at: str = Field(..., description="标记时间")
+    message: str = Field(..., description="操作结果消息")
+
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra": {
+            "example": {
+                "marked_count": 3,
+                "marked_at": "2024-01-15T10:30:00",
+                "message": "已标记 3 条提醒为已读"
             }
         }
     } 
