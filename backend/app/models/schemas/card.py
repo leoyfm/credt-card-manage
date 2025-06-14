@@ -94,11 +94,12 @@ class CreditCardBase(BaseModel):
     @field_validator('due_date')
     @classmethod
     def validate_due_date(cls, v, info):
-        """验证还款日必须在账单日之后"""
-        if v is not None and info.data.get('billing_date') is not None:
-            billing_date = info.data['billing_date']
-            if v <= billing_date:
-                raise ValueError('还款日必须在账单日之后')
+        """验证还款日的合理性"""
+        if v is not None:
+            # 只需要确保还款日在合理范围内（1-31）
+            # 允许跨月还款（还款日可以小于账单日）
+            if not (1 <= v <= 31):
+                raise ValueError('还款日必须在1-31之间')
         return v
 
     @field_validator('credit_limit', 'annual_fee', 'points_rate', 'cashback_rate')
