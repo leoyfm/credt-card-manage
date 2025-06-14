@@ -430,19 +430,27 @@ class ReminderService:
             existing_record = self.db.query(ReminderRecord).filter(
                 and_(
                     ReminderRecord.setting_id == reminder_data['setting_id'],
-                    ReminderRecord.reminder_date == reminder_data['reminder_date'],
-                    ReminderRecord.status.in_(['pending', 'sent'])
+                    ReminderRecord.scheduled_at == reminder_data['reminder_date']
                 )
             ).first()
             
             if not existing_record:
                 try:
+                    setting = self.db.query(ReminderSetting).filter(
+                        and_(
+                            ReminderSetting.id == reminder_data['setting_id'],
+                            ReminderSetting.user_id == user_id
+                        )
+                    ).first()
+                    
                     record = ReminderRecord(
                         setting_id=UUID(reminder_data['setting_id']),
-                        reminder_date=reminder_data['reminder_date'],
-                        reminder_time=reminder_data['reminder_time'],
-                        message=reminder_data['message'],
-                        status='pending'
+                        user_id=user_id,
+                        card_id=setting.card_id,
+                        reminder_type=setting.reminder_type,
+                        title=f"{setting.reminder_type}提醒",
+                        content=reminder_data['message'],
+                        scheduled_at=reminder_data['reminder_date']
                     )
                     
                     self.db.add(record)
@@ -480,14 +488,14 @@ class ReminderService:
         recent_records = self.db.query(ReminderRecord).join(ReminderSetting).filter(
             and_(
                 ReminderSetting.user_id == user_id,
-                ReminderRecord.reminder_date >= thirty_days_ago
+                ReminderRecord.created_at >= thirty_days_ago
             )
         ).all()
         
         total_reminders = len(recent_records)
-        sent_reminders = len([r for r in recent_records if r.status == 'sent'])
-        read_reminders = len([r for r in recent_records if r.status == 'read'])
-        pending_reminders = len([r for r in recent_records if r.status == 'pending'])
+        sent_reminders = len([r for r in recent_records if r.sent_at is not None])
+        read_reminders = len([r for r in recent_records if r.sent_at is not None])
+        pending_reminders = len([r for r in recent_records if r.sent_at is None])
         
         # 按类型统计
         type_distribution = {}
@@ -519,11 +527,11 @@ class ReminderService:
             upcoming_records = self.db.query(ReminderRecord).join(ReminderSetting).filter(
                 and_(
                     ReminderSetting.user_id == user_id,
-                    ReminderRecord.reminder_date <= end_date,
-                    ReminderRecord.reminder_date >= date.today(),
-                    ReminderRecord.status.in_(['pending', 'sent'])
+                    ReminderRecord.scheduled_at <= end_date,
+                    ReminderRecord.scheduled_at >= date.today(),
+                    ReminderRecord.sent_at.is_(None)  # 未发送的记录
                 )
-            ).order_by(ReminderRecord.reminder_date).all()
+            ).order_by(ReminderRecord.scheduled_at).all()
             
             # 分类统计
             high_priority = 0
@@ -532,7 +540,7 @@ class ReminderService:
             
             reminders = []
             for record in upcoming_records:
-                days_until = (record.reminder_date - date.today()).days
+                days_until = (record.scheduled_at.date() - date.today()).days
                 
                 # 根据天数确定优先级
                 if days_until <= 1:
@@ -547,11 +555,11 @@ class ReminderService:
                 
                 reminders.append({
                     "id": str(record.id),
-                    "reminder_type": record.setting.reminder_type,
+                    "reminder_type": record.reminder_type,
                     "priority": priority,
-                    "card_name": record.setting.card.card_name if record.setting.card else "全局提醒",
-                    "reminder_date": record.reminder_date.isoformat(),
-                    "message": record.message,
+                    "card_name": record.card.card_name if record.card else "全局提醒",
+                    "reminder_date": record.scheduled_at.isoformat(),
+                    "message": record.content,
                     "days_until": days_until
                 })
             

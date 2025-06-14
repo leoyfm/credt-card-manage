@@ -313,9 +313,11 @@ class TestTransactionCRUD:
     def test_update_transaction_wrong_card_user(self, transaction_service: TransactionService, test_user: User, test_transaction: Transaction, test_bank: Bank, db_session: Session):
         """测试更新交易到不属于用户的信用卡"""
         # 创建其他用户的信用卡
+        import uuid
+        unique_suffix = str(uuid.uuid4())[:8]
         other_user = User(
-            username="otheruser",
-            email="other@example.com",
+            username=f"otheruser_{unique_suffix}",
+            email=f"other_{unique_suffix}@example.com",
             password_hash="hash"
         )
         db_session.add(other_user)
