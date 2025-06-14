@@ -74,7 +74,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             
             # 添加安全头
             if self.enable_security_headers:
-                self._add_security_headers(response)
+                self._add_security_headers(response, request)
             
             return response
             
@@ -149,8 +149,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         if ip in self.failed_attempts:
             del self.failed_attempts[ip]
     
-    def _add_security_headers(self, response: Response):
+    def _add_security_headers(self, response: Response, request: Request):
         """添加安全响应头"""
+        # 检查是否是Swagger UI相关的路径
+        is_swagger_path = request.url.path in ["/docs", "/redoc", "/openapi.json"]
+        
         security_headers = {
             # 防止XSS攻击
             "X-Content-Type-Options": "nosniff",
@@ -159,9 +162,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             
             # 强制HTTPS
             "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-            
-            # 内容安全策略
-            "Content-Security-Policy": "default-src 'self'",
             
             # 引用策略
             "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -172,6 +172,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             # 服务器信息隐藏
             "Server": "CreditCardAPI/1.0"
         }
+        
+        # 对于Swagger UI页面，使用宽松的CSP策略
+        if is_swagger_path:
+            security_headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https:"
+        else:
+            # 对于其他页面，使用严格的CSP策略
+            security_headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'"
         
         for header, value in security_headers.items():
             response.headers[header] = value
