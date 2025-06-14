@@ -1,11 +1,13 @@
 """
 年费服务单元测试
+
+测试年费规则和年费记录的管理功能，包括CRUD操作、减免评估、统计分析等
 """
 import pytest
-import uuid
 from decimal import Decimal
 from datetime import datetime, date, timedelta
-from unittest.mock import Mock, patch
+from uuid import UUID, uuid4
+from unittest.mock import Mock, patch, call
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import ValidationError as PydanticValidationError
@@ -13,10 +15,10 @@ from pydantic import ValidationError as PydanticValidationError
 from app.services.annual_fee_service import AnnualFeeService
 from app.models.database.user import User
 from app.models.database.card import CreditCard, Bank
-from app.models.database.annual_fee import AnnualFeeRule, AnnualFeeRecord
+from app.models.database.fee_waiver import FeeWaiverRule, AnnualFeeRecord
 from app.models.database.transaction import Transaction, TransactionCategory
-from app.models.schemas.annual_fee import (
-    AnnualFeeRuleCreate, AnnualFeeRuleUpdate, AnnualFeeRecordCreate, AnnualFeeRecordUpdate
+from app.models.schemas.fee_waiver import (
+    FeeWaiverRuleCreate, FeeWaiverRuleUpdate, AnnualFeeRecordCreate, AnnualFeeRecordUpdate
 )
 from app.core.exceptions.custom import (
     ResourceNotFoundError, ValidationError, BusinessRuleError
@@ -42,7 +44,7 @@ def annual_fee_service(db_session: Session):
 def test_user():
     """测试用户fixture"""
     return User(
-        id=uuid.uuid4(),
+        id=uuid4(),
         username="testuser",
         email="test@example.com",
         nickname="测试用户",
@@ -53,7 +55,7 @@ def test_user():
 @pytest.fixture
 def test_bank(db_session: Session):
     """测试银行fixture"""
-    unique_id = str(uuid.uuid4()).replace('-', '')[:8].upper()
+    unique_id = str(uuid4()).replace('-', '')[:8].upper()
     bank = Bank(
         bank_code=f"TEST{unique_id}",
         bank_name=f"测试银行{unique_id}",
@@ -67,7 +69,7 @@ def test_bank(db_session: Session):
 def test_card(test_user: User, test_bank: Bank):
     """测试信用卡fixture"""
     return CreditCard(
-        id=uuid.uuid4(),
+        id=uuid4(),
         user_id=test_user.id,
         bank_id=test_bank.id,
         card_name="测试信用卡",
@@ -84,7 +86,7 @@ def test_card(test_user: User, test_bank: Bank):
 def test_category():
     """测试交易分类fixture"""
     return TransactionCategory(
-        id=uuid.uuid4(),
+        id=uuid4(),
         name="餐饮",
         icon="restaurant",
         color="#FF6B6B",
@@ -95,8 +97,8 @@ def test_category():
 @pytest.fixture
 def test_rule(test_card: CreditCard):
     """测试年费规则fixture"""
-    return AnnualFeeRule(
-        id=uuid.uuid4(),
+    return FeeWaiverRule(
+        id=uuid4(),
         card_id=test_card.id,
         fee_year=2024,
         base_fee=Decimal("300.00"),
@@ -110,11 +112,11 @@ def test_rule(test_card: CreditCard):
 
 
 @pytest.fixture
-def test_record(test_rule: AnnualFeeRule):
+def test_record(test_rule: FeeWaiverRule):
     """测试年费记录fixture"""
     return AnnualFeeRecord(
-        id=uuid.uuid4(),
-        rule_id=test_rule.id,
+        id=uuid4(),
+        waiver_rule_id=test_rule.id,
         fee_year=2024,
         base_fee=Decimal("300.00"),
         actual_fee=Decimal("0.00"),
@@ -128,7 +130,7 @@ def test_record(test_rule: AnnualFeeRule):
 
 # ========== 年费规则CRUD测试 ==========
 
-class TestAnnualFeeRuleCRUD:
+class TestFeeWaiverRuleCRUD:
     """年费规则CRUD操作测试"""
 
     def test_create_annual_fee_rule_success(self, annual_fee_service: AnnualFeeService, 
@@ -138,7 +140,7 @@ class TestAnnualFeeRuleCRUD:
         db_session.query.return_value.filter.return_value.first.return_value = test_card
         db_session.query.return_value.filter.return_value.first.side_effect = [test_card, None]
         
-        rule_data = AnnualFeeRuleCreate(
+        rule_data = FeeWaiverRuleCreate(
             card_id=test_card.id,
             fee_year=2024,
             base_fee=Decimal("300.00"),
@@ -151,8 +153,8 @@ class TestAnnualFeeRuleCRUD:
         )
         
         # 模拟创建的规则
-        created_rule = AnnualFeeRule(**rule_data.model_dump())
-        created_rule.id = uuid.uuid4()
+        created_rule = FeeWaiverRule(**rule_data.model_dump())
+        created_rule.id = uuid4()
         created_rule.created_at = datetime.now()
         created_rule.updated_at = datetime.now()
         
@@ -175,8 +177,8 @@ class TestAnnualFeeRuleCRUD:
         """测试创建年费规则时信用卡不存在"""
         db_session.query.return_value.filter.return_value.first.return_value = None
         
-        rule_data = AnnualFeeRuleCreate(
-            card_id=uuid.uuid4(),
+        rule_data = FeeWaiverRuleCreate(
+            card_id=uuid4(),
             fee_year=2024,
             base_fee=Decimal("300.00"),
             waiver_type="spending_amount",
@@ -188,11 +190,11 @@ class TestAnnualFeeRuleCRUD:
 
     def test_create_annual_fee_rule_duplicate_year(self, annual_fee_service: AnnualFeeService, 
                                                   test_user: User, test_card: CreditCard, 
-                                                  test_rule: AnnualFeeRule, db_session: Session):
+                                                  test_rule: FeeWaiverRule, db_session: Session):
         """测试创建年费规则时年份重复"""
         db_session.query.return_value.filter.return_value.first.side_effect = [test_card, test_rule]
         
-        rule_data = AnnualFeeRuleCreate(
+        rule_data = FeeWaiverRuleCreate(
             card_id=test_card.id,
             fee_year=2024,
             base_fee=Decimal("300.00"),
@@ -204,7 +206,7 @@ class TestAnnualFeeRuleCRUD:
             annual_fee_service.create_annual_fee_rule(test_user.id, rule_data)
 
     def test_get_annual_fee_rule_success(self, annual_fee_service: AnnualFeeService, 
-                                        test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                        test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试获取年费规则成功"""
         db_session.query.return_value.join.return_value.filter.return_value.first.return_value = test_rule
         
@@ -222,14 +224,14 @@ class TestAnnualFeeRuleCRUD:
         db_session.query.return_value.join.return_value.filter.return_value.first.return_value = None
         
         with pytest.raises(ResourceNotFoundError, match="年费规则不存在"):
-            annual_fee_service.get_annual_fee_rule(test_user.id, uuid.uuid4())
+            annual_fee_service.get_annual_fee_rule(test_user.id, uuid4())
 
     def test_update_annual_fee_rule_success(self, annual_fee_service: AnnualFeeService, 
-                                           test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                           test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试更新年费规则成功"""
         db_session.query.return_value.join.return_value.filter.return_value.first.return_value = test_rule
         
-        update_data = AnnualFeeRuleUpdate(
+        update_data = FeeWaiverRuleUpdate(
             base_fee=Decimal("400.00"),
             notes="调整年费金额"
         )
@@ -245,7 +247,7 @@ class TestAnnualFeeRuleCRUD:
             db_session.commit.assert_called_once()
 
     def test_delete_annual_fee_rule_success(self, annual_fee_service: AnnualFeeService, 
-                                           test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                           test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试删除年费规则成功"""
         db_session.query.return_value.join.return_value.filter.return_value.first.return_value = test_rule
         db_session.query.return_value.filter.return_value.count.return_value = 0
@@ -257,7 +259,7 @@ class TestAnnualFeeRuleCRUD:
         db_session.commit.assert_called_once()
 
     def test_delete_annual_fee_rule_with_records(self, annual_fee_service: AnnualFeeService, 
-                                                test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                                test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试删除有关联记录的年费规则"""
         db_session.query.return_value.join.return_value.filter.return_value.first.return_value = test_rule
         db_session.query.return_value.filter.return_value.count.return_value = 1
@@ -272,7 +274,7 @@ class TestAnnualFeeRecordCRUD:
     """年费记录CRUD操作测试"""
 
     def test_create_annual_fee_record_success(self, annual_fee_service: AnnualFeeService, 
-                                             test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                             test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试创建年费记录成功"""
         # 配置数据库查询模拟 - 第一次查询返回规则，第二次查询返回None（没有现有记录）
         mock_query = Mock()
@@ -286,20 +288,19 @@ class TestAnnualFeeRecordCRUD:
         mock_query.filter.return_value = mock_filter
         db_session.query.return_value = mock_query
         
+        # 创建年费记录
         record_data = AnnualFeeRecordCreate(
-            rule_id=test_rule.id,
+            waiver_rule_id=test_rule.id,
             fee_year=2024,
             base_fee=Decimal("300.00"),
             actual_fee=Decimal("0.00"),
             waiver_amount=Decimal("300.00"),
-            waiver_reason="年消费满5万，符合减免条件",
-            status="waived",
-            due_date=date(2024, 12, 31),
-            notes="自动减免"
+            waiver_reason="测试减免",
+            status="waived"
         )
         
         created_record = AnnualFeeRecord(**record_data.model_dump())
-        created_record.id = uuid.uuid4()
+        created_record.id = uuid4()
         created_record.created_at = datetime.now()
         created_record.updated_at = datetime.now()
         
@@ -353,7 +354,7 @@ class TestWaiverEvaluation:
     """年费减免评估测试"""
 
     def test_evaluate_spending_amount_waiver_eligible(self, annual_fee_service: AnnualFeeService, 
-                                                     test_user: User, test_rule: AnnualFeeRule, 
+                                                     test_user: User, test_rule: FeeWaiverRule, 
                                                      test_card: CreditCard, db_session: Session):
         """测试消费金额减免评估 - 符合条件"""
         # 设置规则为消费金额减免
@@ -380,7 +381,7 @@ class TestWaiverEvaluation:
         assert result.estimated_waiver_amount == test_rule.base_fee
 
     def test_evaluate_spending_amount_waiver_not_eligible(self, annual_fee_service: AnnualFeeService, 
-                                                         test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                                         test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试消费金额减免评估 - 不符合条件"""
         test_rule.waiver_type = "spending_amount"
         test_rule.waiver_condition_value = Decimal("50000.00")
@@ -401,7 +402,7 @@ class TestWaiverEvaluation:
         assert result.estimated_waiver_amount == Decimal("0")
 
     def test_evaluate_transaction_count_waiver(self, annual_fee_service: AnnualFeeService, 
-                                              test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                              test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试交易次数减免评估"""
         test_rule.waiver_type = "transaction_count"
         test_rule.waiver_condition_value = Decimal("12")  # 12次交易
@@ -420,7 +421,7 @@ class TestWaiverEvaluation:
         assert result.completion_percentage == 100.0  # 服务中限制最大为100%
 
     def test_evaluate_rigid_waiver(self, annual_fee_service: AnnualFeeService, 
-                                  test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                  test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试刚性年费评估"""
         test_rule.waiver_type = "rigid"
         
@@ -494,8 +495,8 @@ class TestAnnualFeeServiceErrorHandling:
     def test_invalid_waiver_type_validation(self):
         """测试无效减免类型验证"""
         with pytest.raises(PydanticValidationError):
-            AnnualFeeRuleCreate(
-                card_id=uuid.uuid4(),
+            FeeWaiverRuleCreate(
+                card_id=uuid4(),
                 fee_year=2024,
                 base_fee=Decimal("300.00"),
                 waiver_type="invalid_type",  # 无效的减免类型
@@ -513,7 +514,7 @@ class TestAnnualFeeServiceEdgeCases:
         """测试零年费规则"""
         db_session.query.return_value.filter.return_value.first.side_effect = [test_card, None]
         
-        rule_data = AnnualFeeRuleCreate(
+        rule_data = FeeWaiverRuleCreate(
             card_id=test_card.id,
             fee_year=2024,
             base_fee=Decimal("0.00"),  # 零年费
@@ -533,7 +534,7 @@ class TestAnnualFeeServiceEdgeCases:
         db_session.query.return_value.filter.return_value.first.side_effect = [test_card, None]
         
         future_year = datetime.now().year + 2
-        rule_data = AnnualFeeRuleCreate(
+        rule_data = FeeWaiverRuleCreate(
             card_id=test_card.id,
             fee_year=future_year,
             base_fee=Decimal("300.00"),
@@ -553,7 +554,7 @@ class TestAnnualFeeServiceEdgeCases:
         """测试大额减免条件值"""
         db_session.query.return_value.filter.return_value.first.side_effect = [test_card, None]
         
-        rule_data = AnnualFeeRuleCreate(
+        rule_data = FeeWaiverRuleCreate(
             card_id=test_card.id,
             fee_year=2024,
             base_fee=Decimal("300.00"),
@@ -640,7 +641,7 @@ class TestAnnualFeeServiceDataIntegrity:
     """年费服务数据完整性测试"""
 
     def test_rule_record_relationship_integrity(self, annual_fee_service: AnnualFeeService, 
-                                               test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                               test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试规则和记录关系的完整性"""
         # 测试删除有关联记录的规则
         db_session.query.return_value.join.return_value.filter.return_value.first.return_value = test_rule
@@ -650,7 +651,7 @@ class TestAnnualFeeServiceDataIntegrity:
             annual_fee_service.delete_annual_fee_rule(test_user.id, test_rule.id)
 
     def test_waiver_calculation_accuracy(self, annual_fee_service: AnnualFeeService, 
-                                        test_user: User, test_rule: AnnualFeeRule, db_session: Session):
+                                        test_user: User, test_rule: FeeWaiverRule, db_session: Session):
         """测试减免计算的准确性"""
         test_rule.waiver_type = "spending_amount"
         test_rule.waiver_condition_value = Decimal("50000.00")
@@ -681,7 +682,7 @@ class TestAnnualFeeServiceDataIntegrity:
         db_session.query.return_value.filter.return_value.first.side_effect = [test_card, None]
         
         # 测试高精度小数
-        rule_data = AnnualFeeRuleCreate(
+        rule_data = FeeWaiverRuleCreate(
             card_id=test_card.id,
             fee_year=2024,
             base_fee=Decimal("299.99"),

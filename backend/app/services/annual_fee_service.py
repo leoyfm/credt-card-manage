@@ -1,39 +1,40 @@
 """
-年费服务
-提供年费规则管理、减免评估、记录管理等功能
+年费管理服务
+
+提供年费规则和年费记录的完整管理功能，包括创建、查询、更新、删除、
+减免评估和统计分析等功能。
 """
-from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, desc, extract, case
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
-from decimal import Decimal
+
+from typing import List, Tuple, Optional, Dict, Any
 from uuid import UUID
+from decimal import Decimal
+from datetime import datetime, date
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, desc, func, extract
 import calendar
 
-from app.models.database.annual_fee import AnnualFeeRule, AnnualFeeRecord
+from app.models.database.fee_waiver import FeeWaiverRule, AnnualFeeRecord
 from app.models.database.card import CreditCard
 from app.models.database.transaction import Transaction
-from app.models.schemas.annual_fee import (
-    AnnualFeeRuleCreate, AnnualFeeRuleUpdate, AnnualFeeRuleResponse,
+from app.models.schemas.fee_waiver import (
+    FeeWaiverRuleCreate, FeeWaiverRuleUpdate, FeeWaiverRuleResponse,
     AnnualFeeRecordCreate, AnnualFeeRecordUpdate, AnnualFeeRecordResponse,
     AnnualFeeStatisticsResponse, WaiverEvaluationResponse
 )
-from app.core.exceptions.custom import (
-    ResourceNotFoundError, ValidationError, BusinessRuleError
-)
+from app.core.exceptions.custom import ResourceNotFoundError, BusinessRuleError
 from app.core.logging.logger import app_logger as logger
 
 
 class AnnualFeeService:
-    """年费服务类"""
+    """年费管理服务类"""
     
     def __init__(self, db: Session):
         self.db = db
     
     # ========== 年费规则管理 ==========
     
-    def create_annual_fee_rule(self, user_id: UUID, rule_data: AnnualFeeRuleCreate) -> AnnualFeeRuleResponse:
-        """创建年费规则"""
+    def create_fee_waiver_rule(self, user_id: UUID, rule_data: FeeWaiverRuleCreate) -> FeeWaiverRuleResponse:
+        """创建年费减免规则"""
         try:
             # 验证信用卡是否属于用户
             card = self.db.query(CreditCard).filter(
@@ -46,47 +47,40 @@ class AnnualFeeService:
             if not card:
                 raise ResourceNotFoundError("信用卡不存在或不属于当前用户")
             
-            # 检查是否已存在相同年份的规则
-            existing_rule = self.db.query(AnnualFeeRule).filter(
-                and_(
-                    AnnualFeeRule.card_id == rule_data.card_id,
-                    AnnualFeeRule.fee_year == rule_data.fee_year
-                )
-            ).first()
-            
-            if existing_rule:
-                raise BusinessRuleError(f"信用卡在{rule_data.fee_year}年的年费规则已存在")
-            
-            # 创建年费规则
-            rule = AnnualFeeRule(
+            # 创建减免规则
+            rule = FeeWaiverRule(
                 card_id=rule_data.card_id,
-                fee_year=rule_data.fee_year,
-                base_fee=rule_data.base_fee,
-                waiver_type=rule_data.waiver_type,
-                waiver_condition_value=rule_data.waiver_condition_value,
-                waiver_condition_unit=rule_data.waiver_condition_unit,
-                points_per_yuan=rule_data.points_per_yuan,
-                is_active=rule_data.is_active,
-                notes=rule_data.notes
+                rule_group_id=rule_data.rule_group_id,
+                rule_name=rule_data.rule_name,
+                condition_type=rule_data.condition_type,
+                condition_value=rule_data.condition_value,
+                condition_count=rule_data.condition_count,
+                condition_period=rule_data.condition_period,
+                logical_operator=rule_data.logical_operator,
+                priority=rule_data.priority,
+                is_enabled=rule_data.is_enabled,
+                effective_from=rule_data.effective_from,
+                effective_to=rule_data.effective_to,
+                description=rule_data.description
             )
             
             self.db.add(rule)
             self.db.commit()
             self.db.refresh(rule)
             
-            logger.info(f"创建年费规则成功: {rule.id}, 用户: {user_id}")
+            logger.info(f"创建年费减免规则成功: {rule.id}, 用户: {user_id}")
             return self._to_rule_response(rule)
             
         except Exception as e:
             self.db.rollback()
-            logger.error(f"创建年费规则失败: 用户: {user_id}, 错误: {str(e)}")
+            logger.error(f"创建年费减免规则失败: 用户: {user_id}, 错误: {str(e)}")
             raise
     
-    def get_annual_fee_rule(self, user_id: UUID, rule_id: UUID) -> AnnualFeeRuleResponse:
+    def get_annual_fee_rule(self, user_id: UUID, rule_id: UUID) -> FeeWaiverRuleResponse:
         """获取年费规则详情"""
-        rule = self.db.query(AnnualFeeRule).join(CreditCard).filter(
+        rule = self.db.query(FeeWaiverRule).join(CreditCard).filter(
             and_(
-                AnnualFeeRule.id == rule_id,
+                FeeWaiverRule.id == rule_id,
                 CreditCard.user_id == user_id
             )
         ).first()
@@ -97,12 +91,12 @@ class AnnualFeeService:
         return self._to_rule_response(rule)
     
     def update_annual_fee_rule(self, user_id: UUID, rule_id: UUID, 
-                              rule_data: AnnualFeeRuleUpdate) -> AnnualFeeRuleResponse:
+                              rule_data: FeeWaiverRuleUpdate) -> FeeWaiverRuleResponse:
         """更新年费规则"""
         try:
-            rule = self.db.query(AnnualFeeRule).join(CreditCard).filter(
+            rule = self.db.query(FeeWaiverRule).join(CreditCard).filter(
                 and_(
-                    AnnualFeeRule.id == rule_id,
+                    FeeWaiverRule.id == rule_id,
                     CreditCard.user_id == user_id
                 )
             ).first()
@@ -129,9 +123,9 @@ class AnnualFeeService:
     def delete_annual_fee_rule(self, user_id: UUID, rule_id: UUID) -> bool:
         """删除年费规则"""
         try:
-            rule = self.db.query(AnnualFeeRule).join(CreditCard).filter(
+            rule = self.db.query(FeeWaiverRule).join(CreditCard).filter(
                 and_(
-                    AnnualFeeRule.id == rule_id,
+                    FeeWaiverRule.id == rule_id,
                     CreditCard.user_id == user_id
                 )
             ).first()
@@ -141,7 +135,7 @@ class AnnualFeeService:
             
             # 检查是否有关联的年费记录
             record_count = self.db.query(AnnualFeeRecord).filter(
-                AnnualFeeRecord.rule_id == rule_id
+                AnnualFeeRecord.waiver_rule_id == rule_id
             ).count()
             
             if record_count > 0:
@@ -160,31 +154,31 @@ class AnnualFeeService:
     
     def get_user_annual_fee_rules(self, user_id: UUID, page: int = 1, page_size: int = 20,
                                  card_id: Optional[UUID] = None, fee_year: Optional[int] = None,
-                                 waiver_type: Optional[str] = None, is_active: Optional[bool] = None) -> Tuple[List[AnnualFeeRuleResponse], int]:
+                                 waiver_type: Optional[str] = None, is_active: Optional[bool] = None) -> Tuple[List[FeeWaiverRuleResponse], int]:
         """获取用户年费规则列表（支持筛选和分页）"""
         
-        query = self.db.query(AnnualFeeRule).join(CreditCard).filter(
+        query = self.db.query(FeeWaiverRule).join(CreditCard).filter(
             CreditCard.user_id == user_id
         )
         
         # 应用筛选条件
         if card_id:
-            query = query.filter(AnnualFeeRule.card_id == card_id)
+            query = query.filter(FeeWaiverRule.card_id == card_id)
         
         if fee_year:
-            query = query.filter(AnnualFeeRule.fee_year == fee_year)
+            query = query.filter(FeeWaiverRule.fee_year == fee_year)
         
         if waiver_type:
-            query = query.filter(AnnualFeeRule.waiver_type == waiver_type)
+            query = query.filter(FeeWaiverRule.waiver_type == waiver_type)
         
         if is_active is not None:
-            query = query.filter(AnnualFeeRule.is_active == is_active)
+            query = query.filter(FeeWaiverRule.is_active == is_active)
         
         # 获取总数
         total = query.count()
         
         # 分页和排序
-        rules = query.order_by(desc(AnnualFeeRule.fee_year), desc(AnnualFeeRule.created_at))\
+        rules = query.order_by(desc(FeeWaiverRule.fee_year), desc(FeeWaiverRule.created_at))\
                      .offset((page - 1) * page_size)\
                      .limit(page_size)\
                      .all()
@@ -199,32 +193,53 @@ class AnnualFeeService:
     def create_annual_fee_record(self, user_id: UUID, record_data: AnnualFeeRecordCreate) -> AnnualFeeRecordResponse:
         """创建年费记录"""
         try:
-            # 验证年费规则是否属于用户
-            rule = self.db.query(AnnualFeeRule).join(CreditCard).filter(
-                and_(
-                    AnnualFeeRule.id == record_data.rule_id,
-                    CreditCard.user_id == user_id
-                )
-            ).first()
-            
-            if not rule:
-                raise ResourceNotFoundError("年费规则不存在或不属于当前用户")
-            
-            # 检查是否已存在记录
-            existing_record = self.db.query(AnnualFeeRecord).filter(
-                AnnualFeeRecord.rule_id == record_data.rule_id
-            ).first()
-            
-            if existing_record:
-                raise BusinessRuleError("该年费规则已存在记录")
+            # 如果提供了waiver_rule_id，验证年费规则是否属于用户
+            if record_data.waiver_rule_id:
+                rule = self.db.query(FeeWaiverRule).join(CreditCard).filter(
+                    and_(
+                        FeeWaiverRule.id == record_data.waiver_rule_id,
+                        CreditCard.user_id == user_id
+                    )
+                ).first()
+                
+                if not rule:
+                    raise ResourceNotFoundError("年费规则不存在或不属于当前用户")
+                
+                card_id = rule.card_id
+                
+                # 检查是否已有相同规则的记录
+                existing_record = self.db.query(AnnualFeeRecord).filter(
+                    AnnualFeeRecord.waiver_rule_id == record_data.waiver_rule_id
+                ).first()
+                
+                if existing_record:
+                    raise ValueError(f"规则 {record_data.waiver_rule_id} 已有年费记录")
+            else:
+                # 如果没有waiver_rule_id，需要从record_data中获取card_id
+                if not hasattr(record_data, 'card_id') or not record_data.card_id:
+                    raise ValueError("必须提供waiver_rule_id或card_id")
+                
+                # 验证信用卡是否属于用户
+                card = self.db.query(CreditCard).filter(
+                    and_(
+                        CreditCard.id == record_data.card_id,
+                        CreditCard.user_id == user_id
+                    )
+                ).first()
+                
+                if not card:
+                    raise ResourceNotFoundError("信用卡不存在或不属于当前用户")
+                
+                card_id = record_data.card_id
             
             # 创建年费记录
             record = AnnualFeeRecord(
-                rule_id=record_data.rule_id,
-                fee_year=rule.fee_year,
-                base_fee=record_data.base_fee or rule.base_fee,
+                waiver_rule_id=record_data.waiver_rule_id,
+                card_id=card_id,
+                fee_year=record_data.fee_year,
+                base_fee=record_data.base_fee,
                 actual_fee=record_data.actual_fee,
-                waiver_amount=record_data.waiver_amount or Decimal('0'),
+                waiver_amount=record_data.waiver_amount,
                 waiver_reason=record_data.waiver_reason,
                 status=record_data.status,
                 due_date=record_data.due_date,
@@ -246,7 +261,7 @@ class AnnualFeeService:
     
     def get_annual_fee_record(self, user_id: UUID, record_id: UUID) -> AnnualFeeRecordResponse:
         """获取年费记录详情"""
-        record = self.db.query(AnnualFeeRecord).join(AnnualFeeRule).join(CreditCard).filter(
+        record = self.db.query(AnnualFeeRecord).join(FeeWaiverRule).join(CreditCard).filter(
             and_(
                 AnnualFeeRecord.id == record_id,
                 CreditCard.user_id == user_id
@@ -262,7 +277,7 @@ class AnnualFeeService:
                                 record_data: AnnualFeeRecordUpdate) -> AnnualFeeRecordResponse:
         """更新年费记录"""
         try:
-            record = self.db.query(AnnualFeeRecord).join(AnnualFeeRule).join(CreditCard).filter(
+            record = self.db.query(AnnualFeeRecord).join(FeeWaiverRule).join(CreditCard).filter(
                 and_(
                     AnnualFeeRecord.id == record_id,
                     CreditCard.user_id == user_id
@@ -291,7 +306,7 @@ class AnnualFeeService:
     def delete_annual_fee_record(self, user_id: UUID, record_id: UUID) -> bool:
         """删除年费记录"""
         try:
-            record = self.db.query(AnnualFeeRecord).join(AnnualFeeRule).join(CreditCard).filter(
+            record = self.db.query(AnnualFeeRecord).join(FeeWaiverRule).join(CreditCard).filter(
                 and_(
                     AnnualFeeRecord.id == record_id,
                     CreditCard.user_id == user_id
@@ -317,13 +332,13 @@ class AnnualFeeService:
                                    status: Optional[str] = None) -> Tuple[List[AnnualFeeRecordResponse], int]:
         """获取用户年费记录列表（支持筛选和分页）"""
         
-        query = self.db.query(AnnualFeeRecord).join(AnnualFeeRule).join(CreditCard).filter(
+        query = self.db.query(AnnualFeeRecord).join(FeeWaiverRule).join(CreditCard).filter(
             CreditCard.user_id == user_id
         )
         
         # 应用筛选条件
         if card_id:
-            query = query.filter(AnnualFeeRule.card_id == card_id)
+            query = query.filter(FeeWaiverRule.card_id == card_id)
         
         if fee_year:
             query = query.filter(AnnualFeeRecord.fee_year == fee_year)
@@ -351,9 +366,9 @@ class AnnualFeeService:
         """评估年费减免资格"""
         
         # 获取年费规则
-        rule = self.db.query(AnnualFeeRule).join(CreditCard).filter(
+        rule = self.db.query(FeeWaiverRule).join(CreditCard).filter(
             and_(
-                AnnualFeeRule.id == rule_id,
+                FeeWaiverRule.id == rule_id,
                 CreditCard.user_id == user_id
             )
         ).first()
@@ -364,7 +379,7 @@ class AnnualFeeService:
         # 如果是刚性年费，无法减免
         if rule.waiver_type == 'rigid':
             return WaiverEvaluationResponse(
-                rule_id=rule_id,
+                waiver_rule_id=rule_id,
                 waiver_type=rule.waiver_type,
                 is_eligible=False,
                 current_progress=0,
@@ -397,7 +412,7 @@ class AnnualFeeService:
             completion_percentage = (current_spending / required_spending * 100) if required_spending > 0 else 0
             
             return WaiverEvaluationResponse(
-                rule_id=rule_id,
+                waiver_rule_id=rule_id,
                 waiver_type=rule.waiver_type,
                 is_eligible=is_eligible,
                 current_progress=float(current_spending),
@@ -416,7 +431,7 @@ class AnnualFeeService:
             completion_percentage = (current_count / required_count * 100) if required_count > 0 else 0
             
             return WaiverEvaluationResponse(
-                rule_id=rule_id,
+                waiver_rule_id=rule_id,
                 waiver_type=rule.waiver_type,
                 is_eligible=is_eligible,
                 current_progress=current_count,
@@ -435,7 +450,7 @@ class AnnualFeeService:
             completion_percentage = (total_points / required_points * 100) if required_points > 0 else 0
             
             return WaiverEvaluationResponse(
-                rule_id=rule_id,
+                waiver_rule_id=rule_id,
                 waiver_type=rule.waiver_type,
                 is_eligible=is_eligible,
                 current_progress=total_points,
@@ -447,7 +462,7 @@ class AnnualFeeService:
         
         else:
             return WaiverEvaluationResponse(
-                rule_id=rule_id,
+                waiver_rule_id=rule_id,
                 waiver_type=rule.waiver_type,
                 is_eligible=False,
                 current_progress=0,
@@ -466,7 +481,7 @@ class AnnualFeeService:
             year = datetime.now().year
         
         # 查询用户的年费记录
-        records = self.db.query(AnnualFeeRecord).join(AnnualFeeRule).join(CreditCard).filter(
+        records = self.db.query(AnnualFeeRecord).join(FeeWaiverRule).join(CreditCard).filter(
             and_(
                 CreditCard.user_id == user_id,
                 AnnualFeeRecord.fee_year == year
@@ -539,9 +554,9 @@ class AnnualFeeService:
     
     # ========== 私有方法 ==========
     
-    def _to_rule_response(self, rule: AnnualFeeRule) -> AnnualFeeRuleResponse:
+    def _to_rule_response(self, rule: FeeWaiverRule) -> FeeWaiverRuleResponse:
         """转换为年费规则响应模型"""
-        return AnnualFeeRuleResponse(
+        return FeeWaiverRuleResponse(
             id=rule.id,
             card_id=rule.card_id,
             fee_year=rule.fee_year,
@@ -562,7 +577,7 @@ class AnnualFeeService:
         """转换为年费记录响应模型"""
         return AnnualFeeRecordResponse(
             id=record.id,
-            rule_id=record.rule_id,
+            waiver_rule_id=record.waiver_rule_id,
             fee_year=record.fee_year,
             base_fee=record.base_fee,
             actual_fee=record.actual_fee,

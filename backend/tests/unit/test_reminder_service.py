@@ -763,3 +763,4 @@ class TestReminderServiceDataIntegrity(TestReminderService):
         assert result is True
         mock_delete_query.delete.assert_called_once()  # 删除相关记录
         mock_db.delete.assert_called_once()  # 删除设置（不验证具体参数，因为Mock对象可能不同）
+ 

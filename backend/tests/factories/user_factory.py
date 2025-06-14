@@ -2,7 +2,7 @@ import uuid
 from typing import Dict, Any, Optional
 import random
 
-
+ 
 def build_user(**kwargs) -> Dict[str, Any]:
     """构建用户测试数据
     

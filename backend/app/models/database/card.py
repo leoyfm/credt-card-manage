@@ -88,7 +88,6 @@ class CreditCard(Base):
     transactions = relationship("Transaction", back_populates="card", cascade="all, delete-orphan")
     annual_fee_records = relationship("AnnualFeeRecord", back_populates="card", cascade="all, delete-orphan")
     fee_waiver_rules = relationship("FeeWaiverRule", back_populates="card", cascade="all, delete-orphan")
-    annual_fee_rules = relationship("AnnualFeeRule", back_populates="card", cascade="all, delete-orphan")
     reminder_settings = relationship("ReminderSetting", back_populates="card", cascade="all, delete-orphan")
 
     @property

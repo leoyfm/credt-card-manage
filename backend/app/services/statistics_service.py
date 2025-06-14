@@ -12,7 +12,7 @@ import calendar
 
 from app.models.database.card import CreditCard
 from app.models.database.transaction import Transaction
-from app.models.database.annual_fee import AnnualFeeRecord
+from app.models.database.fee_waiver import AnnualFeeRecord
 from app.models.database.reminder import ReminderSetting, ReminderRecord
 from app.core.exceptions.custom import (
     ResourceNotFoundError, ValidationError, BusinessRuleError
@@ -296,7 +296,7 @@ class StatisticsService:
             func.sum(AnnualFeeRecord.base_fee).label('total_base_fee'),
             func.sum(AnnualFeeRecord.actual_fee).label('total_actual_fee'),
             func.sum(AnnualFeeRecord.waiver_amount).label('total_waived')
-        ).join(AnnualFeeRecord.rule).join(CreditCard).filter(
+        ).join(CreditCard).filter(
             and_(
                 CreditCard.user_id == user_id,
                 AnnualFeeRecord.fee_year == year

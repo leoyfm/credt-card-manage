@@ -12,7 +12,7 @@ import calendar
 from app.models.database.card import CreditCard, Bank
 from app.models.database.user import User
 from app.models.database.transaction import Transaction
-from app.models.database.annual_fee import AnnualFeeRecord
+from app.models.database.fee_waiver import AnnualFeeRecord
 from app.core.exceptions.custom import ResourceNotFoundError
 
 

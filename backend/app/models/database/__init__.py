@@ -7,7 +7,7 @@
 from .user import User, VerificationCode, LoginLog, WechatBinding
 from .card import Bank, CreditCard
 from .transaction import TransactionCategory, Transaction
-from .annual_fee import FeeWaiverRule, AnnualFeeRecord, AnnualFeeRule
+from .fee_waiver import FeeWaiverRule, AnnualFeeRecord
 from .reminder import ReminderSetting, ReminderRecord
 
 __all__ = [
@@ -21,7 +21,6 @@ __all__ = [
     "Transaction",
     "FeeWaiverRule",
     "AnnualFeeRecord",
-    "AnnualFeeRule",
     "ReminderSetting",
     "ReminderRecord"
 ] 

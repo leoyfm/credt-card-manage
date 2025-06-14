@@ -17,7 +17,7 @@ def get_admin_service(db: Session = Depends(get_db)) -> AdminUserService:
 
 def get_card_service(db: Session = Depends(get_db)) -> CardService:
     """信用卡服务依赖注入"""
-    return CardService(db)
+    return CardService(db) 
 
 
 def get_admin_card_service(db: Session = Depends(get_db)) -> AdminCardService:

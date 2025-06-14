@@ -47,29 +47,25 @@ from .transaction_factory import (
 )
 
 # 年费相关工厂
-from .annual_fee_factory import (
+from .fee_waiver_factory import (
     build_fee_waiver_rule,
-    build_simple_fee_rule,
     build_spending_rule,
     build_transaction_count_rule,
-    build_points_redeem_rule,
+    build_points_redemption_rule,
+    build_rigid_rule,
     build_annual_fee_record,
     build_paid_fee_record,
     build_waived_fee_record,
     build_overdue_fee_record,
     build_fee_records_batch,
-    build_fee_rules_batch,
-    build_template_fee_record,
-    build_template_fee_rule,
-    FEE_TEMPLATES,
-    RULE_TEMPLATES
+    build_fee_rules_batch
 )
 
 # 导出所有工厂模块，便于需要时直接使用
 from . import user_factory
 from . import card_factory
 from . import transaction_factory
-from . import annual_fee_factory
+from . import fee_waiver_factory
 
 # 定义公共接口
 __all__ = [
@@ -105,26 +101,22 @@ __all__ = [
     
     # 年费工厂
     "build_fee_waiver_rule",
-    "build_simple_fee_rule",
     "build_spending_rule",
     "build_transaction_count_rule",
-    "build_points_redeem_rule",
+    "build_points_redemption_rule",
+    "build_rigid_rule",
     "build_annual_fee_record",
     "build_paid_fee_record",
     "build_waived_fee_record",
     "build_overdue_fee_record",
     "build_fee_records_batch",
     "build_fee_rules_batch",
-    "build_template_fee_record",
-    "build_template_fee_rule",
-    "FEE_TEMPLATES",
-    "RULE_TEMPLATES",
     
     # 工厂模块
     "user_factory",
     "card_factory", 
     "transaction_factory",
-    "annual_fee_factory"
+    "fee_waiver_factory"
 ]
 
 
@@ -137,9 +129,7 @@ def get_all_templates():
     return {
         "users": USER_TEMPLATES,
         "cards": CARD_TEMPLATES,
-        "transactions": TRANSACTION_TEMPLATES,
-        "fee_records": FEE_TEMPLATES,
-        "fee_rules": RULE_TEMPLATES
+        "transactions": TRANSACTION_TEMPLATES
     }
 
 

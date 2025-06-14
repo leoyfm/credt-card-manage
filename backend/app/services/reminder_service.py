@@ -12,7 +12,7 @@ import calendar
 
 from app.models.database.reminder import ReminderSetting, ReminderRecord
 from app.models.database.card import CreditCard
-from app.models.database.annual_fee import AnnualFeeRecord
+from app.models.database.fee_waiver import AnnualFeeRecord
 from app.models.schemas.reminder import (
     ReminderSettingCreate, ReminderSettingUpdate, ReminderSettingResponse,
     ReminderRecordCreate, ReminderRecordUpdate, ReminderRecordResponse,

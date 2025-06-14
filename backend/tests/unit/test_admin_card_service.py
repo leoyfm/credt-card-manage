@@ -12,7 +12,7 @@ from app.services.admin_card_service import AdminCardService
 from app.models.database.card import CreditCard, Bank
 from app.models.database.user import User
 from app.models.database.transaction import Transaction, TransactionCategory
-from app.models.database.annual_fee import AnnualFeeRecord, FeeWaiverRule
+from app.models.database.fee_waiver import AnnualFeeRecord, FeeWaiverRule
 from app.core.exceptions.custom import ResourceNotFoundError
 from tests.utils.db import create_test_session
 
@@ -239,7 +239,7 @@ class TestAdminCardServiceStatistics:
             # 清理所有数据以确保空数据库状态
             from app.models.database.card import CreditCard
             from app.models.database.transaction import Transaction
-            from app.models.database.annual_fee import AnnualFeeRecord
+            from app.models.database.fee_waiver import AnnualFeeRecord
             from app.models.database.user import User
             
             # 删除所有相关数据
