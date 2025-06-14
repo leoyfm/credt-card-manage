@@ -75,13 +75,13 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
+import {
+  getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions,
+  getUnreadRemindersCountApiV1UserRemindersUnreadCountGetQueryOptions,
+} from '@/service/app/v1Yonghugongneng.vuequery'
 import type * as API from '@/service/app/types'
 
 // 移除props，组件自己获取数据
-
-// 通知相关数据
-const unreadNotifications = ref(3) // 演示数据
 
 // 使用Vue Query获取卡片摘要数据
 const {
@@ -91,11 +91,29 @@ const {
   refetch,
 } = useQuery(getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions({}))
 
+// 使用Vue Query获取未读提醒数量
+const {
+  data: unreadCountResponse,
+  isLoading: isUnreadCountLoading,
+  isError: isUnreadCountError,
+  refetch: refetchUnreadCount,
+} = useQuery(getUnreadRemindersCountApiV1UserRemindersUnreadCountGetQueryOptions({}))
+
 // 计算属性 - 从API响应中提取摘要数据
 const summary = computed(() => {
   console.log('summaryResponse', summaryResponse.value)
 
   return summaryResponse.value as any
+})
+
+// 计算属性 - 从API响应中提取未读通知数量
+const unreadNotifications = computed(() => {
+  console.log('unreadCountResponse', unreadCountResponse.value)
+  if (!unreadCountResponse.value) {
+    return 0
+  }
+  // 由于request.ts已经解包数据，直接访问total_unread字段
+  return (unreadCountResponse.value as any)?.total_unread || 0
 })
 
 // 工具函数
@@ -130,6 +148,7 @@ const handleSettingsClick = () => {
 // 暴露刷新方法供父组件调用
 defineExpose({
   refetch,
+  refetchUnreadCount,
 })
 </script>
 
