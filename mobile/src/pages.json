@@ -134,13 +134,6 @@
       }
     },
     {
-      "path": "pages/test-mock/index",
-      "type": "page",
-      "style": {
-        "navigationBarTitleText": "Mock 测试页面"
-      }
-    },
-    {
       "path": "pages/transactions/index",
       "type": "page",
       "style": {
