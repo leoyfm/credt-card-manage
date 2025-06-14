@@ -10,42 +10,63 @@
         </view>
         <view class="flex items-center gap-2">
           <!-- 通知按钮 -->
-          <view 
-            class="relative p-2 bg-gray-100 rounded-lg"
-            @click="handleNotificationClick"
-          >
+          <view class="relative p-2 bg-gray-100 rounded-lg" @click="handleNotificationClick">
             <text class="text-lg">🔔</text>
-            <view 
-              v-if="unreadNotifications > 0" 
+            <view
+              v-if="unreadNotifications > 0"
               class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
             >
-              <text class="text-white text-xs">{{ unreadNotifications > 9 ? '9+' : unreadNotifications }}</text>
+              <text class="text-white text-xs">
+                {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+              </text>
             </view>
           </view>
           <!-- 设置按钮 -->
-          <view 
-            class="p-2 bg-gray-100 rounded-lg"
-            @click="handleSettingsClick"
-          >
+          <view class="p-2 bg-gray-100 rounded-lg" @click="handleSettingsClick">
             <text class="text-lg">⚙️</text>
           </view>
         </view>
       </view>
 
       <!-- 快速统计 -->
-      <view v-if="summary.activeCards > 0" class="grid grid-cols-3 gap-3 mb-4">
+      <view v-if="!isLoading && summary" class="grid grid-cols-3 gap-3 mb-4">
         <view class="text-center">
-          <text class="text-lg font-bold text-blue-600 block">{{ summary.activeCards }}</text>
+          <text class="text-lg font-bold text-blue-600 block">{{ summary.active_cards }}</text>
           <text class="text-xs text-gray-500">活跃卡片</text>
         </view>
         <view class="text-center">
-          <text class="text-lg font-bold text-green-600 block">{{ formatMoney(summary.totalCredit) }}</text>
+          <text class="text-lg font-bold text-green-600 block">
+            {{ formatMoney(summary.total_credit_limit - summary.total_used_limit) }}
+          </text>
           <text class="text-xs text-gray-500">可用额度</text>
         </view>
         <view class="text-center">
-          <text class="text-lg font-bold text-orange-600 block">{{ getBestCardInterestFreeDays() }}</text>
-          <text class="text-xs text-gray-500">免息天数</text>
+          <text class="text-lg font-bold text-orange-600 block">
+            {{ Math.round(summary.credit_utilization) }}%
+          </text>
+          <text class="text-xs text-gray-500">使用率</text>
         </view>
+      </view>
+
+      <!-- 加载状态 -->
+      <view v-if="isLoading" class="grid grid-cols-3 gap-3 mb-4">
+        <view class="text-center">
+          <text class="text-lg font-bold text-gray-400 block">--</text>
+          <text class="text-xs text-gray-500">活跃卡片</text>
+        </view>
+        <view class="text-center">
+          <text class="text-lg font-bold text-gray-400 block">--</text>
+          <text class="text-xs text-gray-500">可用额度</text>
+        </view>
+        <view class="text-center">
+          <text class="text-lg font-bold text-gray-400 block">--</text>
+          <text class="text-xs text-gray-500">使用率</text>
+        </view>
+      </view>
+
+      <!-- 错误状态 -->
+      <view v-if="isError && !isLoading" class="text-center py-4">
+        <text class="text-sm text-gray-500">数据加载失败，请稍后重试</text>
       </view>
     </view>
   </view>
@@ -53,85 +74,48 @@
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
-import type { CreditCard } from '@/types/card'
+import { useQuery } from '@tanstack/vue-query'
+import { getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
+import type { UserStatisticsResponse } from '@/service/app/types'
 
-interface Props {
-  cards: CreditCard[]
-}
-
-const props = defineProps<Props>()
-
-// 移除emit定义，组件内部直接处理导航
+// 移除props，组件自己获取数据
 
 // 通知相关数据
 const unreadNotifications = ref(3) // 演示数据
 
-// 计算属性
-const summary = computed(() => ({
-  activeCards: props.cards.filter(card => card.isActive).length,
-  totalCredit: props.cards.reduce((sum, card) => sum + card.availableAmount, 0),
-}))
+// 使用Vue Query获取卡片摘要数据
+const {
+  data: summaryResponse,
+  isLoading,
+  isError,
+  refetch,
+} = useQuery(
+  getCardSummaryApiV1UserCardsSummaryOverviewGetQueryOptions({
+    options: {
+      url: '', // 这个字段会被拦截器覆盖
+      method: 'GET',
+    } as any,
+  }),
+)
 
-// 最佳卡片计算
-const bestCard = computed(() => {
-  const activeCards = props.cards.filter(card => card.isActive)
-  if (activeCards.length === 0) return null
-  
-  // 选择年费状态最好且免息天数最长的卡片
-  return activeCards.reduce((best, current) => {
-    const currentScore = getCardScore(current)
-    const bestScore = getCardScore(best)
-    return currentScore > bestScore ? current : best
-  })
+// 计算属性 - 从API响应中提取摘要数据
+const summary = computed(() => {
+  if (!summaryResponse.value?.success || !summaryResponse.value?.data) {
+    return null
+  }
+  return summaryResponse.value.data as UserStatisticsResponse
 })
 
 // 工具函数
 const formatMoney = (amount: number) => {
-  if (!amount) return '0.00'
-  return (amount / 10000).toFixed(1) + '万'
-}
-
-const getCardScore = (card: CreditCard) => {
-  let score = 0
-  
-  // 年费状态评分
-  if (card.annualFeeStatus === 'waived') score += 50
-  else if (card.annualFeeStatus === 'pending' && card.waiverProgress >= 80) score += 30
-  else if (card.annualFeeStatus === 'pending') score += 10
-  
-  // 免息天数评分
-  const interestFreeDays = calculateInterestFreeDays(card)
-  score += Math.min(interestFreeDays, 50)
-  
-  return score
-}
-
-const calculateInterestFreeDays = (card: CreditCard) => {
-  if (!card.dueDate) return 0
-  
-  const today = new Date()
-  const currentDate = today.getDate()
-  
-  // 计算到下个还款日的天数
-  let dueMonth = today.getMonth()
-  let dueYear = today.getFullYear()
-  
-  if (currentDate > card.dueDate) {
-    dueMonth += 1
-    if (dueMonth > 11) {
-      dueMonth = 0
-      dueYear += 1
-    }
+  if (!amount || amount === 0) return '0.00'
+  if (amount >= 10000) {
+    return (amount / 10000).toFixed(1) + '万'
   }
-  
-  const dueDate = new Date(dueYear, dueMonth, card.dueDate)
-  const diffTime = dueDate.getTime() - today.getTime()
-  return Math.max(0, Math.ceil(diffTime / (1000 * 3600 * 24)))
-}
-
-const getBestCardInterestFreeDays = () => {
-  if (!bestCard.value) return 0
-  return calculateInterestFreeDays(bestCard.value)
+  return amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
 }
 
 // 事件处理
@@ -139,7 +123,7 @@ const handleNotificationClick = () => {
   console.log('Notification clicked')
   // 跳转到通知中心页面
   uni.navigateTo({
-    url: '/pages/notifications/index'
+    url: '/pages/notifications/index',
   })
 }
 
@@ -147,9 +131,14 @@ const handleSettingsClick = () => {
   console.log('Settings clicked')
   // 跳转到通知设置页面
   uni.navigateTo({
-    url: '/pages/notifications/settings'
+    url: '/pages/notifications/settings',
   })
 }
+
+// 暴露刷新方法供父组件调用
+defineExpose({
+  refetch,
+})
 </script>
 
 <style lang="scss" scoped>
@@ -182,10 +171,10 @@ const handleSettingsClick = () => {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   .py-6 {
     padding-top: 1.5rem;
     padding-bottom: 1.5rem;
   }
 }
-</style> 
+</style>

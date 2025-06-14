@@ -11,7 +11,7 @@
 <template>
   <view class="index-container safe-area bg-gray-50 min-h-screen">
     <!-- 顶部状态栏区域 -->
-    <HeaderSection :cards="creditCards" />
+    <HeaderSection />
 
     <!-- 今日推荐 -->
     <view class="p-4 pt-2">
