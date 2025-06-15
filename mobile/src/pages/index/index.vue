@@ -131,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useUserStore } from '@/store/user'
 import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
@@ -330,6 +330,35 @@ const goToLogin = () => {
 
 onMounted(() => {
   console.log('首页加载完成')
+
+  // 监听信用卡更新事件
+  uni.$on('refreshCardList', () => {
+    console.log('首页收到刷新信用卡列表事件')
+    if (userStore.isLoggedIn) {
+      refetchCards()
+    }
+  })
+
+  uni.$on('cardUpdated', (data) => {
+    console.log('首页收到信用卡更新事件:', data)
+    if (userStore.isLoggedIn) {
+      refetchCards()
+    }
+  })
+})
+
+// 页面显示时刷新数据
+onShow(() => {
+  console.log('首页显示，刷新数据')
+  if (userStore.isLoggedIn) {
+    refetchCards()
+  }
+})
+
+// 页面卸载时移除事件监听
+onUnmounted(() => {
+  uni.$off('refreshCardList')
+  uni.$off('cardUpdated')
 })
 </script>
 

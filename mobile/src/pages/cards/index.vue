@@ -142,7 +142,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useToast } from 'wot-design-uni'
 import { useUserStore } from '@/store/user'
@@ -315,12 +315,41 @@ onMounted(() => {
       url: '/pages/login/index',
     })
   }
+
+  // 监听信用卡更新事件
+  uni.$on('refreshCardList', () => {
+    console.log('收到刷新信用卡列表事件')
+    if (userStore.isLoggedIn) {
+      refetchCards()
+    }
+  })
+
+  uni.$on('cardUpdated', (data) => {
+    console.log('收到信用卡更新事件:', data)
+    if (userStore.isLoggedIn) {
+      refetchCards()
+    }
+  })
+})
+
+// 页面卸载时移除事件监听
+onUnmounted(() => {
+  uni.$off('refreshCardList')
+  uni.$off('cardUpdated')
 })
 
 // 下拉刷新
 onPullDownRefresh(async () => {
   await refetchCards()
   uni.stopPullDownRefresh()
+})
+
+// 页面显示时刷新数据
+onShow(() => {
+  console.log('信用卡列表页面显示，刷新数据')
+  if (userStore.isLoggedIn) {
+    refetchCards()
+  }
 })
 
 // 搜索功能

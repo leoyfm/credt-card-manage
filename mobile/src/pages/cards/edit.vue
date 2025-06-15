@@ -343,7 +343,7 @@
 
 <script lang="ts" setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useToast } from 'wot-design-uni'
 import { smartGoBack } from '@/utils'
 import {
@@ -356,6 +356,7 @@ import type { CreditCard } from '@/types/card'
 import type * as API from '@/service/app/types'
 
 const toast = useToast()
+const queryClient = useQueryClient()
 
 // 获取路由参数
 const pages = getCurrentPages()
@@ -430,6 +431,20 @@ const updateCardMutation = useUpdateCreditCardApiV1UserCardsCardIdPutMutation({
     console.log('更新信用卡成功:', response)
     toast.success('信用卡更新成功！')
 
+    // 使用Vue Query的invalidateQueries刷新相关缓存
+    queryClient.invalidateQueries({
+      queryKey: ['getCreditCardsApiV1UserCardsGet'],
+    })
+    queryClient.invalidateQueries({
+      queryKey: ['getCreditCardApiV1UserCardsCardIdGet', cardId],
+    })
+
+    // 通知其他页面数据已更新
+    uni.$emit('cardUpdated', { cardId, action: 'update' })
+
+    // 发送全局事件通知数据更新
+    uni.$emit('refreshCardList')
+
     // 延迟返回上一页，让用户看到成功提示
     setTimeout(() => {
       smartGoBack()
@@ -446,6 +461,20 @@ const deleteCardMutation = useDeleteCreditCardApiV1UserCardsCardIdDeleteMutation
   onSuccess: () => {
     console.log('删除信用卡成功')
     toast.success('信用卡删除成功！')
+
+    // 使用Vue Query的invalidateQueries刷新相关缓存
+    queryClient.invalidateQueries({
+      queryKey: ['getCreditCardsApiV1UserCardsGet'],
+    })
+    queryClient.invalidateQueries({
+      queryKey: ['getCreditCardApiV1UserCardsCardIdGet', cardId],
+    })
+
+    // 通知其他页面数据已更新
+    uni.$emit('cardUpdated', { cardId, action: 'delete' })
+
+    // 发送全局事件通知数据更新
+    uni.$emit('refreshCardList')
 
     // 延迟返回上一页，让用户看到成功提示
     setTimeout(() => {
