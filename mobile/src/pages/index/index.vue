@@ -231,7 +231,7 @@ const creditCards = computed(() => {
       id: apiCard.id || '',
       bankName: bankName,
       bankCode: bankName.charAt(0),
-      bankColor: getBankColor(bankName),
+      bankColor: apiCard.bank_color,
       cardName: apiCard.card_name || '信用卡',
       cardType: apiCard.card_network?.toLowerCase() || 'unionpay',
       cardNumberLast4: apiCard.card_number ? apiCard.card_number.slice(-4) : '****',

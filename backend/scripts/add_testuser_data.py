@@ -89,11 +89,12 @@ def create_credit_cards(db: Session, user: User):
         {
             "user_id": user.id,
             "bank_id": cmb_bank.id if cmb_bank else None,
-            "card_number": "4111111111111111",  # 测试卡号
+            "card_number": "1111",  # 只保存后4位
             "card_name": "招商银行经典白金卡",
             "card_type": "credit",
             "card_network": "VISA",
             "card_level": "白金卡",
+            "bank_color": "#DC2626",  # 招商银行红色
             "credit_limit": Decimal("100000.00"),
             "available_limit": Decimal("95000.00"),
             "used_limit": Decimal("5000.00"),
@@ -115,11 +116,12 @@ def create_credit_cards(db: Session, user: User):
         {
             "user_id": user.id,
             "bank_id": ccb_bank.id if ccb_bank else None,
-            "card_number": "5555555555554444",  # 测试卡号
+            "card_number": "4444",  # 只保存后4位
             "card_name": "建设银行龙卡信用卡",
             "card_type": "credit",
             "card_network": "MasterCard",
             "card_level": "金卡",
+            "bank_color": "#2563EB",  # 建设银行蓝色
             "credit_limit": Decimal("50000.00"),
             "available_limit": Decimal("48000.00"),
             "used_limit": Decimal("2000.00"),
@@ -141,11 +143,12 @@ def create_credit_cards(db: Session, user: User):
         {
             "user_id": user.id,
             "bank_id": spdb_bank.id if spdb_bank else None,
-            "card_number": "4000000000000002",  # 测试卡号
+            "card_number": "0002",  # 只保存后4位
             "card_name": "浦发银行AE白金卡",
             "card_type": "credit",
             "card_network": "American Express",
             "card_level": "白金卡",
+            "bank_color": "#7C3AED",  # 浦发银行紫色
             "credit_limit": Decimal("200000.00"),
             "available_limit": Decimal("190000.00"),
             "used_limit": Decimal("10000.00"),

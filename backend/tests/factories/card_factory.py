@@ -14,12 +14,25 @@ def build_card(**kwargs) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: 信用卡数据字典
     """
-    # 生成随机卡号（测试用）
-    card_number = kwargs.get("card_number") or f"4111111111{random.randint(100000, 999999)}"
+    # 生成随机卡号后4位（测试用）
+    card_number = kwargs.get("card_number") or f"{random.randint(1000, 9999)}"
     
     # 随机选择银行
     banks = ["招商银行", "建设银行", "工商银行", "农业银行", "中国银行", "交通银行", "浦发银行", "民生银行"]
     bank_name = kwargs.get("bank_name") or random.choice(banks)
+    
+    # 银行颜色映射
+    bank_colors = {
+        "招商银行": "#DC2626",
+        "建设银行": "#2563EB", 
+        "工商银行": "#DC2626",
+        "农业银行": "#16A34A",
+        "中国银行": "#DC2626",
+        "交通银行": "#2563EB",
+        "浦发银行": "#7C3AED",
+        "民生银行": "#059669"
+    }
+    bank_color = kwargs.get("bank_color") or bank_colors.get(bank_name, "#EF4444")
     
     # 生成卡片名称
     card_types = ["经典白金卡", "钻石卡", "金卡", "普卡", "无限卡"]
@@ -49,6 +62,7 @@ def build_card(**kwargs) -> Dict[str, Any]:
         "card_type": kwargs.get("card_type", "credit"),
         "card_network": kwargs.get("card_network") or random.choice(["VISA", "MasterCard", "银联"]),
         "card_level": kwargs.get("card_level") or random.choice(["普卡", "金卡", "白金卡", "钻石卡"]),
+        "bank_color": bank_color,
         "credit_limit": str(kwargs.get("credit_limit", Decimal("50000.00"))),
         "expiry_month": expiry_month,
         "expiry_year": expiry_year,
@@ -76,12 +90,13 @@ def build_simple_card(**kwargs) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: 简化的信用卡数据字典
     """
-    card_number = kwargs.get("card_number") or f"4111111111{random.randint(100000, 999999)}"
+    card_number = kwargs.get("card_number") or f"{random.randint(1000, 9999)}"
     
     return {
         "card_number": card_number,
         "card_name": kwargs.get("card_name", f"测试卡_{uuid.uuid4().hex[:8]}"),
         "bank_name": kwargs.get("bank_name", "测试银行"),
+        "bank_color": kwargs.get("bank_color", "#EF4444"),
         "credit_limit": str(kwargs.get("credit_limit", Decimal("10000.00"))),
         "expiry_month": kwargs.get("expiry_month", 12),
         "expiry_year": kwargs.get("expiry_year", 2027)
@@ -159,7 +174,7 @@ def build_cards_batch(count: int = 3, **kwargs) -> list[Dict[str, Any]]:
         card_kwargs = kwargs.copy()
         # 确保每张卡的卡号不同
         if "card_number" not in card_kwargs:
-            card_kwargs["card_number"] = f"4111111111{random.randint(100000, 999999)}"
+            card_kwargs["card_number"] = f"{random.randint(1000, 9999)}"
         # 第一张卡设为主卡
         if i == 0:
             card_kwargs["is_primary"] = True
@@ -175,6 +190,7 @@ CARD_TEMPLATES = {
         "card_name": "招商银行经典白金卡",
         "card_level": "白金卡",
         "card_network": "VISA",
+        "bank_color": "#DC2626",
         "credit_limit": "100000.00",
         "annual_fee": "580.00",
         "points_rate": "1.00",
@@ -187,6 +203,7 @@ CARD_TEMPLATES = {
         "card_name": "建设银行龙卡信用卡",
         "card_level": "金卡",
         "card_network": "银联",
+        "bank_color": "#2563EB",
         "credit_limit": "50000.00",
         "annual_fee": "200.00",
         "points_rate": "1.00",
@@ -199,12 +216,13 @@ CARD_TEMPLATES = {
         "card_name": "浦发银行AE白金卡",
         "card_level": "白金卡",
         "card_network": "American Express",
+        "bank_color": "#7C3AED",
         "credit_limit": "200000.00",
         "annual_fee": "3600.00",
-        "points_rate": "1.50",
-        "billing_date": 5,
-        "due_date": 25,  # 当月25号
-        "features": ["全球机场贵宾厅", "酒店升房", "租车优惠", "高端餐厅优惠"]
+        "points_rate": "2.00",
+        "billing_date": 15,
+        "due_date": 5,
+        "features": ["无限额度", "全球机场贵宾厅", "专属客服", "高端酒店权益"]
     }
 }
 

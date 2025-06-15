@@ -357,7 +357,7 @@ export type ChangePasswordRequest = {
 export type CreditCardCreate = {
   /** Card Name 卡片名称 */
   card_name: string;
-  /** Card Number 卡号 */
+  /** Card Number 卡号后4位 */
   card_number: string;
   /** Card Type 卡片类型 */
   card_type?: string;
@@ -365,6 +365,8 @@ export type CreditCardCreate = {
   card_network?: string | null;
   /** Card Level 卡片等级 */
   card_level?: string | null;
+  /** Bank Color 卡片颜色 */
+  bank_color?: string;
   /** Credit Limit 信用额度 */
   credit_limit: number | string;
   /** Expiry Month 有效期月份 */
@@ -415,6 +417,8 @@ export type CreditCardUpdate = {
   card_network?: string | null;
   /** Card Level 卡片等级 */
   card_level?: string | null;
+  /** Bank Color 卡片颜色 */
+  bank_color?: string | null;
   /** Credit Limit 信用额度 */
   credit_limit?: number | string | null;
   /** Available Limit 可用额度 */
