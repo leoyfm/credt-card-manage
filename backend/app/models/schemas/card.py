@@ -205,6 +205,7 @@ class CreditCardResponse(BaseModel):
     expiry_display: Optional[str] = Field(None, description="有效期显示", json_schema_extra={"example": "12/27"})
     is_expired: Optional[bool] = Field(None, description="是否已过期", json_schema_extra={"example": False})
     credit_utilization_rate: Optional[float] = Field(None, description="信用额度使用率", json_schema_extra={"example": 10.0})
+    interest_free_days: Optional[int] = Field(None, description="免息天数", json_schema_extra={"example": 45})
 
     @field_validator('credit_limit', 'available_limit', 'used_limit', 'annual_fee', 'points_rate', 'cashback_rate')
     @classmethod

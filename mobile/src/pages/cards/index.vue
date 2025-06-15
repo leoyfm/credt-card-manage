@@ -248,7 +248,7 @@ const creditCards = computed(() => {
       cardName: apiCard.card_name || '信用卡',
       cardType: apiCard.card_type || 'credit',
       cardLevel: getCardLevel(apiCard.card_type),
-      cardNumberLast4: apiCard.card_number || '0000',
+      cardNumberLast4: apiCard.card_number ? apiCard.card_number.slice(-4) : '****',
       expiryDate,
       creditLimit,
       usedAmount,
@@ -263,6 +263,7 @@ const creditCards = computed(() => {
       waiverCondition: getWaiverCondition(apiCard),
       waiverProgress,
       isActive: apiCard.status === 'active',
+      interestFreeDays: apiCard.interest_free_days || 0,
     }
   })
 })

@@ -495,6 +495,9 @@ class CardService:
             if card.credit_limit and float(card.credit_limit) > 0:
                 credit_utilization_rate = float(card.used_limit or 0) / float(card.credit_limit) * 100
             
+            # 计算免息天数
+            interest_free_days = self._calculate_card_interest_free_days(card)
+            
             response_data = {
                 'id': card.id,
                 'user_id': card.user_id,
@@ -504,6 +507,7 @@ class CardService:
                 'card_type': card.card_type,
                 'card_network': card.card_network,
                 'card_level': card.card_level,
+                'bank_color': card.bank_color,
                 'credit_limit': card.credit_limit,
                 'available_limit': card.available_limit,
                 'used_limit': card.used_limit,
@@ -526,7 +530,8 @@ class CardService:
                 'bank': bank_data,
                 'expiry_display': expiry_display,
                 'is_expired': is_expired,
-                'credit_utilization_rate': round(credit_utilization_rate, 2)
+                'credit_utilization_rate': round(credit_utilization_rate, 2),
+                'interest_free_days': interest_free_days
             }
             
             return CreditCardResponse(**response_data)
@@ -534,6 +539,121 @@ class CardService:
         except Exception as e:
             logger.error(f"构建信用卡响应对象失败: {str(e)}")
             raise
+
+    def _calculate_card_interest_free_days(self, card: CreditCard) -> int:
+        """计算单张信用卡的免息天数
+        
+        算法说明：
+        1. 从今天开始消费，计算到最晚还款日的天数
+        2. 考虑账单日和还款日的关系：
+           - 如果还款日 > 账单日：同月还款
+           - 如果还款日 < 账单日：跨月还款
+        3. 根据今天与账单日的关系，计算最优消费时机的免息天数
+        
+        Args:
+            card: 信用卡对象
+            
+        Returns:
+            int: 免息天数，如果没有账单日或还款日则返回0
+        """
+        try:
+            from datetime import datetime, timedelta
+            import calendar
+            
+            # 检查是否有账单日和还款日
+            if not card.billing_date or not card.due_date or card.status != 'active':
+                return 0
+            
+            billing_date = card.billing_date  # 账单日
+            due_date = card.due_date          # 还款日
+            today = datetime.now().date()
+            
+            # 计算当前月份的账单日和还款日
+            current_year = today.year
+            current_month = today.month
+            
+            # 构造当前月的账单日
+            try:
+                current_billing_date = datetime(current_year, current_month, billing_date).date()
+            except ValueError:
+                # 处理月末日期不存在的情况（如2月30日）
+                last_day = calendar.monthrange(current_year, current_month)[1]
+                current_billing_date = datetime(current_year, current_month, min(billing_date, last_day)).date()
+            
+            # 计算还款日期
+            if due_date >= billing_date:
+                # 同月还款：还款日在账单日当月或之后
+                try:
+                    current_due_date = datetime(current_year, current_month, due_date).date()
+                except ValueError:
+                    last_day = calendar.monthrange(current_year, current_month)[1]
+                    current_due_date = datetime(current_year, current_month, min(due_date, last_day)).date()
+            else:
+                # 跨月还款：还款日在账单日的下个月
+                next_month = current_month + 1
+                next_year = current_year
+                if next_month > 12:
+                    next_month = 1
+                    next_year += 1
+                
+                try:
+                    current_due_date = datetime(next_year, next_month, due_date).date()
+                except ValueError:
+                    last_day = calendar.monthrange(next_year, next_month)[1]
+                    current_due_date = datetime(next_year, next_month, min(due_date, last_day)).date()
+            
+            # 根据今天与账单日的关系计算免息天数
+            if today <= current_billing_date:
+                # 情况1：今天在账单日之前或当天
+                # 今天消费，在当前账单周期的还款日还款
+                interest_free_days = (current_due_date - today).days
+            else:
+                # 情况2：今天在账单日之后
+                # 今天消费，计入下个账单周期，在下个周期的还款日还款
+                
+                # 计算下个月的账单日
+                next_month = current_month + 1
+                next_year = current_year
+                if next_month > 12:
+                    next_month = 1
+                    next_year += 1
+                
+                try:
+                    next_billing_date = datetime(next_year, next_month, billing_date).date()
+                except ValueError:
+                    last_day = calendar.monthrange(next_year, next_month)[1]
+                    next_billing_date = datetime(next_year, next_month, min(billing_date, last_day)).date()
+                
+                # 计算下个周期的还款日
+                if due_date >= billing_date:
+                    # 同月还款
+                    try:
+                        next_due_date = datetime(next_year, next_month, due_date).date()
+                    except ValueError:
+                        last_day = calendar.monthrange(next_year, next_month)[1]
+                        next_due_date = datetime(next_year, next_month, min(due_date, last_day)).date()
+                else:
+                    # 跨月还款
+                    due_month = next_month + 1
+                    due_year = next_year
+                    if due_month > 12:
+                        due_month = 1
+                        due_year += 1
+                    
+                    try:
+                        next_due_date = datetime(due_year, due_month, due_date).date()
+                    except ValueError:
+                        last_day = calendar.monthrange(due_year, due_month)[1]
+                        next_due_date = datetime(due_year, due_month, min(due_date, last_day)).date()
+                
+                interest_free_days = (next_due_date - today).days
+            
+            # 确保免息天数不为负数
+            return max(0, interest_free_days)
+
+        except Exception as e:
+            logger.error(f"计算信用卡免息天数失败: {str(e)}")
+            return 0
 
     def _calculate_max_interest_free_days(self, user_id: UUID) -> int:
         """计算用户所有信用卡中的最长免息天数
@@ -571,91 +691,7 @@ class CardService:
             max_days = 0
             
             for card in cards:
-                billing_date = card.billing_date  # 账单日
-                due_date = card.due_date          # 还款日
-                
-                # 计算当前月份的账单日和还款日
-                current_year = today.year
-                current_month = today.month
-                
-                # 构造当前月的账单日
-                try:
-                    current_billing_date = datetime(current_year, current_month, billing_date).date()
-                except ValueError:
-                    # 处理月末日期不存在的情况（如2月30日）
-                    last_day = calendar.monthrange(current_year, current_month)[1]
-                    current_billing_date = datetime(current_year, current_month, min(billing_date, last_day)).date()
-                
-                # 计算还款日期
-                if due_date >= billing_date:
-                    # 同月还款：还款日在账单日当月或之后
-                    try:
-                        current_due_date = datetime(current_year, current_month, due_date).date()
-                    except ValueError:
-                        last_day = calendar.monthrange(current_year, current_month)[1]
-                        current_due_date = datetime(current_year, current_month, min(due_date, last_day)).date()
-                else:
-                    # 跨月还款：还款日在账单日的下个月
-                    next_month = current_month + 1
-                    next_year = current_year
-                    if next_month > 12:
-                        next_month = 1
-                        next_year += 1
-                    
-                    try:
-                        current_due_date = datetime(next_year, next_month, due_date).date()
-                    except ValueError:
-                        last_day = calendar.monthrange(next_year, next_month)[1]
-                        current_due_date = datetime(next_year, next_month, min(due_date, last_day)).date()
-                
-                # 根据今天与账单日的关系计算免息天数
-                if today <= current_billing_date:
-                    # 情况1：今天在账单日之前或当天
-                    # 今天消费，在当前账单周期的还款日还款
-                    interest_free_days = (current_due_date - today).days
-                else:
-                    # 情况2：今天在账单日之后
-                    # 今天消费，计入下个账单周期，在下个周期的还款日还款
-                    
-                    # 计算下个月的账单日
-                    next_month = current_month + 1
-                    next_year = current_year
-                    if next_month > 12:
-                        next_month = 1
-                        next_year += 1
-                    
-                    try:
-                        next_billing_date = datetime(next_year, next_month, billing_date).date()
-                    except ValueError:
-                        last_day = calendar.monthrange(next_year, next_month)[1]
-                        next_billing_date = datetime(next_year, next_month, min(billing_date, last_day)).date()
-                    
-                    # 计算下个周期的还款日
-                    if due_date >= billing_date:
-                        # 同月还款
-                        try:
-                            next_due_date = datetime(next_year, next_month, due_date).date()
-                        except ValueError:
-                            last_day = calendar.monthrange(next_year, next_month)[1]
-                            next_due_date = datetime(next_year, next_month, min(due_date, last_day)).date()
-                    else:
-                        # 跨月还款
-                        due_month = next_month + 1
-                        due_year = next_year
-                        if due_month > 12:
-                            due_month = 1
-                            due_year += 1
-                        
-                        try:
-                            next_due_date = datetime(due_year, due_month, due_date).date()
-                        except ValueError:
-                            last_day = calendar.monthrange(due_year, due_month)[1]
-                            next_due_date = datetime(due_year, due_month, min(due_date, last_day)).date()
-                    
-                    interest_free_days = (next_due_date - today).days
-                
-                # 确保免息天数不为负数
-                interest_free_days = max(0, interest_free_days)
+                interest_free_days = self._calculate_card_interest_free_days(card)
                 max_days = max(max_days, interest_free_days)
 
             return max_days

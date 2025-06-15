@@ -81,7 +81,7 @@
               :class="getInterestFreeDaysClass()"
             >
               <text class="mr-1">📅</text>
-              <text>{{ calculateInterestFreeDays() }}天</text>
+              <text>{{ card.interestFreeDays }}天</text>
             </view>
           </view>
         </view>
@@ -171,7 +171,7 @@
         </view>
 
         <view
-          v-if="calculateInterestFreeDays() <= 7 && card.usedAmount > 0"
+          v-if="(card.interestFreeDays || 0) <= 7 && card.usedAmount > 0"
           class="flex items-center space-x-2 p-2 bg-yellow-50 rounded-lg"
         >
           <text>📅</text>
@@ -276,21 +276,7 @@ const getUtilizationPercentage = () => {
   return (props.card.usedAmount / props.card.creditLimit) * 100
 }
 
-const calculateInterestFreeDays = () => {
-  // 简化计算，实际应该根据账单日和还款日计算
-  const today = new Date()
-  const dueDate = props.card.dueDate || 15
-  const currentMonth = today.getMonth()
-  const currentYear = today.getFullYear()
-
-  let nextDueDate = new Date(currentYear, currentMonth, dueDate)
-  if (nextDueDate <= today) {
-    nextDueDate = new Date(currentYear, currentMonth + 1, dueDate)
-  }
-
-  const diffTime = nextDueDate.getTime() - today.getTime()
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-}
+// calculateInterestFreeDays 函数已移除，直接使用 card.interestFreeDays
 
 const getRemainingDays = () => {
   // 模拟年费周期剩余天数
@@ -322,7 +308,7 @@ const getUtilizationBarClass = () => {
 }
 
 const getInterestFreeDaysClass = () => {
-  const days = calculateInterestFreeDays()
+  const days = props.card.interestFreeDays || 0
   if (days > 20) return 'text-green-600'
   if (days > 10) return 'text-yellow-600'
   return 'text-red-600'
