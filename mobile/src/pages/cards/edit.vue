@@ -504,6 +504,30 @@ const cardColors = ref([
   '#84CC16',
 ])
 
+// 卡片类型值映射函数 - 将API返回的值映射到选择器的值
+const mapCardTypeValue = (apiValue: string): string => {
+  // API可能返回的值映射到选择器的值
+  const mapping: Record<string, string> = {
+    VISA: 'visa',
+    visa: 'visa',
+    Visa: 'visa',
+    MASTERCARD: 'mastercard',
+    mastercard: 'mastercard',
+    MasterCard: 'mastercard',
+    UNIONPAY: 'unionpay',
+    unionpay: 'unionpay',
+    银联: 'unionpay',
+    AMERICAN_EXPRESS: 'americanexpress',
+    americanexpress: 'americanexpress',
+    'American Express': 'americanexpress',
+    AMEX: 'americanexpress',
+  }
+
+  const mappedValue = mapping[apiValue] || apiValue.toLowerCase()
+  console.log('卡片类型值映射:', apiValue, '->', mappedValue)
+  return mappedValue
+}
+
 // 选择器数据 - 正确的格式
 const cardTypeColumns = ref([
   { value: 'visa', label: 'Visa' },
@@ -813,81 +837,53 @@ const expiryDateRules = [
   },
 ]
 
-// 填充表单数据
-const fillFormData = (cardData: any) => {
-  if (!cardData) return
+// 监听银行数据变化，确保银行选择器正确显示
+watch(
+  () => banksData.value,
+  (newBanks) => {
+    console.log('银行数据变化:', newBanks)
 
-  console.log('填充表单数据:', cardData)
-
-  // 基本信息
-  formData.cardName = cardData.card_name || ''
-  formData.cardNumber = cardData.card_number || ''
-  formData.cardType = cardData.card_type || 'visa'
-  formData.bankColor = cardData.bank_color || '#3B82F6'
-  formData.creditLimit = cardData.credit_limit || 0
-  formData.usedAmount = cardData.used_limit || 0
-  formData.billDay = cardData.billing_date || 1
-  formData.dueDate = cardData.due_date || 1
-  formData.annualFee = cardData.annual_fee || 0
-  formData.pointsPerYuan = cardData.points_rate || 1
-  formData.isEnabled = cardData.status === 'active'
-
-  // 银行信息
-  if (cardData.bank_id) {
-    formData.selectedBankId = cardData.bank_id
-  }
-  if (cardData.bank_name) {
-    formData.bankName = cardData.bank_name
-  }
-
-  // 有效期处理
-  if (cardData.expiry_month && cardData.expiry_year) {
-    const month = String(cardData.expiry_month).padStart(2, '0')
-    const year = String(cardData.expiry_year).slice(-2)
-    formData.expiryDate = `${month}/${year}`
-  }
-
-  // 年费信息
-  if (cardData.fee_due_month) {
-    formData.annualFeeDate = [cardData.fee_due_month, 1]
-  }
-
-  // 年费类型从备注中解析
-  if (cardData.notes && cardData.notes.includes('年费类型:')) {
-    const notesParts = cardData.notes.split('年费类型:')[1]
-    if (notesParts) {
-      const feeType = notesParts.split('，')[0].trim()
-      formData.annualFeeType = feeType || '刚性年费'
-
-      // 解析年费条件
-      if (notesParts.includes('需刷卡') && notesParts.includes('次')) {
-        const match = notesParts.match(/需刷卡(\d+)次/)
-        if (match) {
-          formData.requiredSwipeCount = parseInt(match[1])
-        }
-      } else if (notesParts.includes('需刷卡') && notesParts.includes('元')) {
-        const match = notesParts.match(/需刷卡(\d+)元/)
-        if (match) {
-          formData.requiredSwipeAmount = parseInt(match[1])
-        }
-      } else if (notesParts.includes('需') && notesParts.includes('积分')) {
-        const match = notesParts.match(/需(\d+)积分/)
-        if (match) {
-          formData.requiredPoints = parseInt(match[1])
-        }
+    // 如果已经有选中的银行ID，但银行数据刚加载完成，重新验证
+    if (formData.selectedBankId && newBanks.length > 0) {
+      const bankExists = newBanks.find((bank: any) => bank.id === formData.selectedBankId)
+      if (bankExists) {
+        console.log('银行数据加载完成，银行ID验证通过:', bankExists)
+        // 强制触发选择器更新
+        formData.selectedBankId = formData.selectedBankId
+      } else {
+        console.log('警告：银行ID在新加载的列表中未找到')
       }
     }
-  } else {
-    formData.annualFeeType = cardData.fee_waivable ? '刷卡金额达标' : '刚性年费'
-  }
-}
+  },
+  { immediate: true },
+)
 
 // 监听信用卡数据变化，填充表单
 watch(
   () => cardResponse.value,
   (newResponse) => {
-    if (newResponse?.data) {
-      fillFormData(newResponse.data)
+    console.log('API响应数据变化:', newResponse)
+
+    if (newResponse) {
+      // 处理可能的数据包装格式
+      let cardData = null
+
+      if (newResponse.data) {
+        cardData = newResponse.data
+        console.log('从data字段获取卡片数据:', cardData)
+      } else if (newResponse.success && newResponse.data) {
+        cardData = newResponse.data
+        console.log('从包装格式获取卡片数据:', cardData)
+      } else {
+        cardData = newResponse
+        console.log('直接使用响应数据:', cardData)
+      }
+
+      if (cardData) {
+        fillFormData(cardData)
+      } else {
+        console.log('未找到有效的卡片数据')
+      }
     }
   },
   { immediate: true },
@@ -912,6 +908,150 @@ const handleDelete = () => {
       }
     },
   })
+}
+
+// 填充表单数据
+const fillFormData = (cardData: any) => {
+  if (!cardData) {
+    console.log('没有卡片数据，跳过填充')
+    return
+  }
+
+  console.log('开始填充表单数据:', cardData)
+
+  try {
+    // 基本信息
+    if (cardData.card_name) {
+      formData.cardName = cardData.card_name
+      console.log('设置卡片名称:', cardData.card_name)
+    }
+
+    if (cardData.card_number) {
+      formData.cardNumber = cardData.card_number
+      console.log('设置卡号:', cardData.card_number)
+    }
+
+    if (cardData.card_network) {
+      formData.cardType = mapCardTypeValue(cardData.card_network)
+      console.log('设置卡片类型:', cardData.card_network, '->', formData.cardType)
+    }
+
+    if (cardData.bank_color) {
+      formData.bankColor = cardData.bank_color
+      console.log('设置银行颜色:', cardData.bank_color)
+    }
+
+    if (cardData.credit_limit !== undefined) {
+      formData.creditLimit = Number(cardData.credit_limit) || 0
+      console.log('设置授信额度:', formData.creditLimit)
+    }
+
+    if (cardData.used_limit !== undefined) {
+      formData.usedAmount = Number(cardData.used_limit) || 0
+      console.log('设置已用额度:', formData.usedAmount)
+    }
+
+    if (cardData.billing_date !== undefined) {
+      formData.billDay = Number(cardData.billing_date) || 1
+      console.log('设置账单日:', formData.billDay)
+    }
+
+    if (cardData.due_date !== undefined) {
+      formData.dueDate = Number(cardData.due_date) || 1
+      console.log('设置还款日:', formData.dueDate)
+    }
+
+    if (cardData.annual_fee !== undefined) {
+      formData.annualFee = Number(cardData.annual_fee) || 0
+      console.log('设置年费:', formData.annualFee)
+    }
+
+    if (cardData.points_rate !== undefined) {
+      formData.pointsPerYuan = Number(cardData.points_rate) || 1
+      console.log('设置积分比率:', formData.pointsPerYuan)
+    }
+
+    if (cardData.status) {
+      formData.isEnabled = cardData.status === 'active'
+      console.log('设置启用状态:', formData.isEnabled)
+    }
+
+    // 银行信息
+    if (cardData.bank_id) {
+      formData.selectedBankId = cardData.bank_id
+      console.log('设置银行ID:', cardData.bank_id)
+
+      // 检查银行ID是否在银行列表中存在
+      const bankExists = banksData.value.find((bank: any) => bank.id === cardData.bank_id)
+      if (bankExists) {
+        console.log('银行ID在列表中找到:', bankExists)
+      } else {
+        console.log('警告：银行ID在列表中未找到，当前银行列表:', banksData.value)
+      }
+    }
+
+    // 处理银行名称 - 可能在不同的字段中
+    if (cardData.bank_name) {
+      formData.bankName = cardData.bank_name
+      console.log('设置银行名称:', cardData.bank_name)
+    } else if (cardData.bank && cardData.bank.bank_name) {
+      formData.bankName = cardData.bank.bank_name
+      console.log('从嵌套对象设置银行名称:', cardData.bank.bank_name)
+    }
+
+    // 有效期处理
+    if (cardData.expiry_month && cardData.expiry_year) {
+      const month = String(cardData.expiry_month).padStart(2, '0')
+      const year = String(cardData.expiry_year).slice(-2)
+      formData.expiryDate = `${month}/${year}`
+      console.log('设置有效期:', formData.expiryDate)
+    }
+
+    // 年费信息
+    if (cardData.fee_due_month) {
+      formData.annualFeeDate = [Number(cardData.fee_due_month), 1]
+      console.log('设置年费扣款时间:', formData.annualFeeDate)
+    }
+
+    // 年费类型从备注中解析
+    if (cardData.notes && cardData.notes.includes('年费类型:')) {
+      const notesParts = cardData.notes.split('年费类型:')[1]
+      if (notesParts) {
+        const feeType = notesParts.split('，')[0].trim()
+        formData.annualFeeType = feeType || '刚性年费'
+        console.log('从备注解析年费类型:', formData.annualFeeType)
+
+        // 解析年费条件
+        if (notesParts.includes('需刷卡') && notesParts.includes('次')) {
+          const match = notesParts.match(/需刷卡(\d+)次/)
+          if (match) {
+            formData.requiredSwipeCount = parseInt(match[1])
+            console.log('解析刷卡次数:', formData.requiredSwipeCount)
+          }
+        } else if (notesParts.includes('需刷卡') && notesParts.includes('元')) {
+          const match = notesParts.match(/需刷卡(\d+)元/)
+          if (match) {
+            formData.requiredSwipeAmount = parseInt(match[1])
+            console.log('解析刷卡金额:', formData.requiredSwipeAmount)
+          }
+        } else if (notesParts.includes('需') && notesParts.includes('积分')) {
+          const match = notesParts.match(/需(\d+)积分/)
+          if (match) {
+            formData.requiredPoints = parseInt(match[1])
+            console.log('解析所需积分:', formData.requiredPoints)
+          }
+        }
+      }
+    } else {
+      formData.annualFeeType = cardData.fee_waivable ? '刷卡金额达标' : '刚性年费'
+      console.log('根据fee_waivable设置年费类型:', formData.annualFeeType)
+    }
+
+    console.log('表单数据填充完成:', formData)
+  } catch (error) {
+    console.error('填充表单数据时出错:', error)
+    toast.error('数据加载异常，请重试')
+  }
 }
 </script>
 
