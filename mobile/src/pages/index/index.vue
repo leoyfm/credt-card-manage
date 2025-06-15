@@ -246,6 +246,7 @@ const creditCards = computed(() => {
       waiverProgress: 0, // 需要根据实际业务逻辑计算
       annualFee: Number(apiCard.annual_fee) || 0,
       dueDate: apiCard.due_date || 15,
+      interestFreeDays: apiCard.interest_free_days || 0,
     }
     return card
   })
