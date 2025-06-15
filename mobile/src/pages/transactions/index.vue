@@ -191,7 +191,7 @@
 
     <!-- 底部操作栏 -->
     <view
-      class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom"
+      class="bottom-actions fixed left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom z-10"
     >
       <view class="flex space-x-3">
         <button class="btn-secondary flex-1" @click="exportRecords">导出记录</button>
@@ -200,7 +200,7 @@
     </view>
 
     <!-- 底部安全区域 -->
-    <view class="h-20"></view>
+    <view class="h-20 pb-safe"></view>
   </view>
 </template>
 
@@ -212,8 +212,21 @@ defineOptions({
   name: 'TransactionsPage',
 })
 
+// 定义交易记录类型
+interface Transaction {
+  id: string
+  merchantName: string
+  amount: number
+  category: string
+  transactionType: string
+  transactionDate: string
+  installment: number
+  cardId: string
+  description: string
+}
+
 // 响应式数据
-const transactionList = ref<any[]>([])
+const transactionList = ref<Transaction[]>([])
 const cardList = ref<any[]>([])
 const searchKeyword = ref('')
 const activeFilters = ref<string[]>([])
@@ -254,13 +267,13 @@ const categoryOptions = [
 
 // 计算属性
 const filteredTransactions = computed(() => {
-  let filtered: any[] = transactionList.value
+  let filtered: Transaction[] = transactionList.value
 
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     filtered = filtered.filter(
-      (t: any) =>
+      (t: Transaction) =>
         t.merchantName.toLowerCase().includes(keyword) ||
         t.description.toLowerCase().includes(keyword) ||
         t.category.toLowerCase().includes(keyword),
@@ -270,19 +283,19 @@ const filteredTransactions = computed(() => {
   // 卡片过滤
   if (cardFilterIndex.value > 0) {
     const selectedCard = cardOptions.value[cardFilterIndex.value]
-    filtered = filtered.filter((t: any) => t.cardId === selectedCard.value)
+    filtered = filtered.filter((t: Transaction) => t.cardId === selectedCard.value)
   }
 
   // 分类过滤
   if (categoryFilterIndex.value > 0) {
     const selectedCategory = categoryOptions[categoryFilterIndex.value]
-    filtered = filtered.filter((t: any) => t.category === selectedCategory.value)
+    filtered = filtered.filter((t: Transaction) => t.category === selectedCategory.value)
   }
 
   // 日期过滤
   if (dateFilter.value) {
     const selectedDate = new Date(dateFilter.value)
-    filtered = filtered.filter((t: any) => {
+    filtered = filtered.filter((t: Transaction) => {
       const transactionDate = new Date(t.transactionDate)
       return transactionDate.toDateString() === selectedDate.toDateString()
     })
@@ -293,7 +306,7 @@ const filteredTransactions = computed(() => {
     switch (filter) {
       case 'this_month':
         const thisMonth = new Date()
-        filtered = filtered.filter((t: any) => {
+        filtered = filtered.filter((t: Transaction) => {
           const transactionDate = new Date(t.transactionDate)
           return (
             transactionDate.getMonth() === thisMonth.getMonth() &&
@@ -304,7 +317,7 @@ const filteredTransactions = computed(() => {
       case 'last_month':
         const lastMonth = new Date()
         lastMonth.setMonth(lastMonth.getMonth() - 1)
-        filtered = filtered.filter((t: any) => {
+        filtered = filtered.filter((t: Transaction) => {
           const transactionDate = new Date(t.transactionDate)
           return (
             transactionDate.getMonth() === lastMonth.getMonth() &&
@@ -313,10 +326,10 @@ const filteredTransactions = computed(() => {
         })
         break
       case 'large_amount':
-        filtered = filtered.filter((t: any) => t.amount >= 1000)
+        filtered = filtered.filter((t: Transaction) => t.amount >= 1000)
         break
       case 'installment':
-        filtered = filtered.filter((t: any) => t.installment > 0)
+        filtered = filtered.filter((t: Transaction) => t.installment > 0)
         break
     }
   })
@@ -325,7 +338,7 @@ const filteredTransactions = computed(() => {
 })
 
 const groupedTransactions = computed(() => {
-  const groups = {}
+  const groups: Record<string, Transaction[]> = {}
   filteredTransactions.value.forEach((transaction) => {
     const date = transaction.transactionDate.split(' ')[0] // 获取日期部分
     if (!groups[date]) {
@@ -335,7 +348,7 @@ const groupedTransactions = computed(() => {
   })
 
   // 按日期倒序排列
-  const sortedGroups = {}
+  const sortedGroups: Record<string, Transaction[]> = {}
   Object.keys(groups)
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
     .forEach((date) => {
@@ -578,5 +591,18 @@ const exportRecords = () => {
     transform: scale(0.98);
     background: #f8f9ff;
   }
+}
+
+.bottom-actions {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  /* 使用 UniApp 提供的 CSS 变量来正确定位底部操作栏 */
+  bottom: var(--window-bottom);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+  /* 为底部安全区域添加额外的高度，确保内容不被遮挡 */
+  height: calc(80px + var(--window-bottom));
 }
 </style>
