@@ -10,6 +10,11 @@
 
 <template>
   <view class="fees-page">
+    <!-- 状态栏占位 -->
+    <view
+      :style="{ height: safeAreaInsets?.top + 'px' }"
+      class="bg-gradient-to-r from-purple-500 to-pink-500"
+    ></view>
     <!-- 未登录状态 -->
     <view
       v-if="!userStore.isLoggedIn"
@@ -37,7 +42,7 @@
         <view class="text-center mb-4">
           <text class="text-lg font-semibold opacity-90">加载中...</text>
         </view>
-        <view class="flex justify-around">
+        <view class="flex justify-around mb-4">
           <view class="text-center">
             <view class="w-16 h-8 bg-white bg-opacity-20 rounded mb-2"></view>
             <text class="text-sm opacity-80">年费总额</text>
@@ -73,7 +78,7 @@
         <view class="text-center mb-4">
           <text class="text-lg font-semibold opacity-90">本年费用支出</text>
         </view>
-        <view class="flex justify-around">
+        <view class="flex justify-around mb-4">
           <view class="text-center">
             <text class="text-2xl font-bold block">¥{{ summary.totalAnnualFees }}</text>
             <text class="text-sm opacity-80">年费总额</text>
@@ -317,6 +322,15 @@ import type * as API from '@/service/app/types'
 defineOptions({
   name: 'FeesPage',
 })
+
+// 获取屏幕边界到安全区域距离
+let safeAreaInsets: any = null
+try {
+  const systemInfo = uni.getSystemInfoSync()
+  safeAreaInsets = systemInfo.safeAreaInsets
+} catch (e) {
+  console.warn('获取安全区域失败', e)
+}
 
 // 获取用户状态
 const userStore = useUserStore()
