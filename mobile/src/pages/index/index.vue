@@ -123,9 +123,7 @@
           :card="card"
           :isBestCard="index === 0"
           @cardClick="handleCardClick"
-          @edit="handleEditCard"
-          @delete="handleDeleteCard"
-          @toggleActive="handleToggleActiveCard"
+          @cardUpdated="refetchCards"
         />
       </view>
     </view>
@@ -176,11 +174,15 @@ const {
 } = useQuery({
   ...getCreditCardsApiV1UserCardsGetQueryOptions({
     params: {
-      page: 1,
-      page_size: 20,
+      // keyword: '',
+      // status: 'all',
+      // bank_id: '',
+      // card_type: '',
+      // is_primary: false,
+      // expiring_soon: false,
     },
   }),
-  enabled: computed(() => userStore.isLoggedIn), // 只有在已登录时才启用查询
+  enabled: userStore.isLoggedIn, // 只有在已登录时才启用查询
 })
 
 // 监听用户登录状态变化，登录成功后自动刷新数据
@@ -276,47 +278,6 @@ const getAnnualFeeStatus = (apiCard: any) => {
 const handleCardClick = (cardId: string) => {
   console.log('Card clicked:', cardId)
   // 可以导航到卡片详情页
-}
-
-const handleEditCard = (card: CreditCardType) => {
-  console.log('Edit card:', card)
-  // 可以导航到编辑页面
-  uni.showToast({
-    title: '编辑功能开发中',
-    icon: 'none',
-  })
-}
-
-const handleDeleteCard = (cardId: string) => {
-  console.log('Delete card:', cardId)
-  uni.showModal({
-    title: '确认删除',
-    content: '确定要删除这张信用卡吗？',
-    success: (res) => {
-      if (res.confirm) {
-        const index = creditCards.value.findIndex((card) => card.id === cardId)
-        if (index > -1) {
-          creditCards.value.splice(index, 1)
-          uni.showToast({
-            title: '删除成功',
-            icon: 'success',
-          })
-        }
-      }
-    },
-  })
-}
-
-const handleToggleActiveCard = (cardId: string) => {
-  console.log('Toggle active card:', cardId)
-  const card = creditCards.value.find((card) => card.id === cardId)
-  if (card) {
-    card.isActive = !card.isActive
-    uni.showToast({
-      title: card.isActive ? '已启用' : '已停用',
-      icon: 'success',
-    })
-  }
 }
 
 const handleAddCard = () => {
