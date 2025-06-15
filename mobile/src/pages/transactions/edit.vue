@@ -506,7 +506,7 @@ watch(
         { value: '', label: '请选择信用卡' },
         ...cards.map((card: any) => ({
           value: card.id,
-          label: `${card.bank?.bank_name || card.bank_name || '未知银行'}${card.card_name || ''}(${card.card_number_last4 || '****'})`,
+          label: `${card.card_name || ''}(${card.card_number.slice(-4)})`,
         })),
       ]
 
