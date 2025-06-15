@@ -50,7 +50,7 @@ export default defineUniPages({
         iconPath: 'static/tabbar/example.png',
         selectedIconPath: 'static/tabbar/exampleHL.png',
         pagePath: 'pages/fees/index',
-        text: '费用',
+        text: '年费',
       },
       {
         iconPath: 'static/tabbar/personal.png',
