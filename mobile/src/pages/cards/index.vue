@@ -34,27 +34,49 @@
       </view>
 
       <!-- 筛选栏 -->
-      <view class="filter-bar bg-white px-4 py-3 border-b border-gray-100">
-        <view class="flex space-x-3">
-          <view
-            v-for="filter in filterOptions"
-            :key="filter.key"
-            class="filter-item px-3 py-1 rounded-full text-sm transition-all"
-            :class="
-              activeFilter === filter.key ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'
-            "
-            @click="handleFilter(filter.key)"
-          >
-            {{ filter.label }}
-          </view>
+      <view class="filter-section bg-white px-4 py-4 border-b border-gray-100">
+        <!-- 筛选标签 -->
+        <view class="filter-tabs mb-3">
+          <scroll-view class="filter-scroll" :scroll-x="true" :show-scrollbar="false">
+            <view class="filter-container">
+              <view
+                v-for="filter in filterOptions"
+                :key="filter.key"
+                class="filter-tag"
+                :class="[
+                  activeFilter === filter.key ? 'filter-tag-active' : 'filter-tag-normal',
+                  filter.key === 'fee_due' ? 'filter-tag-warning' : '',
+                  filter.key === 'high_limit' ? 'filter-tag-premium' : '',
+                ]"
+                @click="handleFilter(filter.key)"
+              >
+                <text class="filter-icon">{{ getFilterIcon(filter.key) }}</text>
+                <text class="filter-text">{{ filter.label }}</text>
+                <text v-if="getFilterCount(filter.key) > 0" class="filter-count">
+                  {{ getFilterCount(filter.key) }}
+                </text>
+              </view>
+            </view>
+          </scroll-view>
         </view>
-      </view>
 
-      <!-- 统计信息 -->
-      <view class="stats-bar bg-blue-50 px-4 py-3">
-        <view class="flex justify-between text-sm">
-          <text class="text-gray-600">共 {{ filteredCards.length }} 张卡片</text>
-          <text class="text-blue-600">总额度 ¥{{ formatMoney(totalCreditLimit) }}</text>
+        <!-- 统计信息栏 -->
+        <view class="stats-summary">
+          <view class="stats-item">
+            <text class="stats-label">共</text>
+            <text class="stats-value">{{ filteredCards.length }}</text>
+            <text class="stats-label">张卡片</text>
+          </view>
+          <view class="stats-divider"></view>
+          <view class="stats-item">
+            <text class="stats-label">总额度</text>
+            <text class="stats-value stats-amount">¥{{ formatMoney(totalCreditLimit) }}</text>
+          </view>
+          <view class="stats-divider"></view>
+          <view class="stats-item">
+            <text class="stats-label">可用额度</text>
+            <text class="stats-value stats-available">¥{{ formatMoney(totalAvailableLimit) }}</text>
+          </view>
         </view>
       </view>
 
@@ -283,6 +305,10 @@ const totalCreditLimit = computed(() => {
   return filteredCards.value.reduce((sum, card) => sum + card.creditLimit, 0)
 })
 
+const totalAvailableLimit = computed(() => {
+  return filteredCards.value.reduce((sum, card) => sum + card.availableAmount, 0)
+})
+
 // 页面生命周期
 onMounted(() => {
   // 如果未登录，跳转到登录页
@@ -415,6 +441,35 @@ const getWaiverCondition = (apiCard: any): string => {
   return '条件减免'
 }
 
+const getFilterIcon = (filter: string): string => {
+  const icons = {
+    all: '🔍',
+    active: '✅',
+    inactive: '❌',
+    high_limit: '💳',
+    fee_due: '💸',
+  }
+  return icons[filter] || '❓'
+}
+
+const getFilterCount = (filter: string): number => {
+  const allCards = creditCards.value
+  switch (filter) {
+    case 'all':
+      return allCards.length
+    case 'active':
+      return allCards.filter((card) => card.isActive).length
+    case 'inactive':
+      return allCards.filter((card) => !card.isActive).length
+    case 'high_limit':
+      return allCards.filter((card) => card.creditLimit >= 100000).length
+    case 'fee_due':
+      return allCards.filter((card) => card.annualFeeStatus === 'pending').length
+    default:
+      return 0
+  }
+}
+
 // 导航函数
 const goToLogin = () => {
   uni.navigateTo({ url: '/pages/login/index' })
@@ -488,5 +543,155 @@ const importCards = () => {
 
 .empty-state {
   margin-top: 10vh;
+}
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-tabs {
+  width: 100%;
+}
+
+.filter-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.filter-container {
+  display: inline-flex;
+  gap: 12px;
+  padding: 0 4px;
+  min-width: 100%;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: fit-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.filter-tag-active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+  .filter-count {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+}
+
+.filter-tag-normal {
+  border-color: #e5e7eb;
+  background-color: white;
+  color: #6b7280;
+
+  &:hover {
+    border-color: #d1d5db;
+    background-color: #f9fafb;
+  }
+}
+
+.filter-tag-warning {
+  border-color: #f59e0b;
+  background-color: #fef3c7;
+  color: #d97706;
+
+  &.filter-tag-active {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+  }
+}
+
+.filter-tag-premium {
+  border-color: #8b5cf6;
+  background-color: #f3e8ff;
+  color: #7c3aed;
+
+  &.filter-tag-active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+  }
+}
+
+.filter-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.filter-text {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.filter-count {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.stats-summary {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 16px 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stats-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.stats-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.stats-amount {
+  color: #667eea;
+}
+
+.stats-available {
+  color: #059669;
+}
+
+.stats-divider {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, transparent, #cbd5e1, transparent);
+  margin: 0 16px;
 }
 </style>
