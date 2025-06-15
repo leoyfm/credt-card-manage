@@ -90,6 +90,14 @@
       }
     },
     {
+      "path": "pages/cards/edit",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "编辑信用卡"
+      }
+    },
+    {
       "path": "pages/cards/index",
       "type": "page",
       "style": {

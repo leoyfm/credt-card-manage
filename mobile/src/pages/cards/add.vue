@@ -14,13 +14,14 @@
       title="添加信用卡"
       left-text="返回"
       left-arrow
-      right-text="保存"
+      :right-text="createCardMutation.isPending.value ? '保存中...' : '保存'"
       fixed
       placeholder
       safe-area-inset-top
       custom-style="height: 60px; line-height: 60px;"
       @click-left="handleBack"
       @click-right="handleSave"
+      :right-disabled="createCardMutation.isPending.value"
     />
 
     <!-- 信用卡预览 -->
@@ -100,11 +101,19 @@
           :columns="bankColumns"
           type="radio"
           required
-          placeholder="请选择发卡银行"
+          :placeholder="isBanksLoading ? '加载银行列表中...' : '请选择发卡银行'"
           prop="selectedBankId"
           :rules="[{ required: true, message: '请选择发卡银行' }]"
+          :disabled="isBanksLoading || isBanksError"
           @change="onBankChange"
         />
+
+        <!-- 银行列表加载错误提示 -->
+        <wd-cell v-if="isBanksError" custom>
+          <view class="text-red-500 text-sm">
+            <text>银行列表加载失败，请检查网络连接</text>
+          </view>
+        </wd-cell>
 
         <wd-input
           label="卡片名称"
@@ -310,7 +319,10 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useToast } from 'wot-design-uni'
 import { smartGoBack } from '@/utils'
-import { getBanksApiV1UserCardsBanksListGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
+import {
+  getBanksApiV1UserCardsBanksListGetQueryOptions,
+  useCreateCreditCardApiV1UserCardsPostMutation,
+} from '@/service/app/v1Yonghugongneng.vuequery'
 import type { CreditCard } from '@/types/card'
 import type * as API from '@/service/app/types'
 
@@ -495,33 +507,57 @@ const handleSave = () => {
     .validate()
     .then(({ valid, errors }) => {
       if (valid) {
-        // 构建信用卡对象
-        const newCard: Partial<CreditCard> = {
-          id: Date.now().toString(),
-          bankName: formData.bankName,
-          cardName: formData.cardName,
-          cardType: formData.cardType as any,
-          cardNumberLast4: formData.cardNumber.slice(-4),
-          creditLimit: formData.creditLimit,
-          usedAmount: formData.usedAmount,
-          availableAmount: formData.creditLimit - formData.usedAmount,
-          isActive: formData.isEnabled,
-          annualFeeStatus: 'pending',
-          feeType: 'waivable',
-          waiverProgress: 0,
-          annualFee: formData.annualFee,
-          dueDate: formData.dueDate,
-          bankColor: formData.bankColor,
-          bankCode: formData.bankName.charAt(0),
+        // 解析有效期 MM/YY 格式
+        const [monthStr, yearStr] = formData.expiryDate.split('/')
+        const expiryMonth = parseInt(monthStr, 10)
+        const expiryYear = parseInt(yearStr, 10)
+
+        // 将YY转换为完整年份
+        const currentYear = new Date().getFullYear()
+        const currentCentury = Math.floor(currentYear / 100) * 100
+        let fullYear = currentCentury + expiryYear
+        if (expiryYear < currentYear % 100) {
+          fullYear += 100
         }
 
-        console.log('Saving card:', newCard)
+        // 构建API请求数据
+        const cardData: API.CreditCardCreate = {
+          card_name: formData.cardName,
+          card_number: formData.cardNumber, // 后4位
+          card_type: formData.cardType,
+          bank_color: formData.bankColor,
+          credit_limit: formData.creditLimit,
+          expiry_month: expiryMonth,
+          expiry_year: fullYear,
+          billing_date: formData.billDay,
+          due_date: formData.dueDate,
+          annual_fee: formData.annualFee,
+          fee_waivable: formData.annualFeeType !== '刚性年费',
+          fee_auto_deduct: true,
+          fee_due_month: Array.isArray(formData.annualFeeDate) ? formData.annualFeeDate[0] : 1,
+          features: [], // 可以根据需要添加特色功能
+          points_rate: formData.pointsPerYuan,
+          cashback_rate: 0, // 可以根据需要设置
+          is_primary: true, // 默认为主卡
+          notes: `年费类型: ${formData.annualFeeType}${
+            formData.annualFeeType === '刷卡次数达标'
+              ? `，需刷卡${formData.requiredSwipeCount}次`
+              : formData.annualFeeType === '刷卡金额达标'
+                ? `，需刷卡${formData.requiredSwipeAmount}元`
+                : formData.annualFeeType === '积分兑换'
+                  ? `，需${formData.requiredPoints}积分`
+                  : ''
+          }`,
+          bank_id: formData.selectedBankId || null,
+          bank_name: formData.selectedBankId ? null : formData.bankName,
+        }
 
-        toast.success('保存成功')
+        console.log('准备创建信用卡:', cardData)
 
-        setTimeout(() => {
-          uni.navigateBack()
-        }, 1500)
+        // 调用API创建信用卡
+        createCardMutation.mutate({
+          body: cardData,
+        })
       } else {
         console.log('表单校验失败:', errors)
         // 显示第一个错误信息
@@ -686,6 +722,23 @@ const expiryDateRules = [
     message: '请输入正确的有效期格式 (MM/YY)',
   },
 ]
+
+// 创建信用卡的mutation
+const createCardMutation = useCreateCreditCardApiV1UserCardsPostMutation({
+  onSuccess: (response) => {
+    console.log('创建信用卡成功:', response)
+    toast.success('信用卡添加成功！')
+
+    // 延迟返回上一页，让用户看到成功提示
+    setTimeout(() => {
+      smartGoBack()
+    }, 1500)
+  },
+  onError: (error) => {
+    console.error('创建信用卡失败:', error)
+    toast.error('添加信用卡失败，请重试')
+  },
+})
 </script>
 
 <style lang="scss" scoped>

@@ -76,12 +76,20 @@
               </view>
             </view>
           </view>
-          <view class="text-right">
-            <view class="flex items-center">
-              <text class="text-sm font-semibold" :class="getCardStatusClass(card.isActive)">
-                {{ card.isActive ? '正常' : '停用' }}
-              </text>
-              <text class="text-gray-400 ml-2">›</text>
+          <view class="flex items-center space-x-2">
+            <view
+              class="edit-btn w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center"
+              @click.stop="editCard(card.id)"
+            >
+              <text class="text-blue-500 text-sm">✏️</text>
+            </view>
+            <view class="text-right">
+              <view class="flex items-center">
+                <text class="text-sm font-semibold" :class="getCardStatusClass(card.isActive)">
+                  {{ card.isActive ? '正常' : '停用' }}
+                </text>
+                <text class="text-gray-400 ml-2">›</text>
+              </view>
             </view>
           </view>
         </view>
@@ -369,6 +377,10 @@ const importCards = () => {
     title: '功能开发中',
     icon: 'none',
   })
+}
+
+const editCard = (cardId: string) => {
+  uni.navigateTo({ url: `/pages/cards/edit?id=${cardId}` })
 }
 </script>
 
