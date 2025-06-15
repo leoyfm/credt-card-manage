@@ -52,6 +52,10 @@
             <text class="text-xs opacity-75">有效期至</text>
             <text class="text-sm block">{{ formData.expiryDate || '12/25' }}</text>
           </view>
+          <view>
+            <text class="text-xs opacity-75">年费扣款</text>
+            <text class="text-sm block">{{ annualFeeDateDisplay }}</text>
+          </view>
           <view class="w-8 h-8 bg-white bg-opacity-20 rounded flex items-center justify-center">
             <text class="text-white text-xs">{{ getCardTypeIcon(formData.cardType) }}</text>
           </view>
@@ -60,7 +64,7 @@
     </view>
 
     <!-- 表单内容 -->
-    <view class="form-content">
+    <wd-form ref="form" :model="formData">
       <!-- 个性化设置 -->
       <view class="form-section">
         <view class="section-title">
@@ -97,6 +101,8 @@
           type="radio"
           required
           placeholder="请选择发卡银行"
+          prop="selectedBankId"
+          :rules="[{ required: true, message: '请选择发卡银行' }]"
           @change="onBankChange"
         />
 
@@ -106,22 +112,34 @@
           placeholder="请输入卡片名称"
           required
           clearable
+          prop="cardName"
+          :rules="[{ required: true, message: '请输入卡片名称' }]"
         />
 
         <wd-input
           label="卡号"
           v-model="formData.cardNumber"
-          placeholder="请输入完整卡号"
+          placeholder="请输入卡号后四位"
           clearable
-          :maxlength="19"
+          :maxlength="4"
+          prop="cardNumber"
+          :rules="[{ required: true, message: '请输入卡号' }]"
         />
 
-        <wd-datetime-picker
-          label="有效期至"
+        <wd-input
+          label="有效期"
           v-model="formData.expiryDate"
-          placeholder="请选择有效期"
-          type="date"
-        />
+          placeholder="请输入有效期 (如: 06/24)"
+          required
+          clearable
+          :maxlength="5"
+          prop="expiryDate"
+          :rules="expiryDateRules"
+        >
+          <template #suffix>
+            <text class="text-xs text-gray-500">MM/YY</text>
+          </template>
+        </wd-input>
 
         <wd-select-picker
           label="卡片类型"
@@ -129,6 +147,8 @@
           :columns="cardTypeColumns"
           type="radio"
           required
+          prop="cardType"
+          :rules="[{ required: true, message: '请选择卡片类型' }]"
           @change="onCardTypeChange"
         />
       </view>
@@ -144,6 +164,7 @@
           v-model.number="formData.creditLimit"
           placeholder="0"
           type="number"
+          prop="creditLimit"
         />
 
         <wd-input
@@ -151,6 +172,7 @@
           v-model.number="formData.usedAmount"
           placeholder="0"
           type="number"
+          prop="usedAmount"
         />
       </view>
 
@@ -165,6 +187,7 @@
           v-model="formData.billDay"
           :columns="billDayColumns"
           type="radio"
+          prop="billDay"
           @change="onBillDayChange"
         />
 
@@ -173,6 +196,7 @@
           v-model="formData.dueDate"
           :columns="dueDayColumns"
           type="radio"
+          prop="dueDate"
           @change="onDueDayChange"
         />
       </view>
@@ -188,6 +212,7 @@
           v-model.number="formData.annualFee"
           placeholder="0"
           type="number"
+          prop="annualFee"
         >
           <template #suffix>
             <text class="text-sm text-gray-500">免首年年费</text>
@@ -199,6 +224,7 @@
           v-model="formData.annualFeeType"
           :columns="annualFeeTypeColumns"
           type="radio"
+          prop="annualFeeType"
           @change="onAnnualFeeTypeChange"
         />
 
@@ -209,6 +235,7 @@
           v-model.number="formData.requiredSwipeCount"
           placeholder="请输入所需刷卡次数"
           type="number"
+          prop="requiredSwipeCount"
         />
 
         <wd-input
@@ -217,6 +244,7 @@
           v-model.number="formData.requiredSwipeAmount"
           placeholder="请输入所需刷卡金额"
           type="number"
+          prop="requiredSwipeAmount"
         />
 
         <wd-input
@@ -225,6 +253,7 @@
           v-model.number="formData.requiredPoints"
           placeholder="请输入所需积分"
           type="number"
+          prop="requiredPoints"
         />
 
         <wd-cell v-if="formData.annualFeeType === '积分兑换'" title="积分兑换比率" custom>
@@ -236,6 +265,7 @@
               type="number"
               style="width: 80px"
               no-border
+              prop="pointsPerYuan"
             />
             <text class="text-sm text-gray-600">积分</text>
           </view>
@@ -250,29 +280,25 @@
               type="number"
               style="width: 80px"
               no-border
+              prop="yuanPerPoint"
             />
             <text class="text-sm text-gray-600">元</text>
           </view>
         </wd-cell>
 
-        <wd-datetime-picker
-          label="年费开始时间"
-          v-model="formData.annualFeeStartDate"
-          placeholder="请选择年费开始时间"
-          type="date"
-        />
-
-        <wd-datetime-picker
-          label="年费结束时间"
-          v-model="formData.annualFeeEndDate"
-          placeholder="请选择年费结束时间"
-          type="date"
+        <wd-picker
+          label="年费扣款时间"
+          v-model="formData.annualFeeDate"
+          :columns="annualFeeDateColumns"
+          placeholder="请选择年费扣款时间"
+          prop="annualFeeDate"
+          @change="onAnnualFeeDateChange"
         />
       </view>
 
       <!-- 底部间距 -->
       <view class="h-20"></view>
-    </view>
+    </wd-form>
   </view>
 
   <!-- Toast 组件 -->
@@ -290,6 +316,9 @@ import type * as API from '@/service/app/types'
 
 const toast = useToast()
 
+// 表单引用
+const form = ref()
+
 // 表单数据
 const formData = reactive({
   selectedBankId: '', // 选中的银行ID
@@ -297,15 +326,14 @@ const formData = reactive({
   cardName: '全币种国际卡',
   cardNumber: '',
   cardType: 'visa',
-  expiryDate: '',
+  expiryDate: '', // 有效期 MM/YY 格式
   creditLimit: 0,
   usedAmount: 0,
   billDay: 1,
   dueDate: 1,
   annualFee: 0,
   annualFeeType: '刚性年费',
-  annualFeeStartDate: '',
-  annualFeeEndDate: '',
+  annualFeeDate: [1, 1], // 年费扣款时间（月日）- 默认1月1日
   // 年费达标条件
   requiredSwipeCount: 0,
   requiredSwipeAmount: 0,
@@ -355,6 +383,15 @@ const bankColumns = computed(() => {
   }))
 })
 
+// 年费扣款时间显示格式
+const annualFeeDateDisplay = computed(() => {
+  if (Array.isArray(formData.annualFeeDate) && formData.annualFeeDate.length === 2) {
+    const [month, day] = formData.annualFeeDate
+    return `${month}月${day}日`
+  }
+  return '请选择'
+})
+
 // 卡片颜色选项
 const cardColors = ref([
   '#3B82F6',
@@ -394,6 +431,20 @@ const annualFeeTypeColumns = ref([
   { value: '刷卡次数达标', label: '刷卡次数达标' },
   { value: '刷卡金额达标', label: '刷卡金额达标' },
   { value: '积分兑换', label: '积分兑换' },
+])
+
+// 年费扣款时间选择器数据 - 月日选择
+const annualFeeDateColumns = ref([
+  // 月份列
+  Array.from({ length: 12 }, (_, i) => ({
+    value: i + 1,
+    label: `${i + 1}月`,
+  })),
+  // 日期列
+  Array.from({ length: 31 }, (_, i) => ({
+    value: i + 1,
+    label: `${i + 1}日`,
+  })),
 ])
 
 // 获取卡片类型图标
@@ -439,49 +490,148 @@ const handleBack = () => {
 }
 
 const handleSave = () => {
-  // 验证必填字段
-  if (!formData.cardName) {
-    toast.error('请填写卡片名称')
-    return
-  }
+  // 使用表单校验
+  form.value
+    .validate()
+    .then(({ valid, errors }) => {
+      if (valid) {
+        // 构建信用卡对象
+        const newCard: Partial<CreditCard> = {
+          id: Date.now().toString(),
+          bankName: formData.bankName,
+          cardName: formData.cardName,
+          cardType: formData.cardType as any,
+          cardNumberLast4: formData.cardNumber.slice(-4),
+          creditLimit: formData.creditLimit,
+          usedAmount: formData.usedAmount,
+          availableAmount: formData.creditLimit - formData.usedAmount,
+          isActive: formData.isEnabled,
+          annualFeeStatus: 'pending',
+          feeType: 'waivable',
+          waiverProgress: 0,
+          annualFee: formData.annualFee,
+          dueDate: formData.dueDate,
+          bankColor: formData.bankColor,
+          bankCode: formData.bankName.charAt(0),
+        }
 
-  if (!formData.cardNumber) {
-    toast.error('请填写卡号')
-    return
-  }
+        console.log('Saving card:', newCard)
 
-  // 构建信用卡对象
-  const newCard: Partial<CreditCard> = {
-    id: Date.now().toString(),
-    bankName: formData.bankName,
-    cardName: formData.cardName,
-    cardType: formData.cardType as any,
-    cardNumberLast4: formData.cardNumber.slice(-4),
-    creditLimit: formData.creditLimit,
-    usedAmount: formData.usedAmount,
-    availableAmount: formData.creditLimit - formData.usedAmount,
-    isActive: formData.isEnabled,
-    annualFeeStatus: 'pending',
-    feeType: 'waivable',
-    waiverProgress: 0,
-    annualFee: formData.annualFee,
-    dueDate: formData.dueDate,
-    bankColor: formData.bankColor,
-    bankCode: formData.bankName.charAt(0),
-  }
+        toast.success('保存成功')
 
-  console.log('Saving card:', newCard)
-
-  toast.success('保存成功')
-
-  setTimeout(() => {
-    uni.navigateBack()
-  }, 1500)
+        setTimeout(() => {
+          uni.navigateBack()
+        }, 1500)
+      } else {
+        console.log('表单校验失败:', errors)
+        // 显示第一个错误信息
+        if (errors && errors.length > 0) {
+          toast.error(errors[0].message)
+        }
+      }
+    })
+    .catch((error) => {
+      console.log('表单校验异常:', error)
+      toast.error('表单校验失败')
+    })
 }
 
 const handleEditCard = () => {
   toast.show('编辑卡片样式')
 }
+
+// 有效期校验函数
+const validateExpiryDate = (value: string): string => {
+  console.log('开始校验有效期:', value)
+
+  if (!value) {
+    return '请输入有效期'
+  }
+
+  // 检查格式是否为 MM/YY
+  const formatRegex = /^\d{2}\/\d{2}$/
+  if (!formatRegex.test(value)) {
+    console.log('格式不正确:', value)
+    return '请输入正确的有效期格式 (MM/YY)'
+  }
+
+  const [monthStr, yearStr] = value.split('/')
+  const month = parseInt(monthStr, 10)
+  const yearNum = parseInt(yearStr, 10)
+
+  console.log('解析结果:', { monthStr, yearStr, month, yearNum })
+
+  // 检查月份是否有效
+  if (month < 1 || month > 12) {
+    console.log('月份无效:', month)
+    return '月份必须在01-12之间'
+  }
+
+  // 检查年份是否有效（00-99）
+  if (yearNum < 0 || yearNum > 99) {
+    console.log('年份格式无效:', yearNum)
+    return '年份必须在00-99之间'
+  }
+
+  // 将YY转换为完整年份（智能判断世纪）
+  const currentYear = new Date().getFullYear()
+  const currentCentury = Math.floor(currentYear / 100) * 100
+  let fullYear = currentCentury + yearNum
+
+  // 如果年份小于当前年份的后两位，认为是下个世纪
+  if (yearNum < currentYear % 100) {
+    fullYear += 100
+  }
+
+  console.log('完整年份:', fullYear)
+
+  // 检查是否已过期
+  const currentMonth = new Date().getMonth() + 1 // getMonth() 返回0-11
+
+  if (fullYear < currentYear || (fullYear === currentYear && month < currentMonth)) {
+    console.log('已过期')
+    return '信用卡已过期'
+  }
+
+  // 检查年份是否过于久远
+  if (fullYear > currentYear + 20) {
+    console.log('年份过于久远:', fullYear)
+    return '有效期年份不能超过20年'
+  }
+
+  console.log('校验通过')
+  return '' // 校验通过
+}
+
+// 监听有效期输入变化，自动格式化
+let isFormatting = false // 防止循环更新
+watch(
+  () => formData.expiryDate,
+  (newValue, oldValue) => {
+    if (isFormatting) return // 如果正在格式化，跳过
+
+    console.log('有效期值变化:', { oldValue, newValue })
+
+    if (typeof newValue === 'string') {
+      isFormatting = true
+
+      // 自动格式化输入为 MM/YY 格式
+      let formatted = newValue.replace(/\D/g, '') // 只保留数字
+
+      if (formatted.length >= 2) {
+        formatted = formatted.substring(0, 2) + '/' + formatted.substring(2, 4)
+      }
+
+      // 只有当格式化后的值与当前值不同时才更新
+      if (formatted !== newValue) {
+        formData.expiryDate = formatted
+        console.log('自动格式化为:', formatted)
+      }
+
+      isFormatting = false
+    }
+  },
+)
 
 // 选择器事件处理
 const onBankChange = ({ value }: any) => {
@@ -511,10 +661,31 @@ const onAnnualFeeTypeChange = ({ value }: any) => {
   formData.annualFeeType = value
 }
 
+const onAnnualFeeDateChange = ({ value }: any) => {
+  // value 是一个数组 [月份, 日期]
+  if (Array.isArray(value) && value.length === 2) {
+    formData.annualFeeDate = value
+    console.log('年费扣款时间:', `${value[0]}月${value[1]}日`)
+  }
+}
+
 // 颜色选择
 const selectColor = (color: string) => {
   formData.bankColor = color
 }
+
+// 有效期校验规则
+const expiryDateRules = [
+  { required: true, message: '请输入有效期' },
+  {
+    required: false,
+    validator: (value: any) => {
+      const errorMessage = validateExpiryDate(value)
+      return errorMessage === ''
+    },
+    message: '请输入正确的有效期格式 (MM/YY)',
+  },
+]
 </script>
 
 <style lang="scss" scoped>
@@ -612,7 +783,17 @@ page {
   color: #6b7280;
 }
 
-// form-section 的 overflow: hidden 和 border-radius 会自动处理所有子元素的圆角
+.text-orange-500 {
+  color: #f97316;
+}
+
+.text-blue-500 {
+  color: #3b82f6;
+}
+
+.text-green-500 {
+  color: #10b981;
+}
 
 @media (max-width: 640px) {
   .px-4 {
