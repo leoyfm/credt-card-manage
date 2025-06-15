@@ -263,23 +263,6 @@ const debugInfo = computed(() => {
   return info
 })
 
-// 工具函数 - 根据银行名称获取颜色
-const getBankColor = (bankName: string) => {
-  const colorMap: Record<string, string> = {
-    招商银行: '#DC2626',
-    工商银行: '#DC2626',
-    建设银行: '#2563EB',
-    中国银行: '#DC2626',
-    交通银行: '#2563EB',
-    光大银行: '#7C3AED',
-    浦发银行: '#059669',
-    民生银行: '#7C2D12',
-    中信银行: '#DC2626',
-    平安银行: '#EA580C',
-  }
-  return colorMap[bankName] || '#6B7280'
-}
-
 // 工具函数 - 获取年费状态
 const getAnnualFeeStatus = (apiCard: any) => {
   // 根据API返回的年费相关字段判断状态
@@ -288,14 +271,6 @@ const getAnnualFeeStatus = (apiCard: any) => {
   if (apiCard.fee_overdue) return 'overdue'
   return 'pending'
 }
-
-// 计算属性
-const pendingFeeCards = computed(
-  () =>
-    creditCards.value.filter(
-      (card) => card.annualFeeStatus === 'pending' || card.annualFeeStatus === 'overdue',
-    ).length,
-)
 
 // 事件处理
 const handleCardClick = (cardId: string) => {
@@ -391,25 +366,6 @@ const goToLogin = () => {
   })
 }
 
-// HeaderSection 组件已经内部处理导航，移除了这两个方法
-
-const handleTabClick = (tab: string) => {
-  console.log('Tab clicked:', tab)
-  const routes = {
-    home: '/pages/index/index',
-    cards: '/pages/cards/index',
-    transactions: '/pages/transactions/index',
-    fees: '/pages/fees/index',
-    mine: '/pages/mine/index',
-  }
-
-  if (routes[tab] && routes[tab] !== '/pages/index/index') {
-    uni.navigateTo({
-      url: routes[tab],
-    })
-  }
-}
-
 onMounted(() => {
   console.log('首页加载完成')
 })
@@ -423,12 +379,6 @@ onMounted(() => {
 
 // 如果没有iconfont，可以使用文本替代
 .iconfont {
-  &.icon-notification::before {
-    content: '🔔';
-  }
-  &.icon-setting::before {
-    content: '⚙️';
-  }
   &.icon-add::before {
     content: '➕';
   }
