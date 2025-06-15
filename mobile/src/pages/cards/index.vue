@@ -147,6 +147,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { useToast } from 'wot-design-uni'
 import { useUserStore } from '@/store/user'
 import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
+import * as apis from '@/service/app/v1Yonghugongneng'
 import CreditCard from '@/components/CreditCard.vue'
 import type { CreditCard as CreditCardType } from '@/types/card'
 import type * as API from '@/service/app/types'
@@ -162,6 +163,23 @@ const userStore = useUserStore()
 const searchKeyword = ref('')
 const activeFilter = ref('all')
 
+// 计算查询参数
+const queryParams = computed(() => {
+  const params: any = {}
+
+  // 只传递有值的参数，避免空参数导致API报错
+  if (searchKeyword.value) {
+    params.keyword = searchKeyword.value
+  }
+
+  if (activeFilter.value !== 'all') {
+    params.status = activeFilter.value
+  }
+
+  console.log('API查询参数:', params)
+  return params
+})
+
 // 使用Vue Query获取信用卡列表
 const {
   data: creditCardsResponse,
@@ -169,13 +187,12 @@ const {
   isError,
   refetch: refetchCards,
 } = useQuery({
-  ...getCreditCardsApiV1UserCardsGetQueryOptions({
-    params: {
-      // 只传递有值的参数，避免空参数导致API报错
-      ...(searchKeyword.value && { keyword: searchKeyword.value }),
-      ...(activeFilter.value !== 'all' && { status: activeFilter.value }),
-    },
-  }),
+  queryKey: ['getCreditCardsApiV1UserCardsGet', queryParams],
+  queryFn: async () => {
+    return apis.getCreditCardsApiV1UserCardsGet({
+      params: queryParams.value,
+    })
+  },
   enabled: userStore.isLoggedIn, // 只有在已登录时才启用查询
 })
 
@@ -369,16 +386,7 @@ const handleFilter = (filter: string) => {
   activeFilter.value = filter
 }
 
-// 监听搜索和筛选参数变化，重新查询
-watch(
-  [searchKeyword, activeFilter],
-  () => {
-    if (userStore.isLoggedIn) {
-      refetchCards()
-    }
-  },
-  { deep: true },
-)
+// Vue Query会自动响应queryKey中queryParams的变化，无需手动监听
 
 // 工具函数
 const formatMoney = (amount: number) => {
