@@ -609,7 +609,7 @@ const goBack = () => {
 }
 
 .form-input {
-  // width: 100%;
+  width: auto;
   padding: 12px 16px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -623,7 +623,7 @@ const goBack = () => {
 }
 
 .form-textarea {
-  // width: 100%;
+  width: auto;
   min-height: 80px;
   padding: 12px 16px;
   border: 1px solid #e5e7eb;
