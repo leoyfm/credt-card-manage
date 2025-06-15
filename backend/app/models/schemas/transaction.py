@@ -78,6 +78,7 @@ class TransactionResponse(BaseModel):
     
     # 关联数据
     card_name: Optional[str] = Field(None, description="信用卡名称")
+    card_number: Optional[str] = Field(None, description="信用卡卡号后四位")
     category_name: Optional[str] = Field(None, description="分类名称")
 
     model_config = ConfigDict(
@@ -97,6 +98,7 @@ class TransactionResponse(BaseModel):
                 "cashback_earned": "2.99",
                 "status": "completed",
                 "card_name": "招商银行信用卡",
+                "card_number": "1234",
                 "category_name": "餐饮美食"
             }
         }

@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, model_serializer, ConfigDict
 from uuid import UUID
 
-from app.models.schemas.common import PaginationInfo
+from app.models.schemas.common import PaginationInfo, PaginationParams
 
 
 # ============ 银行相关模型 ============
@@ -62,10 +62,11 @@ class BankResponse(BankBase):
 class CreditCardBase(BaseModel):
     """信用卡基础模型"""
     card_name: str = Field(..., max_length=100, description="卡片名称", json_schema_extra={"example": "招商银行信用卡"})
-    card_number: str = Field(..., max_length=100, description="卡号", json_schema_extra={"example": "6225********1234"})
+    card_number: str = Field(..., max_length=100, description="卡号后4位", json_schema_extra={"example": "1234"})
     card_type: str = Field("credit", max_length=20, description="卡片类型", json_schema_extra={"example": "credit"})
     card_network: Optional[str] = Field(None, max_length=20, description="卡组织", json_schema_extra={"example": "VISA"})
     card_level: Optional[str] = Field(None, max_length=20, description="卡片等级", json_schema_extra={"example": "白金卡"})
+    bank_color: str = Field("#EF4444", max_length=20, description="卡片颜色", json_schema_extra={"example": "#EF4444"})
     credit_limit: Decimal = Field(..., ge=0, description="信用额度", json_schema_extra={"example": 50000.00})
     expiry_month: int = Field(..., ge=1, le=12, description="有效期月份", json_schema_extra={"example": 12})
     expiry_year: int = Field(..., ge=2024, description="有效期年份", json_schema_extra={"example": 2027})
@@ -94,11 +95,12 @@ class CreditCardBase(BaseModel):
     @field_validator('due_date')
     @classmethod
     def validate_due_date(cls, v, info):
-        """验证还款日必须在账单日之后"""
-        if v is not None and info.data.get('billing_date') is not None:
-            billing_date = info.data['billing_date']
-            if v <= billing_date:
-                raise ValueError('还款日必须在账单日之后')
+        """验证还款日的合理性"""
+        if v is not None:
+            # 只需要确保还款日在合理范围内（1-31）
+            # 允许跨月还款（还款日可以小于账单日）
+            if not (1 <= v <= 31):
+                raise ValueError('还款日必须在1-31之间')
         return v
 
     @field_validator('credit_limit', 'annual_fee', 'points_rate', 'cashback_rate')
@@ -122,6 +124,7 @@ class CreditCardUpdate(BaseModel):
     card_type: Optional[str] = Field(None, max_length=20, description="卡片类型")
     card_network: Optional[str] = Field(None, max_length=20, description="卡组织")
     card_level: Optional[str] = Field(None, max_length=20, description="卡片等级")
+    bank_color: Optional[str] = Field(None, max_length=20, description="卡片颜色", json_schema_extra={"example": "#EF4444"})
     credit_limit: Optional[Decimal] = Field(None, ge=0, description="信用额度")
     available_limit: Optional[Decimal] = Field(None, ge=0, description="可用额度")
     used_limit: Optional[Decimal] = Field(None, ge=0, description="已用额度")
@@ -170,10 +173,11 @@ class CreditCardResponse(BaseModel):
     user_id: UUID = Field(..., description="用户ID")
     bank_id: Optional[UUID] = Field(None, description="银行ID")
     card_name: str = Field(..., max_length=100, description="卡片名称", json_schema_extra={"example": "招商银行信用卡"})
-    card_number: str = Field(..., max_length=100, description="卡号", json_schema_extra={"example": "6225********1234"})
+    card_number: str = Field(..., max_length=100, description="卡号后4位", json_schema_extra={"example": "1234"})
     card_type: str = Field("credit", max_length=20, description="卡片类型", json_schema_extra={"example": "credit"})
     card_network: Optional[str] = Field(None, max_length=20, description="卡组织", json_schema_extra={"example": "VISA"})
     card_level: Optional[str] = Field(None, max_length=20, description="卡片等级", json_schema_extra={"example": "白金卡"})
+    bank_color: str = Field("#EF4444", max_length=20, description="卡片颜色", json_schema_extra={"example": "#EF4444"})
     credit_limit: Decimal = Field(..., ge=0, description="信用额度", json_schema_extra={"example": 50000.00})
     available_limit: Optional[Decimal] = Field(None, description="可用额度", json_schema_extra={"example": 45000.00})
     used_limit: Decimal = Field(Decimal("0"), description="已用额度", json_schema_extra={"example": 5000.00})
@@ -201,6 +205,7 @@ class CreditCardResponse(BaseModel):
     expiry_display: Optional[str] = Field(None, description="有效期显示", json_schema_extra={"example": "12/27"})
     is_expired: Optional[bool] = Field(None, description="是否已过期", json_schema_extra={"example": False})
     credit_utilization_rate: Optional[float] = Field(None, description="信用额度使用率", json_schema_extra={"example": 10.0})
+    interest_free_days: Optional[int] = Field(None, description="免息天数", json_schema_extra={"example": 45})
 
     @field_validator('credit_limit', 'available_limit', 'used_limit', 'annual_fee', 'points_rate', 'cashback_rate')
     @classmethod
@@ -239,6 +244,7 @@ class CreditCardSummary(BaseModel):
     total_available_limit: Decimal = Field(..., description="总可用额度", json_schema_extra={"example": 225000.00})
     average_utilization_rate: float = Field(..., description="平均使用率", json_schema_extra={"example": 10.0})
     cards_expiring_soon: int = Field(..., description="即将过期卡片数", json_schema_extra={"example": 1})
+    max_interest_free_days: int = Field(..., description="最长免息天数", json_schema_extra={"example": 56})
 
     @field_validator('total_credit_limit', 'total_used_limit', 'total_available_limit')
     @classmethod
@@ -251,7 +257,7 @@ class CreditCardSummary(BaseModel):
 
 # ============ 查询参数模型 ============
 
-class CreditCardQueryParams(BaseModel):
+class CreditCardQueryParams(PaginationParams):
     """信用卡查询参数"""
     keyword: str = Field("", description="搜索关键词，支持卡片名称、银行名称模糊搜索", json_schema_extra={"example": "招商"})
     status: Optional[str] = Field(None, description="状态筛选", json_schema_extra={"example": "active"})
@@ -259,8 +265,6 @@ class CreditCardQueryParams(BaseModel):
     card_type: Optional[str] = Field(None, description="卡片类型筛选", json_schema_extra={"example": "credit"})
     is_primary: Optional[bool] = Field(None, description="是否主卡筛选", json_schema_extra={"example": True})
     expiring_soon: Optional[bool] = Field(None, description="是否即将过期", json_schema_extra={"example": False})
-    page: int = Field(1, ge=1, description="页码，从1开始", json_schema_extra={"example": 1})
-    page_size: int = Field(20, ge=1, le=100, description="每页数量，最大100", json_schema_extra={"example": 20})
 
 
 # ============ 批量操作模型 ============

@@ -2,11 +2,17 @@
 import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
 import { usePageAuth } from '@/hooks/usePageAuth'
+import { useUserStore } from '@/store/user'
 
 usePageAuth()
 
 onLaunch(() => {
   console.log('App Launch')
+
+  // 恢复用户登录状态
+  const userStore = useUserStore()
+  userStore.restoreUserState()
+  console.log('恢复用户状态完成，当前登录状态:', userStore.isLoggedIn)
 })
 onShow(() => {
   console.log('App Show')

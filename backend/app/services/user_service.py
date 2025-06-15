@@ -19,6 +19,7 @@ from app.core.exceptions.custom import (
     BusinessRuleError
 )
 from app.core.logging.logger import app_logger as logger
+from app.utils.pagination import apply_service_pagination
 
 
 class UserService:
@@ -175,17 +176,14 @@ class UserService:
             Tuple[List[LoginLogResponse], int]: 登录日志列表和总数
         """
         try:
-            # 计算偏移量
-            skip = (page - 1) * page_size
-            
-            # 查询登录日志
+            # 查询登录日志并应用分页
             query = self.db.query(LoginLog).filter(LoginLog.user_id == user_id)
-            total = query.count()
-            
-            logs = query.order_by(desc(LoginLog.created_at))\
-                        .offset(skip)\
-                        .limit(page_size)\
-                        .all()
+            logs, total = apply_service_pagination(
+                query,
+                page,
+                page_size,
+                order_by=desc(LoginLog.created_at)
+            )
             
             log_responses = [LoginLogResponse.model_validate(log) for log in logs]
             

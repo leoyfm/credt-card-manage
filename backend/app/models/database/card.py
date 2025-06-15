@@ -43,11 +43,12 @@ class CreditCard(Base):
     bank_id = Column(UUID(as_uuid=True), ForeignKey("banks.id"), comment="银行ID")
     
     # 卡片基本信息
-    card_number = Column(String(100), nullable=False, comment="卡号(加密存储)")
+    card_number = Column(String(100), nullable=False, comment="卡号后4位")
     card_name = Column(String(100), nullable=False, comment="卡片名称")
     card_type = Column(String(20), default="credit", comment="卡片类型")
     card_network = Column(String(20), comment="卡组织")
     card_level = Column(String(20), comment="卡片等级")
+    bank_color = Column(String(20), default="#EF4444", comment="卡片颜色")
     
     # 额度信息
     credit_limit = Column(Numeric(15, 2), nullable=False, comment="信用额度")

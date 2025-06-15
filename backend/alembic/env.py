@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from app.db.database import Base
 # 导入所有数据库模型以确保Alembic能够检测到它们
-from app.models.database import user, card, transaction, annual_fee
+from app.models.database import user, card, transaction, fee_waiver
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,917 +1,773 @@
 /* eslint-disable */
 // @ts-ignore
 
-export type AnnualFeeRecord = {
-  /** Card Id 信用卡ID */
-  card_id: string;
-  /** Fee Year 年费所属年份 */
-  fee_year: number;
-  /** Due Date 年费到期日期 */
-  due_date: string;
-  /** Fee Amount 应付年费金额 */
-  fee_amount: string;
-  /** 减免状态 */
-  waiver_status?: WaiverStatus;
-  /** Waiver Condition Met 是否满足减免条件 */
-  waiver_condition_met?: boolean;
-  /** Current Progress 当前进度 */
-  current_progress?: string;
-  /** Payment Date 实际支付日期 */
-  payment_date?: string | null;
-  /** Notes 备注 */
-  notes?: string | null;
-  /** Id */
-  id: string;
-  /** Created At */
-  created_at: string;
-  /** Updated At */
-  updated_at: string;
+export type AccountDeletionRequest = {
+  /** Password 确认密码 */
+  password: string;
+  /** Reason 注销原因 */
+  reason?: string | null;
 };
 
-export type AnnualFeeRecordCreate = {
-  /** Card Id 信用卡ID */
-  card_id: string;
-  /** Fee Year 年费所属年份 */
-  fee_year: number;
-  /** Due Date 年费到期日期 */
-  due_date: string;
-  /** Fee Amount 应付年费金额 */
-  fee_amount: number | string;
-  /** 减免状态 */
-  waiver_status?: WaiverStatus;
-  /** Waiver Condition Met 是否满足减免条件 */
-  waiver_condition_met?: boolean;
-  /** Current Progress 当前进度 */
-  current_progress?: number | string;
-  /** Payment Date 实际支付日期 */
-  payment_date?: string | null;
-  /** Notes 备注 */
-  notes?: string | null;
-};
-
-export type AnnualFeeRecordUpdate = {
-  waiver_status?: WaiverStatus | null;
-  /** Waiver Condition Met */
-  waiver_condition_met?: boolean | null;
-  /** Current Progress */
-  current_progress?: number | string | null;
-  /** Payment Date */
-  payment_date?: string | null;
-  /** Notes */
-  notes?: string | null;
-};
-
-export type AnnualFeeRule = {
-  /** 年费类型，决定减免条件的计算方式 */
-  fee_type: FeeType;
-  /** Base Fee 基础年费金额，单位：元 */
-  base_fee: string;
-  /** Waiver Condition Value 减免条件数值，如刷卡次数12或消费金额50000 */
-  waiver_condition_value?: string | null;
-  /** Points Per Yuan 积分兑换比例：1元对应的积分数，如1元=0.1积分。仅当fee_type为points_exchange时有效 */
-  points_per_yuan?: string | null;
-  /** Annual Fee Month 年费扣除月份，1-12月。如每年2月扣费则填2 */
-  annual_fee_month?: number | null;
-  /** Annual Fee Day 年费扣除日期，1-31日。如每年2月18日扣费则填18 */
-  annual_fee_day?: number | null;
-  /** Description 规则描述，详细说明减免条件 */
-  description?: string | null;
-  /** Id 规则ID，系统自动生成的唯一标识 */
-  id: string;
-  /** Created At 创建时间 */
-  created_at: string;
-};
-
-export type AnnualFeeRuleCreate = {
-  /** 年费类型，决定减免条件的计算方式 */
-  fee_type: FeeType;
-  /** Base Fee 基础年费金额，单位：元 */
-  base_fee: number | string;
-  /** Waiver Condition Value 减免条件数值，如刷卡次数12或消费金额50000 */
-  waiver_condition_value?: number | string | null;
-  /** Points Per Yuan 积分兑换比例：1元对应的积分数，如1元=0.1积分。仅当fee_type为points_exchange时有效 */
-  points_per_yuan?: number | string | null;
-  /** Annual Fee Month 年费扣除月份，1-12月。如每年2月扣费则填2 */
-  annual_fee_month?: number | null;
-  /** Annual Fee Day 年费扣除日期，1-31日。如每年2月18日扣费则填18 */
-  annual_fee_day?: number | null;
-  /** Description 规则描述，详细说明减免条件 */
-  description?: string | null;
-};
-
-export type AnnualFeeRuleUpdate = {
-  /** 年费类型 */
-  fee_type?: FeeType | null;
-  /** Base Fee 基础年费金额 */
-  base_fee?: number | string | null;
-  /** Waiver Condition Value 减免条件数值 */
-  waiver_condition_value?: number | string | null;
-  /** Points Per Yuan 积分兑换比例 */
-  points_per_yuan?: number | string | null;
-  /** Annual Fee Month 年费扣除月份 */
-  annual_fee_month?: number | null;
-  /** Annual Fee Day 年费扣除日期 */
-  annual_fee_day?: number | null;
-  /** Description 规则描述 */
-  description?: string | null;
-};
-
-export type AnnualFeeStatistics = {
-  /** Total Cards 信用卡总数 */
-  total_cards: number;
-  /** Total Annual Fees 年费总金额 */
-  total_annual_fees: string;
-  /** Waived Fees 已减免年费金额 */
-  waived_fees: string;
-  /** Paid Fees 已支付年费金额 */
-  paid_fees: string;
-  /** Pending Fees 待处理年费金额 */
-  pending_fees: string;
-  /** Overdue Fees 逾期年费金额 */
-  overdue_fees: string;
-  /** Waiver Rate 年费减免率，百分比形式 */
-  waiver_rate: number;
-};
-
-export type AnnualFeeWaiverCheck = {
-  /** Card Id 信用卡ID */
-  card_id: string;
-  /** Fee Year 年费年份 */
-  fee_year: number;
-  /** Waiver Eligible 是否符合减免条件 */
-  waiver_eligible: boolean;
-  /** Current Progress 当前进度，如已刷卡次数或金额 */
-  current_progress: string;
-  /** Required Progress 要求进度，减免所需的目标值 */
-  required_progress?: string | null;
-  /** Progress Description 进度描述，易于理解的文字说明 */
-  progress_description: string;
-  /** Days Remaining 距离年费到期的剩余天数 */
-  days_remaining: number;
-};
-
-export type ApiPagedResponseAnnualFeeRecord_ = {
-  /** Success 请求是否成功 */
-  success: boolean;
-  /** Code HTTP状态码 */
-  code: number;
+export type ApiPagedResponse = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
   /** Message 响应消息 */
-  message: string;
-  /** 分页响应数据，包含items数组和pagination信息 */
-  data?: PagedResponseAnnualFeeRecord_ | null;
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: unknown[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
   /** Timestamp 响应时间戳 */
-  timestamp?: string;
+  timestamp: string;
 };
 
-export type ApiPagedResponseAnnualFeeRule_ = {
-  /** Success 请求是否成功 */
-  success: boolean;
-  /** Code HTTP状态码 */
-  code: number;
+export type ApiPagedResponseLoginLogResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
   /** Message 响应消息 */
-  message: string;
-  /** 分页响应数据，包含items数组和pagination信息 */
-  data?: PagedResponseAnnualFeeRule_ | null;
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: LoginLogResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
   /** Timestamp 响应时间戳 */
-  timestamp?: string;
+  timestamp: string;
 };
 
-export type ApiPagedResponseCard_ = {
-  /** Success 请求是否成功 */
-  success: boolean;
-  /** Code HTTP状态码 */
-  code: number;
+export type ApiPagedResponseRecommendationRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
   /** Message 响应消息 */
-  message: string;
-  /** 分页响应数据，包含items数组和pagination信息 */
-  data?: PagedResponseCard_ | null;
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: RecommendationRecordResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
   /** Timestamp 响应时间戳 */
-  timestamp?: string;
+  timestamp: string;
 };
 
-export type ApiPagedResponseCardSummaryWithAnnualFee_ = {
-  /** Success 请求是否成功 */
-  success: boolean;
-  /** Code HTTP状态码 */
-  code: number;
+export type ApiPagedResponseReminderRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
   /** Message 响应消息 */
-  message: string;
-  /** 分页响应数据，包含items数组和pagination信息 */
-  data?: PagedResponseCardSummaryWithAnnualFee_ | null;
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: ReminderRecordResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
   /** Timestamp 响应时间戳 */
-  timestamp?: string;
+  timestamp: string;
 };
 
-export type ApiPagedResponseRecommendation_ = {
-  /** Success 请求是否成功 */
-  success: boolean;
-  /** Code HTTP状态码 */
-  code: number;
+export type ApiPagedResponseReminderSettingResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
   /** Message 响应消息 */
-  message: string;
-  /** 分页响应数据，包含items数组和pagination信息 */
-  data?: PagedResponseRecommendation_ | null;
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: ReminderSettingResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
   /** Timestamp 响应时间戳 */
-  timestamp?: string;
+  timestamp: string;
 };
 
-export type ApiPagedResponseReminder_ = {
-  /** Success 请求是否成功 */
-  success: boolean;
-  /** Code HTTP状态码 */
-  code: number;
+export type ApiPagedResponseTransactionResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
   /** Message 响应消息 */
-  message: string;
-  /** 分页响应数据，包含items数组和pagination信息 */
-  data?: PagedResponseReminder_ | null;
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: TransactionResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
   /** Timestamp 响应时间戳 */
-  timestamp?: string;
+  timestamp: string;
 };
 
-export type ApiResponseAnnualFeeRecord_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: AnnualFeeRecord | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponse = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: unknown | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseAnnualFeeRule_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: AnnualFeeRule | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseBool_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: boolean | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseAnnualFeeStatistics_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: AnnualFeeStatistics | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
-};
-
-export type ApiResponseAnnualFeeWaiverCheck_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: AnnualFeeWaiverCheck | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
-};
-
-export type ApiResponseCard_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Card | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
-};
-
-export type ApiResponseCardWithAnnualFee_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: CardWithAnnualFee | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseCategoryStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: CategoryStatisticsResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
 export type ApiResponseDict_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
   data?: Record<string, unknown> | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseDictStr_Any_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Record<string, unknown> | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseListRecommendationRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: RecommendationRecordResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseDictStr_bool_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Record<string, unknown> | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseListReminderRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: ReminderRecordResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseDictStr_str_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Record<string, unknown> | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseListStr_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: string[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseListAnnualFeeWaiverCheck_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: AnnualFeeWaiverCheck[] | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseListTransactionCategoryResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: TransactionCategoryResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseListRecommendation_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Recommendation[] | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseListWechatBindingResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: WechatBindingResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseLoginResponse_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: LoginResponse | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseMarkAllReadResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: MarkAllReadResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseNoneType_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseMonthlyTrendResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: MonthlyTrendResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseRecommendation_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Recommendation | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseRecommendationRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: RecommendationRecordResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseReminder_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: Reminder | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseRecommendationStats_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: RecommendationStats | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseStr_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** Data 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: string | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseReminderRecordResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: ReminderRecordResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type ApiResponseUserProfile_ = {
-  /** Success 请求是否成功，true表示成功，false表示失败 */
-  success: boolean;
-  /** Code HTTP状态码，如200、404、500等 */
-  code: number;
-  /** Message 响应消息，用于描述操作结果 */
-  message: string;
-  /** 响应数据，根据接口不同而变化，可能为null、对象或数组 */
-  data?: UserProfile | null;
-  /** Timestamp 响应时间戳，ISO 8601格式 */
-  timestamp?: string;
+export type ApiResponseReminderSettingResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: ReminderSettingResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
 };
 
-export type batchCheckAnnualFeeWaiversApiAnnualFeesBatchCheckWaiversPostParams =
-  {
-    fee_year: number;
-  };
+export type ApiResponseReminderStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: ReminderStatisticsResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
 
-export type batchCreateAnnualFeeRecordsApiAnnualFeesBatchCreateRecordsPostParams =
-  {
-    fee_year: number;
-  };
+export type ApiResponseTransactionResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: TransactionResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
 
-export type Card = {
-  /** Bank Name 银行名称，如：招商银行、中国工商银行 */
-  bank_name: string;
-  /** Card Name 信用卡名称，如：招行经典白金卡、工行环球旅行卡 */
-  card_name: string;
-  /** Card Number 信用卡号，支持13-19位数字 */
-  card_number: string;
-  /** 信用卡组织类型 */
-  card_type: CardType;
-  /** Credit Limit 信用额度，单位：元 */
-  credit_limit: string;
-  /** Used Amount 已使用额度，单位：元 */
-  used_amount?: string;
-  /** Available Amount 可用额度，自动计算得出 */
-  available_amount?: string | null;
-  /** Billing Day 账单日，每月的哪一天生成账单 */
-  billing_day: number;
-  /** Due Day 还款日，每月的还款截止日期 */
-  due_day: number;
-  /** Expiry Month 卡片有效期月份，1-12 */
-  expiry_month: number;
-  /** Expiry Year 卡片有效期年份，如2024 */
-  expiry_year: number;
-  /** Annual Fee Rule Id 年费规则ID，关联年费规则表 */
-  annual_fee_rule_id?: string | null;
-  /** Card Color 卡片颜色，用于前端显示 */
-  card_color?: string;
-  /** 卡片状态 */
-  status?: CardStatus;
-  /** Is Active 是否启用此卡片 */
-  is_active?: boolean;
-  /** Activation Date 激活日期 */
-  activation_date?: string | null;
-  /** Notes 备注信息 */
-  notes?: string | null;
-  /** Id 信用卡ID，系统自动生成的唯一标识 */
-  id: string;
-  /** User Id 用户ID，卡片所属用户 */
+export type ApiResponseTransactionStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: TransactionStatisticsResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseUnreadRemindersCountResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: UnreadRemindersCountResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseUpcomingRemindersResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: UpcomingRemindersResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseUserProfileResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: UserProfileResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseUserStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: UserStatisticsResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type AuthResponse = {
+  /** User Id 用户ID */
   user_id: string;
+  /** Username 用户名 */
+  username: string;
+  /** Email 邮箱 */
+  email: string;
+  /** Nickname 昵称 */
+  nickname?: string | null;
+  /** Phone 手机号 */
+  phone?: string | null;
+  /** Avatar Url 头像URL */
+  avatar_url?: string | null;
+  /** Is Active 是否激活 */
+  is_active?: boolean;
+  /** Is Verified 是否已验证 */
+  is_verified?: boolean;
+  /** Is Admin 是否管理员 */
+  is_admin?: boolean;
+  /** Timezone 时区 */
+  timezone?: string | null;
+  /** Language 语言偏好 */
+  language?: string | null;
+  /** Currency 默认货币 */
+  currency?: string | null;
+  /** Last Login At 最后登录时间 */
+  last_login_at?: string | null;
+  /** Email Verified At 邮箱验证时间 */
+  email_verified_at?: string | null;
   /** Created At 创建时间 */
-  created_at: string;
-  /** Updated At 最后更新时间 */
-  updated_at: string;
+  created_at?: string | null;
+  /** Updated At 更新时间 */
+  updated_at?: string | null;
+  /** Access Token 访问令牌 */
+  access_token: string;
+  /** Refresh Token 刷新令牌 */
+  refresh_token: string;
+  /** Token Type 令牌类型 */
+  token_type?: string;
 };
 
-export type CardCreate = {
-  /** Bank Name 银行名称，如：招商银行、中国工商银行 */
-  bank_name: string;
-  /** Card Name 信用卡名称，如：招行经典白金卡、工行环球旅行卡 */
-  card_name: string;
-  /** Card Number 信用卡号，支持13-19位数字 */
-  card_number: string;
-  /** 信用卡组织类型 */
-  card_type: CardType;
-  /** Credit Limit 信用额度，单位：元 */
-  credit_limit: number | string;
-  /** Used Amount 已使用额度，单位：元 */
-  used_amount?: number | string;
-  /** Available Amount 可用额度，自动计算得出 */
-  available_amount?: number | string | null;
-  /** Billing Day 账单日，每月的哪一天生成账单 */
-  billing_day: number;
-  /** Due Day 还款日，每月的还款截止日期 */
-  due_day: number;
-  /** Expiry Month 卡片有效期月份，1-12 */
-  expiry_month: number;
-  /** Expiry Year 卡片有效期年份，如2024 */
-  expiry_year: number;
-  /** Annual Fee Rule Id 年费规则ID，关联年费规则表 */
-  annual_fee_rule_id?: string | null;
-  /** Card Color 卡片颜色，用于前端显示 */
-  card_color?: string;
-  /** 卡片状态 */
-  status?: CardStatus;
-  /** Is Active 是否启用此卡片 */
-  is_active?: boolean;
-  /** Activation Date 激活日期 */
-  activation_date?: string | null;
-  /** Notes 备注信息 */
-  notes?: string | null;
-};
-
-export enum CardStatus {
-  active = 'active',
-  inactive = 'inactive',
-  frozen = 'frozen',
-  cancelled = 'cancelled',
-}
-
-export type ICardStatus = keyof typeof CardStatus;
-
-export type CardSummaryWithAnnualFee = {
-  /** Id 信用卡ID */
-  id: string;
-  /** Bank Name 银行名称 */
-  bank_name: string;
-  /** Card Name 信用卡名称 */
-  card_name: string;
-  /** 信用卡组织类型 */
-  card_type: CardType;
-  /** Credit Limit 信用额度 */
-  credit_limit: string;
-  /** Used Amount 已使用额度 */
-  used_amount: string;
-  /** Available Amount 可用额度 */
-  available_amount: string;
-  /** 卡片状态 */
-  status: CardStatus;
-  /** Card Color 卡片颜色 */
-  card_color: string;
-  /** Has Annual Fee 是否设置了年费规则 */
-  has_annual_fee: boolean;
-  /** Annual Fee Amount 年费金额 */
-  annual_fee_amount?: string | null;
-  /** Fee Type Display 年费类型显示名称 */
-  fee_type_display?: string | null;
-  /** Current Year Fee Status 当前年费状态 */
-  current_year_fee_status?: string | null;
-};
-
-export enum CardType {
-  visa = 'visa',
-  mastercard = 'mastercard',
-  unionpay = 'unionpay',
-  amex = 'amex',
-  jcb = 'jcb',
-  discover = 'discover',
-  diners = 'diners',
-}
-
-export type ICardType = keyof typeof CardType;
-
-export type CardWithAnnualFee = {
-  /** Bank Name 银行名称，如：招商银行、中国工商银行 */
-  bank_name: string;
-  /** Card Name 信用卡名称，如：招行经典白金卡、工行环球旅行卡 */
-  card_name: string;
-  /** Card Number 信用卡号，支持13-19位数字 */
-  card_number: string;
-  /** 信用卡组织类型 */
-  card_type: CardType;
-  /** Credit Limit 信用额度，单位：元 */
-  credit_limit: string;
-  /** Used Amount 已使用额度，单位：元 */
-  used_amount?: string;
-  /** Available Amount 可用额度，自动计算得出 */
-  available_amount?: string | null;
-  /** Billing Day 账单日，每月的哪一天生成账单 */
-  billing_day: number;
-  /** Due Day 还款日，每月的还款截止日期 */
-  due_day: number;
-  /** Expiry Month 卡片有效期月份，1-12 */
-  expiry_month: number;
-  /** Expiry Year 卡片有效期年份，如2024 */
-  expiry_year: number;
-  /** Annual Fee Rule Id 年费规则ID，关联年费规则表 */
-  annual_fee_rule_id?: string | null;
-  /** Card Color 卡片颜色，用于前端显示 */
-  card_color?: string;
-  /** 卡片状态 */
-  status?: CardStatus;
-  /** Is Active 是否启用此卡片 */
-  is_active?: boolean;
-  /** Activation Date 激活日期 */
-  activation_date?: string | null;
-  /** Notes 备注信息 */
-  notes?: string | null;
-  /** Id 信用卡ID，系统自动生成的唯一标识 */
-  id: string;
-  /** User Id 用户ID，卡片所属用户 */
-  user_id: string;
-  /** Created At 创建时间 */
-  created_at: string;
-  /** Updated At 最后更新时间 */
-  updated_at: string;
-  /** 年费规则信息，如果卡片设置了年费规则则包含完整信息 */
-  annual_fee_rule?: AnnualFeeRule | null;
-  /** Has Annual Fee 是否设置了年费规则 */
-  has_annual_fee: boolean;
-  /** Current Year Fee Status 当前年份年费状态：pending/waived/paid/overdue */
-  current_year_fee_status?: string | null;
-  /** Next Fee Due Date 下一次年费到期日期 */
-  next_fee_due_date?: string | null;
-};
-
-export type CardWithAnnualFeeCreate = {
-  /** Bank Name 银行名称，如：招商银行、中国工商银行 */
-  bank_name: string;
-  /** Card Name 信用卡名称，如：招行经典白金卡、工行环球旅行卡 */
-  card_name: string;
-  /** Card Number 信用卡号，支持13-19位数字 */
-  card_number: string;
-  /** 信用卡组织类型 */
-  card_type: CardType;
-  /** Credit Limit 信用额度，单位：元 */
-  credit_limit: number | string;
-  /** Used Amount 已使用额度，单位：元 */
-  used_amount?: number | string;
-  /** Available Amount 可用额度，自动计算得出 */
-  available_amount?: number | string | null;
-  /** Billing Day 账单日，每月的哪一天生成账单 */
-  billing_day: number;
-  /** Due Day 还款日，每月的还款截止日期 */
-  due_day: number;
-  /** Expiry Month 卡片有效期月份，1-12 */
-  expiry_month: number;
-  /** Expiry Year 卡片有效期年份，如2024 */
-  expiry_year: number;
-  /** Annual Fee Rule Id 年费规则ID，关联年费规则表 */
-  annual_fee_rule_id?: string | null;
-  /** Card Color 卡片颜色，用于前端显示 */
-  card_color?: string;
-  /** 卡片状态 */
-  status?: CardStatus;
-  /** Is Active 是否启用此卡片 */
-  is_active?: boolean;
-  /** Activation Date 激活日期 */
-  activation_date?: string | null;
-  /** Notes 备注信息 */
-  notes?: string | null;
-  /** Annual Fee Enabled 是否启用年费管理 */
-  annual_fee_enabled?: boolean;
-  /** 年费类型，启用年费管理时必填 */
-  fee_type?: FeeType | null;
-  /** Base Fee 基础年费金额，启用年费管理时必填 */
-  base_fee?: number | string | null;
-  /** Waiver Condition Value 减免条件数值，如刷卡次数12或消费金额50000 */
-  waiver_condition_value?: number | string | null;
-  /** Points Per Yuan 积分兑换比例：1元对应的积分数，如1元=0.1积分。仅当fee_type为points_exchange时有效 */
-  points_per_yuan?: number | string | null;
-  /** Annual Fee Month 年费扣除月份，1-12月。如每年2月扣费则填2 */
-  annual_fee_month?: number | null;
-  /** Annual Fee Day 年费扣除日期，1-31日。如每年2月18日扣费则填18 */
-  annual_fee_day?: number | null;
-  /** Fee Description 年费规则描述，详细说明减免条件 */
-  fee_description?: string | null;
-};
-
-export type CardWithAnnualFeeUpdate = {
-  /** Bank Name 银行名称 */
-  bank_name?: string | null;
-  /** Card Name 信用卡名称 */
-  card_name?: string | null;
-  /** 信用卡组织类型 */
-  card_type?: CardType | null;
-  /** Credit Limit 信用额度 */
-  credit_limit?: number | string | null;
-  /** Used Amount 已使用额度 */
-  used_amount?: number | string | null;
-  /** Billing Day 账单日 */
-  billing_day?: number | null;
-  /** Due Day 还款日 */
-  due_day?: number | null;
-  /** Expiry Month 卡片有效期月份 */
-  expiry_month?: number | null;
-  /** Expiry Year 卡片有效期年份 */
-  expiry_year?: number | null;
-  /** Annual Fee Rule Id 年费规则ID */
-  annual_fee_rule_id?: string | null;
-  /** Card Color 卡片颜色 */
-  card_color?: string | null;
-  /** 卡片状态 */
-  status?: CardStatus | null;
-  /** Is Active 是否启用此卡片 */
-  is_active?: boolean | null;
-  /** Activation Date 激活日期 */
-  activation_date?: string | null;
-  /** Notes 备注信息 */
-  notes?: string | null;
-  /** Annual Fee Enabled 是否启用年费管理。设为False将删除现有年费规则 */
-  annual_fee_enabled?: boolean | null;
-  /** 年费类型 */
-  fee_type?: FeeType | null;
-  /** Base Fee 基础年费金额 */
-  base_fee?: number | string | null;
-  /** Waiver Condition Value 减免条件数值 */
-  waiver_condition_value?: number | string | null;
-  /** Points Per Yuan 积分兑换比例 */
-  points_per_yuan?: number | string | null;
-  /** Annual Fee Month 年费扣除月份 */
-  annual_fee_month?: number | null;
-  /** Annual Fee Day 年费扣除日期 */
-  annual_fee_day?: number | null;
-  /** Fee Description 年费规则描述 */
-  fee_description?: string | null;
+export type CategoryStatisticsResponse = {
+  /** Period Start 统计开始时间 */
+  period_start: string;
+  /** Period End 统计结束时间 */
+  period_end: string;
+  /** Total Categories 分类总数 */
+  total_categories: number;
+  /** Total Expense 总支出 */
+  total_expense: number;
+  /** Category Distribution 分类分布 */
+  category_distribution: Record<string, unknown>[];
+  /** Top Categories 前5大分类 */
+  top_categories: Record<string, unknown>[];
 };
 
 export type ChangePasswordRequest = {
-  /** Old Password 当前密码 */
-  old_password: string;
-  /** New Password 新密码，8-30位字符 */
+  /** Current Password 当前密码 */
+  current_password: string;
+  /** New Password 新密码 */
   new_password: string;
+  /** Confirm Password 确认新密码 */
+  confirm_password: string;
 };
 
-export type checkAllAnnualFeeWaiversApiAnnualFeesWaiverCheckUserUserIdGetParams =
+export type CreditCardCreate = {
+  /** Card Name 卡片名称 */
+  card_name: string;
+  /** Card Number 卡号后4位 */
+  card_number: string;
+  /** Card Type 卡片类型 */
+  card_type?: string;
+  /** Card Network 卡组织 */
+  card_network?: string | null;
+  /** Card Level 卡片等级 */
+  card_level?: string | null;
+  /** Bank Color 卡片颜色 */
+  bank_color?: string;
+  /** Credit Limit 信用额度 */
+  credit_limit: number | string;
+  /** Expiry Month 有效期月份 */
+  expiry_month: number;
+  /** Expiry Year 有效期年份 */
+  expiry_year: number;
+  /** Billing Date 账单日 */
+  billing_date?: number | null;
+  /** Due Date 还款日 */
+  due_date?: number | null;
+  /** Annual Fee 年费金额 */
+  annual_fee?: number | string;
+  /** Fee Waivable 年费是否可减免 */
+  fee_waivable?: boolean;
+  /** Fee Auto Deduct 是否自动扣费 */
+  fee_auto_deduct?: boolean;
+  /** Fee Due Month 年费到期月份 */
+  fee_due_month?: number | null;
+  /** Features 特色功能 */
+  features?: string[];
+  /** Points Rate 积分倍率 */
+  points_rate?: number | string;
+  /** Cashback Rate 返现比例 */
+  cashback_rate?: number | string;
+  /** Is Primary 是否主卡 */
+  is_primary?: boolean;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Bank Id 银行ID */
+  bank_id?: string | null;
+  /** Bank Name 银行名称（如果不提供bank_id） */
+  bank_name?: string | null;
+};
+
+export type CreditCardStatusUpdate = {
+  /** Status 状态 */
+  status: string;
+  /** Reason 状态变更原因 */
+  reason?: string | null;
+};
+
+export type CreditCardUpdate = {
+  /** Card Name 卡片名称 */
+  card_name?: string | null;
+  /** Card Type 卡片类型 */
+  card_type?: string | null;
+  /** Card Network 卡组织 */
+  card_network?: string | null;
+  /** Card Level 卡片等级 */
+  card_level?: string | null;
+  /** Bank Color 卡片颜色 */
+  bank_color?: string | null;
+  /** Credit Limit 信用额度 */
+  credit_limit?: number | string | null;
+  /** Available Limit 可用额度 */
+  available_limit?: number | string | null;
+  /** Used Limit 已用额度 */
+  used_limit?: number | string | null;
+  /** Expiry Month 有效期月份 */
+  expiry_month?: number | null;
+  /** Expiry Year 有效期年份 */
+  expiry_year?: number | null;
+  /** Billing Date 账单日 */
+  billing_date?: number | null;
+  /** Due Date 还款日 */
+  due_date?: number | null;
+  /** Annual Fee 年费金额 */
+  annual_fee?: number | string | null;
+  /** Fee Waivable 年费是否可减免 */
+  fee_waivable?: boolean | null;
+  /** Fee Auto Deduct 是否自动扣费 */
+  fee_auto_deduct?: boolean | null;
+  /** Fee Due Month 年费到期月份 */
+  fee_due_month?: number | null;
+  /** Features 特色功能 */
+  features?: string[] | null;
+  /** Points Rate 积分倍率 */
+  points_rate?: number | string | null;
+  /** Cashback Rate 返现比例 */
+  cashback_rate?: number | string | null;
+  /** Status 状态 */
+  status?: string | null;
+  /** Is Primary 是否主卡 */
+  is_primary?: boolean | null;
+  /** Notes 备注 */
+  notes?: string | null;
+};
+
+export type deleteCreditCardApiV1UserCardsCardIdDeleteParams = {
+  /** 信用卡ID */
+  card_id: string;
+};
+
+export type deleteReminderSettingApiV1UserRemindersSettingsSettingIdDeleteParams =
   {
-    user_id: string;
-    /** 年份，默认为当前年份 */
-    year?: number | null;
+    /** 提醒设置ID */
+    setting_id: string;
   };
 
-export type checkAnnualFeeWaiverApiAnnualFeesWaiverCheckCardIdFeeYearGetParams =
+export type deleteTransactionApiV1UserTransactionsTransactionIdDeleteDeleteParams =
   {
-    card_id: string;
-    fee_year: number;
+    transaction_id: string;
   };
 
-export enum CodeType {
-  login = 'login',
-  register = 'register',
-  reset_password = 'reset_password',
-  bind_phone = 'bind_phone',
-}
-
-export type ICodeType = keyof typeof CodeType;
-
-export type createAnnualFeeRecordAutoApiAnnualFeesRecordsAutoPostParams = {
-  card_id: string;
-  fee_year: number;
-};
-
-export type deleteAnnualFeeRuleApiAnnualFeesRulesRuleIdDeleteParams = {
-  rule_id: string;
-};
-
-export type deleteCardApiCardsCardIdDeleteParams = {
-  card_id: string;
-};
-
-export type deleteReminderApiRemindersReminderIdDeleteParams = {
-  reminder_id: string;
-};
-
-export enum FeeType {
-  rigid = 'rigid',
-  transaction_count = 'transaction_count',
-  points_exchange = 'points_exchange',
-  transaction_amount = 'transaction_amount',
-}
-
-export type IFeeType = keyof typeof FeeType;
-
-export enum Gender {
-  male = 'male',
-  female = 'female',
-  unknown = 'unknown',
-}
-
-export type IGender = keyof typeof Gender;
-
-export type generateRecommendationsApiRecommendationsGeneratePostParams = {
+export type deleteUserApiV1AdminUsersUserIdDeleteDeleteParams = {
+  /** 用户ID */
   user_id: string;
 };
 
-export type getAnnualFeeRecordApiAnnualFeesRecordsRecordIdGetParams = {
-  record_id: string;
-};
-
-export type getAnnualFeeRecordsApiAnnualFeesRecordsGetParams = {
-  /** 页码，从1开始 */
-  page?: number;
-  /** 每页数量，最大100 */
-  page_size?: number;
-  /** 模糊搜索关键词，支持卡片名称、银行名称搜索 */
-  keyword?: string;
-  /** 信用卡ID过滤 */
-  card_id?: string | null;
-  /** 年费年份过滤 */
-  fee_year?: number | null;
-  /** 减免状态过滤 */
-  waiver_status?: WaiverStatus | null;
-};
-
-export type getAnnualFeeRuleApiAnnualFeesRulesRuleIdGetParams = {
-  rule_id: string;
-};
-
-export type getAnnualFeeRulesApiAnnualFeesRulesGetParams = {
-  /** 页码，从1开始 */
-  page?: number;
-  /** 每页数量，最大100 */
-  page_size?: number;
-  /** 模糊搜索关键词，支持规则名称、描述搜索 */
-  keyword?: string;
-  /** 按年费类型筛选 */
-  fee_type?: FeeType | null;
-};
-
-export type getAnnualFeeStatisticsApiAnnualFeesStatisticsUserIdGetParams = {
-  user_id: string;
-  /** 年份，默认为当前年份 */
+export type getAnnualFeeSummaryApiV1AdminCardsAnnualFeeSummaryGetParams = {
+  /** 指定年份，默认当前年份 */
   year?: number | null;
 };
 
-export type getCardApiCardsCardIdGetParams = {
+export type getBanksApiV1UserCardsBanksListGetParams = {
+  /** 是否只返回激活的银行 */
+  active_only?: boolean;
+};
+
+export type getCardTrendsApiV1AdminCardsTrendsGetParams = {
+  /** 分析月数，1-24个月 */
+  months?: number;
+};
+
+export type getCategoryStatisticsApiV1UserTransactionsStatisticsCategoriesGetParams =
+  {
+    /** 开始日期，默认30天前 */
+    start_date?: string | null;
+    /** 结束日期，默认今天 */
+    end_date?: string | null;
+  };
+
+export type getCreditCardApiV1UserCardsCardIdGetParams = {
+  /** 信用卡ID */
   card_id: string;
 };
 
-export type getCardsApiCardsGetParams = {
+export type getCreditCardsApiV1UserCardsGetParams = {
+  /** 搜索关键词，支持卡片名称、银行名称模糊搜索 */
+  keyword?: string;
+  /** 状态筛选 */
+  status?: string | null;
+  /** 银行ID筛选 */
+  bank_id?: string | null;
+  /** 卡片类型筛选 */
+  card_type?: string | null;
+  /** 是否主卡筛选 */
+  is_primary?: boolean | null;
+  /** 是否即将过期 */
+  expiring_soon?: boolean | null;
   /** 页码，从1开始 */
   page?: number;
   /** 每页数量，最大100 */
   page_size?: number;
-  /** 模糊搜索关键词，支持银行名称、卡片名称搜索 */
-  keyword?: string;
 };
 
-export type getCardsBasicApiCardsBasicGetParams = {
+export type getExpiryAlertsApiV1AdminCardsExpiryAlertsGetParams = {
+  /** 提前月数，1-12个月 */
+  months_ahead?: number;
+};
+
+export type getLoginLogsApiV1UserProfileLoginLogsGetParams = {
+  page?: number;
+  page_size?: number;
+};
+
+export type getMonthlyTrendsApiV1UserTransactionsStatisticsMonthlyTrendsGetParams =
+  {
+    /** 分析月数，最多24个月 */
+    months?: number;
+  };
+
+export type getRecentRemindersApiV1UserRemindersRecentGetParams = {
+  /** 返回数量限制，最大50 */
+  limit?: number;
+};
+
+export type getRecommendationDetailApiV1UserRecommendationsRecommendationIdGetParams =
+  {
+    recommendation_id: string;
+  };
+
+export type getRecommendationHistoryApiV1UserRecommendationsHistoryGetParams = {
+  /** 推荐类型筛选 */
+  recommendation_type?: string | null;
+  /** 状态筛选 */
+  status?: string | null;
+  /** 用户行动筛选 */
+  user_action?: string | null;
+  /** 页码 */
+  page?: number;
+  /** 每页数量 */
+  page_size?: number;
+};
+
+export type getReminderRecordApiV1UserRemindersRecordsRecordIdGetParams = {
+  /** 提醒记录ID */
+  record_id: string;
+};
+
+export type getReminderRecordsApiV1UserRemindersRecordsGetParams = {
   /** 页码，从1开始 */
   page?: number;
   /** 每页数量，最大100 */
   page_size?: number;
-  /** 模糊搜索关键词，支持银行名称、卡片名称搜索 */
-  keyword?: string;
+  /** 提醒设置ID筛选 */
+  setting_id?: string | null;
+  /** 状态筛选: pending, sent, read, cancelled */
+  status?: string | null;
+  /** 开始日期筛选 (YYYY-MM-DD) */
+  start_date?: string | null;
+  /** 结束日期筛选 (YYYY-MM-DD) */
+  end_date?: string | null;
 };
 
-export type getRecommendationApiRecommendationsRecommendationIdGetParams = {
-  recommendation_id: string;
+export type getReminderSettingApiV1UserRemindersSettingsSettingIdGetParams = {
+  /** 提醒设置ID */
+  setting_id: string;
 };
 
-export type getRecommendationsApiRecommendationsGetParams = {
+export type getReminderSettingsApiV1UserRemindersSettingsGetParams = {
   /** 页码，从1开始 */
   page?: number;
   /** 每页数量，最大100 */
   page_size?: number;
-  /** 模糊搜索关键词，支持银行名称、卡片类型搜索 */
-  keyword?: string;
+  /** 信用卡ID筛选 */
+  card_id?: string | null;
+  /** 提醒类型筛选 */
+  reminder_type?: string | null;
+  /** 启用状态筛选 */
+  is_enabled?: boolean | null;
 };
 
-export type getReminderApiRemindersReminderIdGetParams = {
-  reminder_id: string;
+export type getSmartRecommendationsApiV1UserRecommendationsSmartGetParams = {
+  /** 推荐类型列表 */
+  recommendation_types?: string[] | null;
+  /** 推荐数量限制 */
+  limit?: number;
+  /** 是否包含历史推荐 */
+  include_history?: boolean;
 };
 
-export type getRemindersApiRemindersGetParams = {
+export type getTransactionDetailsApiV1UserTransactionsTransactionIdDetailsGetParams =
+  {
+    transaction_id: string;
+  };
+
+export type getTransactionsApiV1UserTransactionsListGetParams = {
   /** 页码，从1开始 */
   page?: number;
   /** 每页数量，最大100 */
   page_size?: number;
-  /** 模糊搜索关键词，支持卡片名称、银行名称搜索 */
-  keyword?: string;
+  /** 信用卡ID筛选 */
+  card_id?: string | null;
+  /** 分类ID筛选 */
+  category_id?: string | null;
+  /** 交易类型筛选 */
+  transaction_type?: string | null;
+  /** 开始日期 */
+  start_date?: string | null;
+  /** 结束日期 */
+  end_date?: string | null;
+  /** 关键词搜索（描述、商户、地点、备注） */
+  keyword?: string | null;
+};
+
+export type getTransactionStatisticsApiV1UserTransactionsStatisticsOverviewGetParams =
+  {
+    /** 开始日期，默认30天前 */
+    start_date?: string | null;
+    /** 结束日期，默认今天 */
+    end_date?: string | null;
+  };
+
+export type getUpcomingRemindersApiV1UserRemindersUpcomingGetParams = {
+  /** 查看未来天数，最大30天 */
+  days_ahead?: number;
+};
+
+export type getUserDetailsApiV1AdminUsersUserIdDetailsGetParams = {
+  /** 用户ID */
+  user_id: string;
+};
+
+export type getUserLoginLogsApiV1AdminUsersUserIdLoginLogsGetParams = {
+  /** 用户ID */
+  user_id: string;
+  /** 页码，从1开始 */
+  page?: number;
+  /** 每页数量，最大100 */
+  page_size?: number;
+};
+
+export type getUsersListApiV1AdminUsersListGetParams = {
+  /** 页码，从1开始 */
+  page?: number;
+  /** 每页数量，最大100 */
+  page_size?: number;
+  /** 搜索关键词（用户名、邮箱、昵称） */
+  search?: string | null;
+  /** 过滤用户状态：true=激活，false=禁用 */
+  is_active?: boolean | null;
+  /** 过滤管理员：true=管理员，false=普通用户 */
+  is_admin?: boolean | null;
+  /** 过滤验证状态：true=已验证，false=未验证 */
+  is_verified?: boolean | null;
 };
 
 export type HTTPValidationError = {
@@ -919,373 +775,556 @@ export type HTTPValidationError = {
   detail?: ValidationError[];
 };
 
-export type LoginResponse = {
-  /** Access Token JWT访问令牌，用于API认证 */
-  access_token: string;
-  /** Token Type 令牌类型，固定为bearer */
-  token_type?: string;
-  /** Expires In 令牌过期时间（秒） */
-  expires_in: number;
-  /** 用户详细信息 */
-  user: UserProfile;
+export type LoginLogResponse = {
+  /** Id 日志ID */
+  id: string;
+  /** Login Type 登录类型 */
+  login_type: string;
+  /** Login Method 登录方式 */
+  login_method: string;
+  /** Ip Address IP地址 */
+  ip_address?: string | null;
+  /** User Agent 用户代理 */
+  user_agent?: string | null;
+  /** Location 地理位置 */
+  location?: string | null;
+  /** Is Success 是否成功 */
+  is_success: boolean;
+  /** Failure Reason 失败原因 */
+  failure_reason?: string | null;
+  /** Created At 创建时间 */
+  created_at: string;
 };
 
-export type LogoutRequest = {
-  /** All Devices 是否登出所有设备 */
-  all_devices?: boolean;
+export type LoginRequest = {
+  /** Username 用户名 */
+  username: string;
+  /** Password 密码 */
+  password: string;
 };
 
-export type markReminderReadApiRemindersReminderIdMarkReadPutParams = {
-  reminder_id: string;
+export type MarkAllReadResponse = {
+  /** Marked Count 标记为已读的提醒数量 */
+  marked_count: number;
+  /** Marked At 标记时间 */
+  marked_at: string;
+  /** Message 操作结果消息 */
+  message: string;
 };
 
-export type PagedResponseAnnualFeeRecord_ = {
-  /** Items 当前页的数据列表 */
-  items: AnnualFeeRecord[];
-  /** 分页信息 */
-  pagination: PaginationInfo;
-};
+export type markReminderAsReadApiV1UserRemindersRecordsRecordIdReadPostParams =
+  {
+    /** 提醒记录ID */
+    record_id: string;
+  };
 
-export type PagedResponseAnnualFeeRule_ = {
-  /** Items 当前页的数据列表 */
-  items: AnnualFeeRule[];
-  /** 分页信息 */
-  pagination: PaginationInfo;
-};
-
-export type PagedResponseCard_ = {
-  /** Items 当前页的数据列表 */
-  items: Card[];
-  /** 分页信息 */
-  pagination: PaginationInfo;
-};
-
-export type PagedResponseCardSummaryWithAnnualFee_ = {
-  /** Items 当前页的数据列表 */
-  items: CardSummaryWithAnnualFee[];
-  /** 分页信息 */
-  pagination: PaginationInfo;
-};
-
-export type PagedResponseRecommendation_ = {
-  /** Items 当前页的数据列表 */
-  items: Recommendation[];
-  /** 分页信息 */
-  pagination: PaginationInfo;
-};
-
-export type PagedResponseReminder_ = {
-  /** Items 当前页的数据列表 */
-  items: Reminder[];
-  /** 分页信息 */
-  pagination: PaginationInfo;
+export type MonthlyTrendResponse = {
+  /** Analysis Period 分析周期 */
+  analysis_period: string;
+  /** Monthly Trends 月度趋势数据 */
+  monthly_trends: Record<string, unknown>[];
+  /** Expense Trend 支出趋势 */
+  expense_trend: string;
+  /** Total Months 分析月数 */
+  total_months: number;
 };
 
 export type PaginationInfo = {
+  /** Current Page 当前页码 */
+  current_page: number;
+  /** Page Size 每页数量 */
+  page_size: number;
   /** Total 总记录数 */
   total: number;
-  /** Page 当前页码，从1开始 */
-  page: number;
-  /** Size 每页大小，即当前页实际返回的记录数 */
-  size: number;
-  /** Pages 总页数，根据总记录数和每页大小计算得出 */
-  pages: number;
+  /** Total Pages 总页数 */
+  total_pages: number;
+  /** Has Next 是否有下一页 */
+  has_next: boolean;
+  /** Has Prev 是否有上一页 */
+  has_prev: boolean;
 };
 
-export type PhoneCodeLogin = {
-  /** Phone 手机号码 */
-  phone: string;
-  /** Verification Code 6位数字验证码 */
-  verification_code: string;
+export type RecommendationFeedback = {
+  /** User Action 用户行动 */
+  user_action: string;
+  /** Feedback 用户反馈 */
+  feedback?: string | null;
 };
 
-export type PhonePasswordLogin = {
-  /** Phone 手机号码 */
-  phone: string;
-  /** Password 用户密码 */
-  password: string;
-  /** Remember Me 是否记住登录状态 */
-  remember_me?: boolean;
-};
-
-export type Recommendation = {
-  /** Bank Name 银行名称 */
-  bank_name: string;
-  /** Card Name 信用卡名称 */
-  card_name: string;
-  /** 推荐类型 */
-  recommendation_type: RecommendationType;
-  /** Title 推荐标题 */
+export type RecommendationRecordResponse = {
+  /** Recommendation Type 推荐类型 */
+  recommendation_type: string;
+  /** Title 标题 */
   title: string;
-  /** Description 推荐描述 */
-  description: string;
-  /** Features 卡片特色功能列表 */
-  features?: string[];
-  /** Annual Fee 年费金额，单位：元 */
-  annual_fee?: string;
-  /** Credit Limit Range 额度范围 */
-  credit_limit_range: string;
-  /** Approval Difficulty 申请难度等级，1-5分 */
-  approval_difficulty: number;
-  /** Recommendation Score 推荐分数，0-100分 */
-  recommendation_score: string;
-  /** Match Reasons 匹配原因列表 */
-  match_reasons?: string[];
-  /** Pros 优点列表 */
-  pros?: string[];
-  /** Cons 缺点列表 */
-  cons?: string[];
-  /** Apply Url 申请链接 */
-  apply_url?: string | null;
-  /** 推荐状态 */
-  status?: RecommendationStatus;
-  /** Expires At 推荐过期时间 */
-  expires_at?: string | null;
-  /** Is Featured 是否为精选推荐 */
-  is_featured?: boolean;
-  /** Id 推荐ID，系统自动生成的唯一标识 */
+  /** Content 内容 */
+  content: string;
+  /** Action Data 行动数据 */
+  action_data?: Record<string, unknown> | null;
+  /** Id 记录ID */
   id: string;
-  /** User Id 用户ID，推荐的目标用户 */
+  /** User Id 用户ID */
   user_id: string;
+  /** Rule Id 规则ID */
+  rule_id?: string | null;
+  /** User Action 用户行动 */
+  user_action?: string | null;
+  /** Feedback 用户反馈 */
+  feedback?: string | null;
+  /** Status 状态 */
+  status: string;
   /** Created At 创建时间 */
   created_at: string;
-  /** Updated At 最后更新时间 */
+  /** Updated At 更新时间 */
   updated_at: string;
-  /** View Count 查看次数 */
-  view_count?: number;
-  /** Last Viewed At 最后查看时间 */
-  last_viewed_at?: string | null;
 };
 
-export enum RecommendationStatus {
-  active = 'active',
-  expired = 'expired',
-  applied = 'applied',
-  rejected = 'rejected',
-}
+export type RecommendationRecordUpdate = {
+  /** User Action 用户行动 */
+  user_action?: string | null;
+  /** Feedback 用户反馈 */
+  feedback?: string | null;
+  /** Status 状态 */
+  status?: string | null;
+};
 
-export type IRecommendationStatus = keyof typeof RecommendationStatus;
-
-export enum RecommendationType {
-  cashback = 'cashback',
-  points = 'points',
-  travel = 'travel',
-  dining = 'dining',
-  shopping = 'shopping',
-  fuel = 'fuel',
-}
-
-export type IRecommendationType = keyof typeof RecommendationType;
+export type RecommendationStats = {
+  /** Total Recommendations 总推荐数 */
+  total_recommendations: number;
+  /** Pending Recommendations 待处理推荐数 */
+  pending_recommendations: number;
+  /** Accepted Recommendations 已接受推荐数 */
+  accepted_recommendations: number;
+  /** Rejected Recommendations 已拒绝推荐数 */
+  rejected_recommendations: number;
+  /** Type Distribution 类型分布 */
+  type_distribution: Record<string, unknown>;
+  /** Recent Recommendations 最近推荐 */
+  recent_recommendations: RecommendationRecordResponse[];
+};
 
 export type RefreshTokenRequest = {
   /** Refresh Token 刷新令牌 */
   refresh_token: string;
 };
 
-export type Reminder = {
-  /** Card Id 信用卡ID，关联的信用卡 */
-  card_id: string;
-  /** 提醒类型 */
-  reminder_type: ReminderType;
+export type RegisterRequest = {
+  /** Username 用户名 */
+  username: string;
+  /** Email 邮箱 */
+  email: string;
+  /** Password 密码 */
+  password: string;
+  /** Nickname 昵称 */
+  nickname?: string | null;
+};
+
+export type ReminderRecordCreate = {
+  /** Setting Id 提醒设置ID */
+  setting_id: string;
+  /** Card Id 信用卡ID */
+  card_id?: string | null;
+  /** Reminder Type 提醒类型 */
+  reminder_type: string;
   /** Title 提醒标题 */
   title: string;
-  /** Message 提醒内容 */
-  message: string;
-  /** Reminder Date 提醒日期 */
-  reminder_date: string;
-  /** Due Date 到期日期（还款日或账单日） */
-  due_date: string;
-  /** Amount 相关金额，如还款金额、年费金额 */
-  amount?: string | null;
-  /** 提醒状态 */
-  status?: ReminderStatus;
-  /** Is Active 是否启用此提醒 */
-  is_active?: boolean;
-  /** Notes 备注信息 */
-  notes?: string | null;
-  /** Id 提醒ID，系统自动生成的唯一标识 */
-  id: string;
-  /** User Id 用户ID，提醒所属用户 */
-  user_id: string;
-  /** Created At 创建时间 */
-  created_at: string;
-  /** Updated At 最后更新时间 */
-  updated_at: string;
-  /** Sent At 发送时间 */
-  sent_at?: string | null;
-  /** Read At 已读时间 */
-  read_at?: string | null;
+  /** Content 提醒内容 */
+  content: string;
+  /** Email Sent 邮件是否发送 */
+  email_sent?: boolean;
+  /** Sms Sent 短信是否发送 */
+  sms_sent?: boolean;
+  /** Push Sent 推送是否发送 */
+  push_sent?: boolean;
+  /** Wechat Sent 微信是否发送 */
+  wechat_sent?: boolean;
+  /** Scheduled At 计划发送时间 */
+  scheduled_at?: string | null;
 };
 
-export type ReminderCreate = {
-  /** Card Id 信用卡ID，关联的信用卡 */
-  card_id: string;
-  /** 提醒类型 */
-  reminder_type: ReminderType;
-  /** Title 提醒标题 */
-  title: string;
-  /** Message 提醒内容 */
-  message: string;
-  /** Reminder Date 提醒日期 */
-  reminder_date: string;
-  /** Due Date 到期日期（还款日或账单日） */
-  due_date: string;
-  /** Amount 相关金额，如还款金额、年费金额 */
-  amount?: number | string | null;
-  /** 提醒状态 */
-  status?: ReminderStatus;
-  /** Is Active 是否启用此提醒 */
-  is_active?: boolean;
-  /** Notes 备注信息 */
-  notes?: string | null;
+export type ReminderRecordResponse = object;
+
+export type ReminderSettingCreate = {
+  /** Card Id 信用卡ID，NULL表示全局提醒 */
+  card_id?: string | null;
+  /** Reminder Type 提醒类型: payment, annual_fee, card_expiry, custom */
+  reminder_type: string;
+  /** Advance Days 提前天数 */
+  advance_days?: number;
+  /** Reminder Time 提醒时间 */
+  reminder_time?: string | null;
+  /** Email Enabled 邮件提醒 */
+  email_enabled?: boolean;
+  /** Sms Enabled 短信提醒 */
+  sms_enabled?: boolean;
+  /** Push Enabled 推送提醒 */
+  push_enabled?: boolean;
+  /** Wechat Enabled 微信提醒 */
+  wechat_enabled?: boolean;
+  /** Is Recurring 是否循环 */
+  is_recurring?: boolean;
+  /** Frequency 频率: daily, weekly, monthly, yearly */
+  frequency?: string;
+  /** Is Enabled 是否启用 */
+  is_enabled?: boolean;
 };
 
-export enum ReminderStatus {
-  pending = 'pending',
-  sent = 'sent',
-  read = 'read',
-  ignored = 'ignored',
-}
+export type ReminderSettingResponse = object;
 
-export type IReminderStatus = keyof typeof ReminderStatus;
-
-export enum ReminderType {
-  payment = 'payment',
-  bill = 'bill',
-  annual_fee = 'annual_fee',
-  overdue = 'overdue',
-}
-
-export type IReminderType = keyof typeof ReminderType;
-
-export type ReminderUpdate = {
-  /** Title 提醒标题 */
-  title?: string | null;
-  /** Message 提醒内容 */
-  message?: string | null;
-  /** Reminder Date 提醒日期 */
-  reminder_date?: string | null;
-  /** Due Date 到期日期 */
-  due_date?: string | null;
-  /** Amount 相关金额 */
-  amount?: number | string | null;
-  /** 提醒状态 */
-  status?: ReminderStatus | null;
-  /** Is Active 是否启用此提醒 */
-  is_active?: boolean | null;
-  /** Notes 备注信息 */
-  notes?: string | null;
+export type ReminderSettingUpdate = {
+  /** Advance Days 提前天数 */
+  advance_days?: number | null;
+  /** Reminder Time 提醒时间 */
+  reminder_time?: string | null;
+  /** Email Enabled 邮件提醒 */
+  email_enabled?: boolean | null;
+  /** Sms Enabled 短信提醒 */
+  sms_enabled?: boolean | null;
+  /** Push Enabled 推送提醒 */
+  push_enabled?: boolean | null;
+  /** Wechat Enabled 微信提醒 */
+  wechat_enabled?: boolean | null;
+  /** Is Recurring 是否循环 */
+  is_recurring?: boolean | null;
+  /** Frequency 频率 */
+  frequency?: string | null;
+  /** Is Enabled 是否启用 */
+  is_enabled?: boolean | null;
 };
 
-export type ResetPasswordRequest = {
-  /** Phone Or Email 手机号或邮箱地址 */
-  phone_or_email: string;
-  /** Verification Code 6位数字验证码 */
-  verification_code: string;
-  /** New Password 新密码，8-30位字符 */
-  new_password: string;
+export type ReminderStatisticsResponse = {
+  /** Total Settings 总设置数 */
+  total_settings: number;
+  /** Active Settings 活跃设置数 */
+  active_settings: number;
+  /** Total Reminders 30Days 30天内提醒总数 */
+  total_reminders_30days: number;
+  /** Pending Reminders 待处理提醒数 */
+  pending_reminders: number;
+  /** Read Rate 阅读率 */
+  read_rate: number;
+  /** Type Distribution 类型分布 */
+  type_distribution: Record<string, unknown>;
+  /** Recent Reminders 最近提醒 */
+  recent_reminders: ReminderRecordResponse[];
 };
 
-export type SendCodeRequest = {
-  /** Phone Or Email 手机号或邮箱地址 */
-  phone_or_email: string;
-  /** 验证码类型 */
-  code_type: CodeType;
-};
-
-export type submitRecommendationFeedbackApiRecommendationsRecommendationIdFeedbackPutParams =
+export type submitRecommendationFeedbackApiV1UserRecommendationsRecommendationIdFeedbackPostParams =
   {
     recommendation_id: string;
-    /** 用户反馈，如：interested、not_interested、applied */
-    feedback: string;
   };
 
-export type updateAnnualFeeRecordApiAnnualFeesRecordsRecordIdPutParams = {
-  record_id: string;
+export type TokenResponse = {
+  /** Access Token 访问令牌 */
+  access_token: string;
+  /** Refresh Token 刷新令牌 */
+  refresh_token: string;
+  /** Token Type 令牌类型 */
+  token_type?: string;
 };
 
-export type updateAnnualFeeRuleApiAnnualFeesRulesRuleIdPutParams = {
-  rule_id: string;
+export type TransactionCategoryResponse = {
+  /** Id 分类ID */
+  id: string;
+  /** Name 分类名称 */
+  name: string;
+  /** Icon 图标 */
+  icon?: string | null;
+  /** Color 颜色 */
+  color?: string | null;
+  /** Parent Id 父分类ID */
+  parent_id?: string | null;
+  /** Is System 是否系统分类 */
+  is_system: boolean;
 };
 
-export type updateCardApiCardsCardIdPutParams = {
+export type TransactionCreate = {
+  /** Card Id 信用卡ID */
+  card_id: string;
+  /** Category Id 交易分类ID */
+  category_id?: string | null;
+  /** Transaction Type 交易类型 */
+  transaction_type: string;
+  /** Amount 交易金额 */
+  amount: number | string;
+  /** Currency 货币类型 */
+  currency?: string | null;
+  /** Description 交易描述 */
+  description?: string | null;
+  /** Merchant Name 商户名称 */
+  merchant_name?: string | null;
+  /** Merchant Category 商户类别 */
+  merchant_category?: string | null;
+  /** Location 交易地点 */
+  location?: string | null;
+  /** Transaction Date 交易时间 */
+  transaction_date?: string | null;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Tags 标签 */
+  tags?: string[] | null;
+};
+
+export type TransactionResponse = {
+  /** Id 交易ID */
+  id: string;
+  /** Card Id 信用卡ID */
+  card_id: string;
+  /** Category Id 交易分类ID */
+  category_id?: string | null;
+  /** Transaction Type 交易类型 */
+  transaction_type: string;
+  /** Amount 交易金额 */
+  amount: string;
+  /** Currency 货币类型 */
+  currency: string;
+  /** Description 交易描述 */
+  description?: string | null;
+  /** Merchant Name 商户名称 */
+  merchant_name?: string | null;
+  /** Merchant Category 商户类别 */
+  merchant_category?: string | null;
+  /** Location 交易地点 */
+  location?: string | null;
+  /** Points Earned 获得积分 */
+  points_earned?: number;
+  /** Cashback Earned 获得返现 */
+  cashback_earned?: string;
+  /** Status 状态 */
+  status: string;
+  /** Transaction Date 交易时间 */
+  transaction_date?: string | null;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Tags 标签 */
+  tags?: string[];
+  /** Created At 创建时间 */
+  created_at: string;
+  /** Updated At 更新时间 */
+  updated_at: string;
+  /** Card Name 信用卡名称 */
+  card_name?: string | null;
+  /** Category Name 分类名称 */
+  category_name?: string | null;
+};
+
+export type TransactionStatisticsResponse = {
+  /** Period Start 统计开始时间 */
+  period_start: string;
+  /** Period End 统计结束时间 */
+  period_end: string;
+  /** Total Transactions 交易总笔数 */
+  total_transactions: number;
+  /** Total Expense 总支出 */
+  total_expense: number;
+  /** Total Income 总收入 */
+  total_income: number;
+  /** Net Amount 净额 */
+  net_amount: number;
+  /** Average Transaction 平均交易额 */
+  average_transaction: number;
+  /** Total Points Earned 总获得积分 */
+  total_points_earned: number;
+  /** Total Cashback Earned 总获得返现 */
+  total_cashback_earned: number;
+  /** Type Distribution 类型分布 */
+  type_distribution: Record<string, unknown>;
+  /** Monthly Trends 月度趋势 */
+  monthly_trends: Record<string, unknown>[];
+};
+
+export type TransactionUpdate = {
+  /** Card Id 信用卡ID */
+  card_id?: string | null;
+  /** Category Id 交易分类ID */
+  category_id?: string | null;
+  /** Transaction Type 交易类型 */
+  transaction_type?: string | null;
+  /** Amount 交易金额 */
+  amount?: number | string | null;
+  /** Currency 货币类型 */
+  currency?: string | null;
+  /** Description 交易描述 */
+  description?: string | null;
+  /** Merchant Name 商户名称 */
+  merchant_name?: string | null;
+  /** Merchant Category 商户类别 */
+  merchant_category?: string | null;
+  /** Location 交易地点 */
+  location?: string | null;
+  /** Transaction Date 交易时间 */
+  transaction_date?: string | null;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Tags 标签 */
+  tags?: string[] | null;
+};
+
+export type UnreadRemindersCountResponse = {
+  /** Total Unread 未读提醒总数 */
+  total_unread: number;
+  /** Type Breakdown 按类型分布的未读提醒数 */
+  type_breakdown: Record<string, unknown>;
+  /** Last Check Time 最后检查时间 */
+  last_check_time: string;
+};
+
+export type UpcomingRemindersResponse = {
+  /** Total Upcoming 即将到来的提醒总数 */
+  total_upcoming: number;
+  /** High Priority Count 高优先级提醒数 */
+  high_priority_count: number;
+  /** Medium Priority Count 中优先级提醒数 */
+  medium_priority_count: number;
+  /** Low Priority Count 低优先级提醒数 */
+  low_priority_count: number;
+  /** Analysis Period 分析周期 */
+  analysis_period: string;
+  /** Reminders 提醒列表 */
+  reminders: Record<string, unknown>[];
+};
+
+export type updateCardStatusApiV1UserCardsCardIdStatusPatchParams = {
+  /** 信用卡ID */
   card_id: string;
 };
 
-export type updateReminderApiRemindersReminderIdPutParams = {
-  reminder_id: string;
+export type updateCreditCardApiV1UserCardsCardIdPutParams = {
+  /** 信用卡ID */
+  card_id: string;
 };
 
-export type UsernamePasswordLogin = {
-  /** Username 用户名或邮箱地址 */
-  username: string;
-  /** Password 用户密码 */
-  password: string;
-  /** Remember Me 是否记住登录状态，影响令牌过期时间 */
-  remember_me?: boolean;
+export type updateRecommendationApiV1UserRecommendationsRecommendationIdPutParams =
+  {
+    recommendation_id: string;
+  };
+
+export type updateReminderSettingApiV1UserRemindersSettingsSettingIdPutParams =
+  {
+    /** 提醒设置ID */
+    setting_id: string;
+  };
+
+export type updateTransactionApiV1UserTransactionsTransactionIdUpdatePutParams =
+  {
+    transaction_id: string;
+  };
+
+export type updateUserPermissionsApiV1AdminUsersUserIdPermissionsPutParams = {
+  /** 用户ID */
+  user_id: string;
 };
 
-export type UserProfile = {
-  /** Id 用户唯一标识符 */
+export type updateUserStatusApiV1AdminUsersUserIdStatusPutParams = {
+  /** 用户ID */
+  user_id: string;
+};
+
+export type UserDeletionRequest = {
+  /** Reason 删除原因 */
+  reason: string;
+  /** Confirm Username 确认用户名 */
+  confirm_username: string;
+};
+
+export type UserPermissionsUpdateRequest = {
+  /** Is Admin 是否管理员 */
+  is_admin: boolean;
+  /** Is Verified 是否已验证 */
+  is_verified: boolean;
+  /** Reason 操作原因 */
+  reason?: string | null;
+};
+
+export type UserProfileResponse = {
+  /** Id 用户ID */
   id: string;
   /** Username 用户名 */
   username: string;
   /** Email 邮箱地址 */
   email: string;
-  /** Phone 手机号码 */
-  phone?: string | null;
-  /** Nickname 用户昵称 */
+  /** Nickname 昵称 */
   nickname?: string | null;
+  /** Phone 手机号 */
+  phone?: string | null;
   /** Avatar Url 头像URL */
   avatar_url?: string | null;
-  /** 性别 */
-  gender?: Gender;
-  /** Birthday 生日 */
-  birthday?: string | null;
-  /** Bio 个人简介 */
-  bio?: string | null;
-  /** Is Active 账户是否激活 */
-  is_active?: boolean;
-  /** Is Verified 是否已验证邮箱或手机号 */
-  is_verified?: boolean;
-  /** Is Admin 是否为管理员 */
-  is_admin?: boolean;
-  /** Login Count 登录次数 */
-  login_count?: string;
+  /** Is Active 是否激活 */
+  is_active: boolean;
+  /** Is Verified 是否已验证 */
+  is_verified: boolean;
+  /** Timezone 时区 */
+  timezone: string;
+  /** Language 语言偏好 */
+  language: string;
+  /** Currency 默认货币 */
+  currency: string;
   /** Last Login At 最后登录时间 */
   last_login_at?: string | null;
-  /** Created At 注册时间 */
+  /** Email Verified At 邮箱验证时间 */
+  email_verified_at?: string | null;
+  /** Created At 创建时间 */
   created_at: string;
-  /** Updated At 最后更新时间 */
-  updated_at: string;
 };
 
-export type UserRegisterRequest = {
-  /** Username 用户名，3-20位字符，支持字母、数字、下划线 */
-  username: string;
-  /** Email 邮箱地址，必须是有效的邮箱格式 */
-  email: string;
-  /** Password 密码，8-30位字符，建议包含字母、数字和特殊字符 */
-  password: string;
-  /** Phone 手机号码，可选，中国大陆手机号格式 */
+export type UserProfileUpdateRequest = {
+  /** Nickname 昵称 */
+  nickname?: string | null;
+  /** Phone 手机号 */
   phone?: string | null;
-  /** Nickname 昵称，可选，默认使用用户名 */
-  nickname?: string | null;
-  /** Verification Code 手机验证码，提供手机号时必填 */
-  verification_code?: string | null;
-};
-
-export type UserUpdateRequest = {
-  /** Nickname 用户昵称 */
-  nickname?: string | null;
   /** Avatar Url 头像URL */
   avatar_url?: string | null;
-  /** 性别 */
-  gender?: Gender | null;
-  /** Birthday 生日 */
-  birthday?: string | null;
-  /** Bio 个人简介 */
-  bio?: string | null;
+  /** Timezone 时区 */
+  timezone?: string | null;
+  /** Language 语言偏好 */
+  language?: string | null;
+  /** Currency 默认货币 */
+  currency?: string | null;
+};
+
+export type UserStatisticsResponse = {
+  /** Total Cards 信用卡总数 */
+  total_cards: number;
+  /** Active Cards 活跃信用卡数 */
+  active_cards: number;
+  /** Total Credit Limit 总信用额度 */
+  total_credit_limit: number;
+  /** Total Used Limit 总已用额度 */
+  total_used_limit: number;
+  /** Credit Utilization 信用利用率(%) */
+  credit_utilization: number;
+  /** Total Transactions 总交易笔数 */
+  total_transactions: number;
+  /** Total Spending 总支出金额 */
+  total_spending: number;
+  /** This Month Spending 本月支出金额 */
+  this_month_spending: number;
+  /** Total Income 总收入金额 */
+  total_income: number;
+  /** Avg Transaction 平均交易金额 */
+  avg_transaction: number;
+  /** Total Annual Fees 总年费金额 */
+  total_annual_fees: number;
+  /** Waived Fees 已减免年费 */
+  waived_fees: number;
+  /** Pending Fees 待缴年费 */
+  pending_fees: number;
+  /** Total Points Earned 总获得积分 */
+  total_points_earned: number;
+  /** Total Cashback Earned 总获得返现 */
+  total_cashback_earned: number;
+  /** Active Reminders 活跃提醒数 */
+  active_reminders: number;
+  /** Account Age Days 账户天数 */
+  account_age_days: number;
+  /** Last Transaction Date 最后交易时间 */
+  last_transaction_date?: string | null;
+};
+
+export type UserStatusUpdateRequest = {
+  /** Is Active 是否激活 */
+  is_active: boolean;
+  /** Reason 操作原因 */
+  reason?: string | null;
 };
 
 export type ValidationError = {
@@ -1297,27 +1336,19 @@ export type ValidationError = {
   type: string;
 };
 
-export type VerifyCodeRequest = {
-  /** Phone Or Email 手机号或邮箱地址 */
-  phone_or_email: string;
-  /** Code 6位数字验证码 */
-  code: string;
-  /** 验证码类型 */
-  code_type: CodeType;
-};
-
-export enum WaiverStatus {
-  pending = 'pending',
-  waived = 'waived',
-  paid = 'paid',
-  overdue = 'overdue',
-}
-
-export type IWaiverStatus = keyof typeof WaiverStatus;
-
-export type WechatLoginRequest = {
-  /** Code 微信授权码，由微信客户端获取 */
-  code: string;
-  /** User Info 可选的用户补充信息，如昵称等 */
-  user_info?: Record<string, unknown> | null;
+export type WechatBindingResponse = {
+  /** Id 绑定ID */
+  id: string;
+  /** Openid 微信OpenID */
+  openid: string;
+  /** Unionid 微信UnionID */
+  unionid?: string | null;
+  /** Nickname 微信昵称 */
+  nickname?: string | null;
+  /** Avatar Url 微信头像 */
+  avatar_url?: string | null;
+  /** Is Active 是否激活 */
+  is_active: boolean;
+  /** Bound At 绑定时间 */
+  bound_at: string;
 };

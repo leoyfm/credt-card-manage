@@ -3,7 +3,7 @@
 """
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc
 from sqlalchemy.exc import SQLAlchemyError
@@ -18,6 +18,7 @@ from app.core.exceptions.custom import (
 )
 from app.core.logging.logger import app_logger as logger
 from app.models.schemas.common import PaginationInfo
+from app.utils.pagination import apply_service_pagination, calculate_pagination_info
 
 
 class AdminUserService:
@@ -70,11 +71,13 @@ class AdminUserService:
             if is_verified is not None:
                 query = query.filter(User.is_verified == is_verified)
             
-            # 总数统计
-            total = query.count()
-            
-            # 分页和排序
-            users = query.order_by(desc(User.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+            # 应用分页和排序
+            users, total = apply_service_pagination(
+                query,
+                page,
+                page_size,
+                order_by=desc(User.created_at)
+            )
             
             # 获取统计信息（批量查询避免N+1问题）
             user_ids = [user.id for user in users]
@@ -119,18 +122,8 @@ class AdminUserService:
                 user_summaries.append(user_summary)
             
             # 计算分页信息
-            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-            has_next = page < total_pages
-            has_prev = page > 1
-            
-            pagination_info = PaginationInfo(
-                current_page=page,
-                page_size=page_size,
-                total=total,
-                total_pages=total_pages,
-                has_next=has_next,
-                has_prev=has_prev
-            )
+            pagination_data = calculate_pagination_info(total, page, page_size)
+            pagination_info = PaginationInfo(**pagination_data)
             
             logger.info(f"管理员查询用户列表成功: total={total}, page={page}, size={page_size}")
             return user_summaries, pagination_info
@@ -218,7 +211,7 @@ class AdminUserService:
             
             # 更新状态
             user.is_active = status_update.is_active
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone(timedelta(hours=8)))
             
             self.db.commit()
             
@@ -267,7 +260,7 @@ class AdminUserService:
             # 更新权限
             user.is_admin = permissions_update.is_admin
             user.is_verified = permissions_update.is_verified
-            user.updated_at = datetime.utcnow()
+            user.updated_at = datetime.now(timezone(timedelta(hours=8)))
             
             self.db.commit()
             
@@ -307,11 +300,14 @@ class AdminUserService:
             if not user:
                 raise ResourceNotFoundError("用户不存在")
             
+            # 查询登录日志并应用分页
             query = self.db.query(LoginLog).filter(LoginLog.user_id == user_id)
-            total = query.count()
-            
-            # 分页查询，按时间倒序
-            logs = query.order_by(desc(LoginLog.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+            logs, total = apply_service_pagination(
+                query,
+                page,
+                page_size,
+                order_by=desc(LoginLog.created_at)
+            )
             
             # 转换为响应模型
             log_responses = [
@@ -331,18 +327,8 @@ class AdminUserService:
             ]
             
             # 计算分页信息
-            total_pages = (total + page_size - 1) // page_size if total > 0 else 0
-            has_next = page < total_pages
-            has_prev = page > 1
-            
-            pagination_info = PaginationInfo(
-                current_page=page,
-                page_size=page_size,
-                total=total,
-                total_pages=total_pages,
-                has_next=has_next,
-                has_prev=has_prev
-            )
+            pagination_data = calculate_pagination_info(total, page, page_size)
+            pagination_info = PaginationInfo(**pagination_data)
             
             logger.info(f"管理员查询用户登录日志成功: user_id={user_id}, total={total}")
             return log_responses, pagination_info
@@ -422,7 +408,7 @@ class AdminUserService:
             admin_users = self.db.query(User).filter(User.is_admin == True).count()
             
             # 时间范围统计
-            now = datetime.utcnow()
+            now = datetime.now(timezone(timedelta(hours=8)))
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             week_start = today_start - timedelta(days=now.weekday())
             month_start = today_start.replace(day=1)

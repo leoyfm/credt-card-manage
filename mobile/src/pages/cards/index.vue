@@ -10,199 +10,193 @@
 
 <template>
   <view class="cards-page">
-    <!-- 搜索栏 -->
-    <view class="search-bar bg-white px-4 py-3 sticky top-0 z-10">
-      <view class="flex items-center bg-gray-100 rounded-full px-4 py-2">
-        <text class="iconfont icon-search text-gray-400 mr-2">🔍</text>
-        <input
-          v-model="searchKeyword"
-          placeholder="搜索银行或卡片名称"
-          class="flex-1 text-sm"
-          @input="handleSearch"
+    <!-- 未登录状态 -->
+    <view v-if="!userStore.isLoggedIn" class="login-prompt text-center py-16">
+      <text class="text-4xl mb-4 block">🔐</text>
+      <text class="text-gray-500 text-base mb-4 block">请先登录查看您的信用卡</text>
+      <button class="btn-primary" @click="goToLogin">立即登录</button>
+    </view>
+
+    <!-- 已登录状态 -->
+    <template v-else>
+      <!-- 搜索栏 -->
+      <view class="search-bar bg-white px-4 py-3 sticky top-0 z-10">
+        <view class="flex items-center bg-gray-100 rounded-full px-4 py-2">
+          <text class="iconfont icon-search text-gray-400 mr-2">🔍</text>
+          <input
+            v-model="searchKeyword"
+            placeholder="搜索银行或卡片名称"
+            class="flex-1 text-sm"
+            @input="handleSearch"
+          />
+          <text v-if="searchKeyword" class="text-gray-400 ml-2" @click="clearSearch">✕</text>
+        </view>
+      </view>
+
+      <!-- 筛选栏 -->
+      <view class="filter-section bg-white px-4 py-4 border-b border-gray-100">
+        <!-- 筛选标签 -->
+        <view class="filter-tabs mb-3">
+          <scroll-view class="filter-scroll" :scroll-x="true" :show-scrollbar="false">
+            <view class="filter-container">
+              <view
+                v-for="filter in filterOptions"
+                :key="filter.key"
+                class="filter-tag"
+                :class="[
+                  activeFilter === filter.key ? 'filter-tag-active' : 'filter-tag-normal',
+                  filter.key === 'fee_due' ? 'filter-tag-warning' : '',
+                  filter.key === 'high_limit' ? 'filter-tag-premium' : '',
+                ]"
+                @click="handleFilter(filter.key)"
+              >
+                <text class="filter-icon">{{ getFilterIcon(filter.key) }}</text>
+                <text class="filter-text">{{ filter.label }}</text>
+                <text v-if="getFilterCount(filter.key) > 0" class="filter-count">
+                  {{ getFilterCount(filter.key) }}
+                </text>
+              </view>
+            </view>
+          </scroll-view>
+        </view>
+
+        <!-- 统计信息栏 -->
+        <view class="stats-summary">
+          <view class="stats-item">
+            <text class="stats-label">共</text>
+            <text class="stats-value">{{ filteredCards.length }}</text>
+            <text class="stats-label">张卡片</text>
+          </view>
+          <view class="stats-divider"></view>
+          <view class="stats-item">
+            <text class="stats-label">总额度</text>
+            <text class="stats-value stats-amount">¥{{ formatMoney(totalCreditLimit) }}</text>
+          </view>
+          <view class="stats-divider"></view>
+          <view class="stats-item">
+            <text class="stats-label">可用额度</text>
+            <text class="stats-value stats-available">¥{{ formatMoney(totalAvailableLimit) }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载状态 -->
+      <view v-if="isLoading" class="loading-container text-center py-16">
+        <wd-loading />
+        <text class="text-gray-500 text-sm mt-4 block">加载信用卡列表中...</text>
+      </view>
+
+      <!-- 错误状态 -->
+      <view v-else-if="isError" class="error-container text-center py-16">
+        <text class="text-4xl mb-4 block">❌</text>
+        <text class="text-red-500 text-base mb-4 block">加载失败，请重试</text>
+        <button class="btn-primary" @click="refetchCards">重新加载</button>
+      </view>
+
+      <!-- 卡片列表 -->
+      <view v-else class="card-list px-4 py-2">
+        <CreditCard
+          v-for="card in filteredCards"
+          :key="card.id"
+          :card="card"
+          :is-best-card="false"
+          @card-click="goToCardDetail"
+          @card-updated="refetchCards"
         />
-        <text v-if="searchKeyword" class="text-gray-400 ml-2" @click="clearSearch">✕</text>
       </view>
-    </view>
 
-    <!-- 筛选栏 -->
-    <view class="filter-bar bg-white px-4 py-3 border-b border-gray-100">
-      <view class="flex space-x-3">
-        <view 
-          v-for="filter in filterOptions" 
-          :key="filter.key"
-          class="filter-item px-3 py-1 rounded-full text-sm transition-all"
-          :class="activeFilter === filter.key ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'"
-          @click="setFilter(filter.key)"
-        >
-          {{ filter.label }}
-        </view>
-      </view>
-    </view>
-
-    <!-- 统计信息 -->
-    <view class="stats-bar bg-blue-50 px-4 py-3">
-      <view class="flex justify-between text-sm">
-        <text class="text-gray-600">共 {{ filteredCards.length }} 张卡片</text>
-        <text class="text-blue-600">总额度 ¥{{ formatMoney(totalCreditLimit) }}</text>
-      </view>
-    </view>
-
-    <!-- 卡片列表 -->
-    <view class="card-list px-4 py-2">
-      <view 
-        v-for="card in filteredCards" 
-        :key="card.id"
-        class="card-item bg-white rounded-xl p-4 mb-4 shadow-sm"
-        @click="goToCardDetail(card.id)"
+      <!-- 空状态 -->
+      <view
+        v-if="!isLoading && !isError && filteredCards.length === 0"
+        class="empty-state text-center py-16"
       >
-        <!-- 银行头部 -->
-        <view class="flex items-center justify-between mb-4">
-          <view class="flex items-center">
-            <view 
-              class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
-              :style="{ backgroundColor: card.bankColor }"
-            >
-              {{ card.bankCode }}
-            </view>
-            <view>
-              <text class="font-semibold text-gray-800 text-base">{{ card.bankName }}</text>
-              <view class="flex items-center mt-1">
-                <text class="text-sm text-gray-600">{{ card.cardName }}</text>
-                <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded ml-2">{{ card.cardLevel }}</text>
-              </view>
-            </view>
-          </view>
-          <view class="text-right">
-            <view class="flex items-center">
-              <text class="text-sm font-semibold" :class="getCardStatusClass(card.isActive)">
-                {{ card.isActive ? '正常' : '停用' }}
-              </text>
-              <text class="text-gray-400 ml-2">›</text>
-            </view>
-          </view>
-        </view>
-
-        <!-- 卡号信息 -->
-        <view class="bg-gray-50 rounded-lg p-3 mb-4">
-          <view class="flex items-center justify-between">
-            <text class="text-gray-600 text-sm">卡号</text>
-            <text class="text-gray-800 font-mono">**** **** **** {{ card.cardNumberLast4 }}</text>
-          </view>
-          <view class="flex items-center justify-between mt-2">
-            <text class="text-gray-600 text-sm">有效期</text>
-            <text class="text-gray-800">{{ formatDate(card.expiryDate, 'MM/YY') }}</text>
-          </view>
-        </view>
-
-        <!-- 额度信息 -->
-        <view class="mb-4">
-          <view class="flex justify-between items-center mb-2">
-            <text class="text-sm text-gray-600">信用额度</text>
-            <text class="text-lg font-bold text-gray-800">¥{{ formatMoney(card.creditLimit) }}</text>
-          </view>
-          
-          <!-- 额度使用进度条 -->
-          <view class="mb-2">
-            <view class="bg-gray-200 rounded-full h-3 relative overflow-hidden">
-              <view 
-                class="h-3 rounded-full transition-all duration-500"
-                :class="getUsageColorClass(card.usedAmount / card.creditLimit)"
-                :style="{ width: (card.usedAmount / card.creditLimit * 100) + '%' }"
-              ></view>
-              <text class="absolute inset-0 text-xs text-white flex items-center justify-center font-medium">
-                {{ Math.round(card.usedAmount / card.creditLimit * 100) }}%
-              </text>
-            </view>
-          </view>
-          
-          <view class="flex justify-between text-sm">
-            <text class="text-green-600">可用 ¥{{ formatMoney(card.availableAmount) }}</text>
-            <text class="text-red-600">已用 ¥{{ formatMoney(card.usedAmount) }}</text>
-          </view>
-        </view>
-
-        <!-- 还款信息 -->
-        <view class="flex justify-between items-center py-2 border-t border-gray-100">
-          <view class="flex-1">
-            <text class="text-sm text-gray-600">账单日</text>
-            <text class="text-sm text-gray-800 ml-2">每月{{ card.billingDay }}日</text>
-          </view>
-          <view class="flex-1">
-            <text class="text-sm text-gray-600">还款日</text>
-            <text class="text-sm text-gray-800 ml-2">每月{{ card.dueDay }}日</text>
-          </view>
-          <view class="flex-1 text-right">
-            <text class="text-sm text-gray-600">下次账单</text>
-            <text class="text-sm text-blue-600 ml-2">{{ formatDate(card.nextBillingDate, 'MM-DD') }}</text>
-          </view>
-        </view>
-
-        <!-- 年费信息 -->
-        <view class="flex items-center justify-between pt-3 border-t border-gray-100">
-          <view class="flex items-center">
-            <text class="text-sm text-gray-600">年费</text>
-            <text class="text-sm text-gray-800 ml-2">¥{{ card.annualFee }}</text>
-            <text class="text-xs ml-2" :class="getFeeStatusClass(card.annualFeeStatus)">
-              {{ getFeeStatusText(card.annualFeeStatus) }}
-            </text>
-          </view>
-          <view v-if="card.feeType !== 'rigid'" class="text-right">
-            <text class="text-xs text-gray-500">{{ card.waiverCondition }}</text>
-            <view class="flex items-center mt-1">
-              <view class="w-16 bg-gray-200 rounded-full h-1 mr-2">
-                <view 
-                  class="bg-blue-500 h-1 rounded-full transition-all duration-300"
-                  :style="{ width: card.waiverProgress + '%' }"
-                ></view>
-              </view>
-              <text class="text-xs text-blue-600">{{ card.waiverProgress }}%</text>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- 空状态 -->
-    <view v-if="filteredCards.length === 0" class="empty-state text-center py-16">
-      <text class="text-4xl mb-4 block">💳</text>
-      <text class="text-gray-500 text-base mb-4 block">
-        {{ searchKeyword || activeFilter !== 'all' ? '没有找到符合条件的卡片' : '还没有添加信用卡' }}
-      </text>
-      <button v-if="!searchKeyword && activeFilter === 'all'" class="btn-primary" @click="addCard">
-        添加第一张信用卡
-      </button>
-    </view>
-
-    <!-- 底部操作栏 -->
-    <view class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom">
-      <view class="flex space-x-3">
-        <button class="btn-secondary flex-1" @click="importCards">
-          批量导入
-        </button>
-        <button class="btn-primary flex-1" @click="addCard">
-          添加卡片
+        <text class="text-4xl mb-4 block">💳</text>
+        <text class="text-gray-500 text-base mb-4 block">
+          {{
+            searchKeyword || activeFilter !== 'all' ? '没有找到符合条件的卡片' : '还没有添加信用卡'
+          }}
+        </text>
+        <button
+          v-if="!searchKeyword && activeFilter === 'all'"
+          class="btn-primary"
+          @click="addCard"
+        >
+          添加第一张信用卡
         </button>
       </view>
-    </view>
 
-    <!-- 底部安全区域 -->
-    <view class="h-20"></view>
+      <!-- 底部操作栏 -->
+      <view
+        class="bottom-actions fixed left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom z-10"
+      >
+        <button class="btn-primary w-full" @click="addCard">添加卡片</button>
+      </view>
+
+      <!-- 底部安全区域 -->
+      <view class="h-20 pb-safe"></view>
+    </template>
+
+    <!-- Toast 组件 -->
+    <wd-toast />
   </view>
 </template>
 
 <script lang="ts" setup>
-import { cardApi } from '@/service/api'
-import '@/mock'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { useToast } from 'wot-design-uni'
+import { useUserStore } from '@/store/user'
+import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
+import * as apis from '@/service/app/v1Yonghugongneng'
+import CreditCard from '@/components/CreditCard.vue'
+import type { CreditCard as CreditCardType } from '@/types/card'
+import type * as API from '@/service/app/types'
 
 defineOptions({
   name: 'CardsPage',
 })
 
+const toast = useToast()
+const userStore = useUserStore()
+
 // 响应式数据
-const cardList = ref([])
 const searchKeyword = ref('')
 const activeFilter = ref('all')
-const loading = ref(false)
+
+// 计算查询参数
+const queryParams = computed(() => {
+  const params: any = {}
+
+  // 只传递有值的参数，避免空参数导致API报错
+  if (searchKeyword.value) {
+    params.keyword = searchKeyword.value
+  }
+
+  if (activeFilter.value !== 'all') {
+    params.status = activeFilter.value
+  }
+
+  console.log('API查询参数:', params)
+  return params
+})
+
+// 使用Vue Query获取信用卡列表
+const {
+  data: creditCardsResponse,
+  isLoading,
+  isError,
+  refetch: refetchCards,
+} = useQuery({
+  queryKey: ['getCreditCardsApiV1UserCardsGet', queryParams],
+  queryFn: async () => {
+    return apis.getCreditCardsApiV1UserCardsGet({
+      params: queryParams.value,
+    })
+  },
+  enabled: userStore.isLoggedIn, // 只有在已登录时才启用查询
+})
+
+// mutation 已移至 CreditCard 组件中
 
 // 筛选选项
 const filterOptions = [
@@ -213,33 +207,109 @@ const filterOptions = [
   { key: 'fee_due', label: '年费待缴' },
 ]
 
+// 处理API响应数据
+const creditCards = computed(() => {
+  if (!creditCardsResponse.value) {
+    return []
+  }
+
+  // 智能检测API响应格式
+  let cardsData = null
+  if (creditCardsResponse.value.data && Array.isArray(creditCardsResponse.value.data)) {
+    cardsData = creditCardsResponse.value.data
+  } else if (Array.isArray(creditCardsResponse.value)) {
+    cardsData = creditCardsResponse.value
+  }
+
+  if (!cardsData) {
+    console.log('未找到有效的信用卡数据')
+    return []
+  }
+
+  // 转换API数据为组件需要的格式
+  return cardsData.map((apiCard: any) => {
+    // 计算可用额度
+    const creditLimit = Number(apiCard.credit_limit) || 0
+    const usedAmount = Number(apiCard.used_limit) || 0
+    const availableAmount = creditLimit - usedAmount
+
+    // 处理银行信息
+    const bankName = apiCard.bank?.bank_name || apiCard.bank_name || '未知银行'
+    const bankCode = bankName.substring(0, 2)
+
+    // 处理有效期
+    let expiryDate = ''
+    if (apiCard.expiry_month && apiCard.expiry_year) {
+      const month = String(apiCard.expiry_month).padStart(2, '0')
+      const year = String(apiCard.expiry_year).slice(-2)
+      expiryDate = `${month}/${year}`
+    }
+
+    // 计算下次账单日期
+    const nextBillingDate = calculateNextBillingDate(apiCard.billing_date)
+
+    // 年费状态判断
+    const annualFeeStatus = determineAnnualFeeStatus(apiCard)
+
+    // 年费减免进度
+    const waiverProgress = calculateWaiverProgress(apiCard)
+
+    return {
+      id: apiCard.id,
+      bankName,
+      bankCode,
+      bankColor: apiCard.bank_color || '#3B82F6',
+      cardName: apiCard.card_name || '信用卡',
+      cardType: apiCard.card_type || 'credit',
+      cardLevel: getCardLevel(apiCard.card_type),
+      cardNumberLast4: apiCard.card_number ? apiCard.card_number.slice(-4) : '****',
+      expiryDate,
+      creditLimit,
+      usedAmount,
+      availableAmount,
+      billingDay: apiCard.billing_date || 1,
+      dueDay: apiCard.due_date || 1,
+      dueDate: apiCard.due_date || 1, // CreditCard 组件需要的字段
+      nextBillingDate,
+      annualFee: Number(apiCard.annual_fee) || 0,
+      annualFeeStatus,
+      feeType: apiCard.fee_waivable ? 'waivable' : 'rigid', // 修正为 CreditCard 组件期望的值
+      waiverCondition: getWaiverCondition(apiCard),
+      waiverProgress,
+      isActive: apiCard.status === 'active',
+      interestFreeDays: apiCard.interest_free_days || 0,
+    }
+  })
+})
+
 // 计算属性
 const filteredCards = computed(() => {
-  let filtered = cardList.value
+  let filtered = creditCards.value
 
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter(card => 
-      card.bankName.toLowerCase().includes(keyword) ||
-      card.cardName.toLowerCase().includes(keyword) ||
-      card.cardNumberLast4.includes(keyword)
+    filtered = filtered.filter(
+      (card) =>
+        card.bankName.toLowerCase().includes(keyword) ||
+        card.cardName.toLowerCase().includes(keyword) ||
+        card.cardNumberLast4.includes(keyword),
     )
   }
 
   // 状态过滤
   switch (activeFilter.value) {
     case 'active':
-      filtered = filtered.filter(card => card.isActive)
+      filtered = filtered.filter((card) => card.isActive)
       break
     case 'inactive':
-      filtered = filtered.filter(card => !card.isActive)
+      filtered = filtered.filter((card) => !card.isActive)
       break
     case 'high_limit':
-      filtered = filtered.filter(card => card.creditLimit >= 100000)
+      filtered = filtered.filter((card) => card.creditLimit >= 100000)
       break
     case 'fee_due':
-      filtered = filtered.filter(card => card.annualFeeStatus === 'pending')
+      filtered = filtered.filter((card) => card.annualFeeStatus === 'pending')
       break
   }
 
@@ -250,48 +320,73 @@ const totalCreditLimit = computed(() => {
   return filteredCards.value.reduce((sum, card) => sum + card.creditLimit, 0)
 })
 
-// 页面生命周期
-onLoad(async () => {
-  await loadCards()
+const totalAvailableLimit = computed(() => {
+  return filteredCards.value.reduce((sum, card) => sum + card.availableAmount, 0)
 })
 
+// 页面生命周期
+onMounted(() => {
+  // 如果未登录，跳转到登录页
+  if (!userStore.isLoggedIn) {
+    uni.navigateTo({
+      url: '/pages/login/index',
+    })
+  }
+
+  // 监听信用卡更新事件
+  uni.$on('refreshCardList', () => {
+    console.log('收到刷新信用卡列表事件')
+    if (userStore.isLoggedIn) {
+      refetchCards()
+    }
+  })
+
+  uni.$on('cardUpdated', (data) => {
+    console.log('收到信用卡更新事件:', data)
+    if (userStore.isLoggedIn) {
+      refetchCards()
+    }
+  })
+})
+
+// 页面卸载时移除事件监听
+onUnmounted(() => {
+  uni.$off('refreshCardList')
+  uni.$off('cardUpdated')
+})
+
+// 下拉刷新
 onPullDownRefresh(async () => {
-  await loadCards()
+  await refetchCards()
   uni.stopPullDownRefresh()
 })
 
-// 数据加载
-const loadCards = async () => {
-  try {
-    loading.value = true
-    const res = await cardApi.getCards()
-    if (res.code === 200) {
-      cardList.value = res.data.list
-    }
-  } catch (error) {
-    console.error('加载卡片失败:', error)
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none'
-    })
-  } finally {
-    loading.value = false
+// 页面显示时刷新数据
+onShow(() => {
+  console.log('信用卡列表页面显示，刷新数据')
+  if (userStore.isLoggedIn) {
+    refetchCards()
   }
-}
+})
 
-// 搜索处理
-const handleSearch = () => {
-  // 实时搜索，已通过计算属性实现
+// 搜索功能
+const handleSearch = (event: any) => {
+  const keyword = event.detail?.value || event.target?.value || ''
+  console.log('搜索关键词:', keyword)
+  searchKeyword.value = keyword
 }
 
 const clearSearch = () => {
   searchKeyword.value = ''
 }
 
-// 筛选处理
-const setFilter = (filterKey: string) => {
-  activeFilter.value = filterKey
+// 筛选功能
+const handleFilter = (filter: string) => {
+  console.log('筛选条件:', filter)
+  activeFilter.value = filter
 }
+
+// Vue Query会自动响应queryKey中queryParams的变化，无需手动监听
 
 // 工具函数
 const formatMoney = (amount: number) => {
@@ -313,38 +408,108 @@ const formatDate = (dateStr: string, format: string = 'YYYY-MM-DD') => {
   return dateStr
 }
 
-const getCardStatusClass = (isActive: boolean) => {
-  return isActive ? 'text-green-600' : 'text-red-600'
-}
+// 样式类函数已移至 CreditCard 组件中
 
-const getUsageColorClass = (ratio: number) => {
-  if (ratio >= 0.9) return 'bg-red-500'
-  if (ratio >= 0.7) return 'bg-orange-500'
-  if (ratio >= 0.5) return 'bg-yellow-500'
-  return 'bg-green-500'
-}
+// 业务逻辑函数
+const calculateNextBillingDate = (billingDay: number): string => {
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
 
-const getFeeStatusClass = (status: string) => {
-  const classes = {
-    pending: 'text-orange-600 bg-orange-50',
-    waived: 'text-green-600 bg-green-50',
-    paid: 'text-blue-600 bg-blue-50',
-    overdue: 'text-red-600 bg-red-50'
+  let nextBillingDate = new Date(currentYear, currentMonth, billingDay)
+
+  // 如果本月账单日已过，计算下月
+  if (nextBillingDate <= now) {
+    nextBillingDate = new Date(currentYear, currentMonth + 1, billingDay)
   }
-  return `px-2 py-0.5 rounded text-xs ${classes[status] || 'text-gray-600 bg-gray-50'}`
+
+  return nextBillingDate.toISOString().split('T')[0]
 }
 
-const getFeeStatusText = (status: string) => {
-  const texts = {
-    pending: '待缴费',
-    waived: '已减免',
-    paid: '已缴费',
-    overdue: '已逾期'
+const determineAnnualFeeStatus = (apiCard: any): string => {
+  // 根据API数据判断年费状态
+  if (apiCard.fee_waivable && apiCard.annual_fee > 0) {
+    // 可减免的年费，需要检查减免条件
+    return 'pending'
+  } else if (apiCard.annual_fee === 0) {
+    return 'waived'
+  } else {
+    return 'paid'
   }
-  return texts[status] || '未知'
+}
+
+const calculateWaiverProgress = (apiCard: any): number => {
+  // 根据备注信息计算减免进度
+  if (!apiCard.notes || !apiCard.fee_waivable) {
+    return 0
+  }
+
+  // 这里可以根据实际的消费记录计算进度
+  // 暂时返回随机进度作为示例
+  return Math.floor(Math.random() * 100)
+}
+
+const getCardLevel = (cardType: string): string => {
+  const levels = {
+    visa: 'Visa',
+    mastercard: 'MasterCard',
+    unionpay: '银联',
+    americanexpress: 'AE',
+  }
+  return levels[cardType] || '普通卡'
+}
+
+const getWaiverCondition = (apiCard: any): string => {
+  if (!apiCard.fee_waivable) {
+    return '刚性年费'
+  }
+
+  // 从备注中解析减免条件
+  if (apiCard.notes && apiCard.notes.includes('刷卡')) {
+    if (apiCard.notes.includes('次')) {
+      return '刷卡次数达标'
+    } else if (apiCard.notes.includes('元')) {
+      return '刷卡金额达标'
+    }
+  }
+
+  return '条件减免'
+}
+
+const getFilterIcon = (filter: string): string => {
+  const icons = {
+    all: '🔍',
+    active: '✅',
+    inactive: '❌',
+    high_limit: '💳',
+    fee_due: '💸',
+  }
+  return icons[filter] || '❓'
+}
+
+const getFilterCount = (filter: string): number => {
+  const allCards = creditCards.value
+  switch (filter) {
+    case 'all':
+      return allCards.length
+    case 'active':
+      return allCards.filter((card) => card.isActive).length
+    case 'inactive':
+      return allCards.filter((card) => !card.isActive).length
+    case 'high_limit':
+      return allCards.filter((card) => card.creditLimit >= 100000).length
+    case 'fee_due':
+      return allCards.filter((card) => card.annualFeeStatus === 'pending').length
+    default:
+      return 0
+  }
 }
 
 // 导航函数
+const goToLogin = () => {
+  uni.navigateTo({ url: '/pages/login/index' })
+}
+
 const goToCardDetail = (cardId: string) => {
   uni.navigateTo({ url: `/pages/cards/detail?id=${cardId}` })
 }
@@ -353,12 +518,7 @@ const addCard = () => {
   uni.navigateTo({ url: '/pages/cards/add' })
 }
 
-const importCards = () => {
-  uni.showToast({
-    title: '功能开发中',
-    icon: 'none'
-  })
-}
+// 编辑、删除、状态切换功能已移至 CreditCard 组件中
 </script>
 
 <style lang="scss">
@@ -370,30 +530,24 @@ const importCards = () => {
 .filter-item {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.95);
   }
 }
 
-.card-item {
-  transition: transform 0.2s ease;
-  
-  &:active {
-    transform: scale(0.98);
-  }
-}
+// .card-item 样式已移至 CreditCard 组件中
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 12px 24px;
+  padding: 6px 12px;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -408,7 +562,7 @@ const importCards = () => {
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
     background: #f8f9ff;
@@ -418,4 +572,167 @@ const importCards = () => {
 .empty-state {
   margin-top: 10vh;
 }
-</style> 
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-tabs {
+  width: 100%;
+}
+
+.filter-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.filter-container {
+  display: inline-flex;
+  gap: 12px;
+  padding: 0 4px;
+  min-width: 100%;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: fit-content;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.filter-tag-active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+
+  .filter-count {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+}
+
+.filter-tag-normal {
+  border-color: #e5e7eb;
+  background-color: white;
+  color: #6b7280;
+
+  &:hover {
+    border-color: #d1d5db;
+    background-color: #f9fafb;
+  }
+}
+
+.filter-tag-warning {
+  border-color: #f59e0b;
+  background-color: #fef3c7;
+  color: #d97706;
+
+  &.filter-tag-active {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+  }
+}
+
+.filter-tag-premium {
+  border-color: #8b5cf6;
+  background-color: #f3e8ff;
+  color: #7c3aed;
+
+  &.filter-tag-active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+  }
+}
+
+.filter-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.filter-text {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.filter-count {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.stats-summary {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 16px 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stats-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.stats-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.stats-amount {
+  color: #667eea;
+}
+
+.stats-available {
+  color: #059669;
+}
+
+.stats-divider {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, transparent, #cbd5e1, transparent);
+  margin: 0 16px;
+}
+
+.bottom-actions {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  /* 使用 UniApp 提供的 CSS 变量来正确定位底部操作栏 */
+  bottom: var(--window-bottom);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+  /* 为底部安全区域添加额外的高度，确保内容不被遮挡 */
+  height: calc(80px + var(--window-bottom));
+}
+</style>

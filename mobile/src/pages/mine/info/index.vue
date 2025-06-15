@@ -54,7 +54,7 @@ import { ref } from 'vue'
 import { useUserStore } from '@/store'
 import { storeToRefs } from 'pinia'
 import { toast } from '@/utils/toast'
-import { updateInfo } from '@/api/login'
+// import { updateInfo } from '@/api/login' // 暂时注释掉，等待API更新
 
 // 表单引用
 const formRef = ref()
@@ -65,9 +65,9 @@ const { userInfo } = storeToRefs(userStore)
 
 // 表单数据
 const formData = ref({
-  id: userInfo.value.id,
-  name: userInfo.value.name,
-  sex: userInfo.value.sex,
+  id: userInfo.value?.id || '',
+  name: userInfo.value?.nickname || '',
+  sex: '1', // 默认男性，因为新API中没有性别字段
 })
 
 // 提交表单
@@ -75,9 +75,13 @@ const handleSubmit = async () => {
   // 表单验证
   const valid = await formRef.value.validate()
   if (!valid) return
-  const { message } = await updateInfo(formData.value)
-  await useUserStore().getUserInfo()
-  toast.success(message)
+
+  // TODO: 等待新的用户资料更新API
+  toast.error('用户资料更新功能正在开发中')
+
+  // const { message } = await updateInfo(formData.value)
+  // await userStore.getCurrentUser()
+  // toast.success(message)
 }
 </script>
 

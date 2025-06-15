@@ -1,25 +1,27 @@
 <template>
   <view class="relative mb-4">
     <!-- 主卡片 -->
-    <view 
+    <view
       class="card-container overflow-hidden rounded-xl shadow-lg transition-all duration-300"
       :class="[
         isBestCard ? 'ring-2 ring-green-400 shadow-xl' : 'shadow-md',
-        !card.isActive ? 'opacity-60' : ''
+        !card.isActive ? 'opacity-60' : '',
       ]"
       :style="{ background: `linear-gradient(135deg, ${card.bankColor}20, ${card.bankColor}10)` }"
       @click="$emit('cardClick', card.id)"
     >
       <!-- 推荐标识 -->
       <view v-if="isBestCard" class="absolute top-2 right-2 z-10">
-        <view class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
+        <view
+          class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center"
+        >
           <text class="mr-1">⭐</text>
           <text>推荐</text>
         </view>
       </view>
 
       <!-- 卡片头部 - 模拟真实信用卡 -->
-      <view 
+      <view
         class="relative p-6 text-white flex flex-col justify-between"
         :style="{ background: `linear-gradient(135deg, ${card.bankColor}, ${card.bankColor}dd)` }"
       >
@@ -39,11 +41,15 @@
 
         <!-- 卡号区域 -->
         <view class="space-y-2">
-          <text class="text-xl font-mono tracking-wider block">•••• •••• •••• {{ card.cardNumberLast4 }}</text>
+          <text class="text-xl font-mono tracking-wider block">
+            •••• •••• •••• {{ card.cardNumberLast4 }}
+          </text>
           <view class="flex justify-between items-end">
             <view>
               <text class="text-xs opacity-75 block">可用额度</text>
-              <text class="text-lg font-semibold block">{{ formatCurrency(card.availableAmount) }}</text>
+              <text class="text-lg font-semibold block">
+                {{ formatCurrency(card.availableAmount) }}
+              </text>
             </view>
             <view class="text-right">
               <text class="text-xs opacity-75 block">还款日</text>
@@ -70,12 +76,12 @@
           </view>
           <view>
             <text class="text-xs text-gray-500 block mb-1">免息天数</text>
-            <view 
+            <view
               class="font-semibold text-sm flex items-center justify-center"
               :class="getInterestFreeDaysClass()"
             >
               <text class="mr-1">📅</text>
-              <text>{{ calculateInterestFreeDays() }}天</text>
+              <text>{{ card.interestFreeDays }}天</text>
             </view>
           </view>
         </view>
@@ -84,15 +90,12 @@
         <view class="space-y-2">
           <view class="flex justify-between items-center">
             <text class="text-xs text-gray-500">使用率</text>
-            <text 
-              class="text-xs font-semibold"
-              :class="getUtilizationClass()"
-            >
+            <text class="text-xs font-semibold" :class="getUtilizationClass()">
               {{ getUtilizationPercentage().toFixed(1) }}%
             </text>
           </view>
           <view class="w-full bg-gray-100 rounded-full h-2">
-            <view 
+            <view
               class="h-2 rounded-full transition-all duration-300"
               :class="getUtilizationBarClass()"
               :style="{ width: Math.min(getUtilizationPercentage(), 100) + '%' }"
@@ -107,7 +110,7 @@
               <text>{{ getAnnualFeeTypeIcon() }}</text>
               <text class="text-sm font-medium">年费信息</text>
             </view>
-            <view 
+            <view
               class="px-2 py-1 rounded-full text-xs font-medium"
               :class="getAnnualFeeStatusClass()"
             >
@@ -133,7 +136,7 @@
               <text class="text-xs font-semibold">{{ card.waiverProgress }}%</text>
             </view>
             <view class="w-full bg-gray-100 rounded-full h-2">
-              <view 
+              <view
                 class="h-2 rounded-full transition-all duration-300"
                 :class="getWaiverProgressBarClass()"
                 :style="{ width: Math.min(card.waiverProgress, 100) + '%' }"
@@ -146,7 +149,11 @@
           </view>
 
           <!-- 年费状态提示 -->
-          <view v-if="getAnnualFeeHint()" class="p-2 rounded-lg text-xs" :class="getAnnualFeeHintClass()">
+          <view
+            v-if="getAnnualFeeHint()"
+            class="p-2 rounded-lg text-xs"
+            :class="getAnnualFeeHintClass()"
+          >
             <view class="flex items-center space-x-2">
               <text>{{ getAnnualFeeHintIcon() }}</text>
               <text :class="getAnnualFeeHintTextClass()">{{ getAnnualFeeHint() }}</text>
@@ -155,12 +162,18 @@
         </view>
 
         <!-- 警告提示 -->
-        <view v-if="getUtilizationPercentage() > 80" class="flex items-center space-x-2 p-2 bg-red-50 rounded-lg">
+        <view
+          v-if="getUtilizationPercentage() > 80"
+          class="flex items-center space-x-2 p-2 bg-red-50 rounded-lg"
+        >
           <text>⚠️</text>
           <text class="text-xs text-red-700">使用率过高，建议及时还款</text>
         </view>
 
-        <view v-if="calculateInterestFreeDays() <= 7 && card.usedAmount > 0" class="flex items-center space-x-2 p-2 bg-yellow-50 rounded-lg">
+        <view
+          v-if="(card.interestFreeDays || 0) <= 7 && card.usedAmount > 0"
+          class="flex items-center space-x-2 p-2 bg-yellow-50 rounded-lg"
+        >
           <text>📅</text>
           <text class="text-xs text-yellow-700">还款日临近，请及时还款</text>
         </view>
@@ -168,25 +181,22 @@
     </view>
 
     <!-- 操作菜单 -->
-    <view 
-      v-if="showActions" 
+    <view
+      v-if="showActions"
       class="absolute top-16 right-4 bg-white rounded-lg shadow-lg border z-20 min-w-32"
       @click.stop
     >
       <view class="py-2">
-        <view 
-          class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50"
-          @click="handleEdit"
-        >
+        <view class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50" @click="handleEdit">
           <text>编辑</text>
         </view>
-        <view 
+        <view
           class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50"
           @click="handleToggleActive"
         >
           <text>{{ card.isActive ? '停用' : '启用' }}</text>
         </view>
-        <view 
+        <view
           class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
           @click="handleDelete"
         >
@@ -196,16 +206,20 @@
     </view>
 
     <!-- 点击外部关闭菜单 -->
-    <view 
-      v-if="showActions" 
-      class="fixed inset-0 z-10" 
-      @click="showActions = false"
-    ></view>
+    <view v-if="showActions" class="fixed inset-0 z-10" @click="showActions = false"></view>
+
+    <!-- Toast 组件 -->
+    <wd-toast />
   </view>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { useToast } from 'wot-design-uni'
+import {
+  useDeleteCreditCardApiV1UserCardsCardIdDeleteMutation,
+  useUpdateCardStatusApiV1UserCardsCardIdStatusPatchMutation,
+} from '@/service/app/v1Yonghugongneng.vuequery'
 import type { CreditCard } from '@/types/card'
 
 interface Props {
@@ -214,17 +228,42 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isBestCard: false
+  isBestCard: false,
 })
 
 const emit = defineEmits<{
   cardClick: [cardId: string]
-  edit: [card: CreditCard]
-  delete: [cardId: string]
-  toggleActive: [cardId: string]
+  cardUpdated: [] // 通知父组件刷新数据
 }>()
 
 const showActions = ref(false)
+const toast = useToast()
+
+// 删除信用卡的 mutation
+const deleteCardMutation = useDeleteCreditCardApiV1UserCardsCardIdDeleteMutation({
+  onSuccess: () => {
+    toast.success('删除成功')
+    // 通知父组件刷新数据
+    emit('cardUpdated')
+  },
+  onError: (error) => {
+    console.error('删除信用卡失败:', error)
+    toast.error('删除失败，请重试')
+  },
+})
+
+// 更新信用卡状态的 mutation
+const updateCardStatusMutation = useUpdateCardStatusApiV1UserCardsCardIdStatusPatchMutation({
+  onSuccess: () => {
+    toast.success('状态更新成功')
+    // 通知父组件刷新数据
+    emit('cardUpdated')
+  },
+  onError: (error) => {
+    console.error('更新状态失败:', error)
+    toast.error('状态更新失败，请重试')
+  },
+})
 
 // 工具函数
 const formatCurrency = (amount: number) => {
@@ -237,21 +276,7 @@ const getUtilizationPercentage = () => {
   return (props.card.usedAmount / props.card.creditLimit) * 100
 }
 
-const calculateInterestFreeDays = () => {
-  // 简化计算，实际应该根据账单日和还款日计算
-  const today = new Date()
-  const dueDate = props.card.dueDate || 15
-  const currentMonth = today.getMonth()
-  const currentYear = today.getFullYear()
-  
-  let nextDueDate = new Date(currentYear, currentMonth, dueDate)
-  if (nextDueDate <= today) {
-    nextDueDate = new Date(currentYear, currentMonth + 1, dueDate)
-  }
-  
-  const diffTime = nextDueDate.getTime() - today.getTime()
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-}
+// calculateInterestFreeDays 函数已移除，直接使用 card.interestFreeDays
 
 const getRemainingDays = () => {
   // 模拟年费周期剩余天数
@@ -260,10 +285,10 @@ const getRemainingDays = () => {
 
 const getRemainingTarget = () => {
   if (props.card.feeType === 'rigid') return ''
-  
+
   const remaining = 100 - props.card.waiverProgress
   if (remaining <= 0) return '已完成'
-  
+
   return `还需${remaining}%`
 }
 
@@ -283,7 +308,7 @@ const getUtilizationBarClass = () => {
 }
 
 const getInterestFreeDaysClass = () => {
-  const days = calculateInterestFreeDays()
+  const days = props.card.interestFreeDays || 0
   if (days > 20) return 'text-green-600'
   if (days > 10) return 'text-yellow-600'
   return 'text-red-600'
@@ -291,17 +316,23 @@ const getInterestFreeDaysClass = () => {
 
 const getAnnualFeeTypeIcon = () => {
   switch (props.card.feeType) {
-    case 'waivable': return '🔄'
-    case 'rigid': return '💰'
-    default: return '💳'
+    case 'waivable':
+      return '🔄'
+    case 'rigid':
+      return '💰'
+    default:
+      return '💳'
   }
 }
 
 const getAnnualFeeTypeText = () => {
   switch (props.card.feeType) {
-    case 'waivable': return '可减免'
-    case 'rigid': return '刚性年费'
-    default: return '年费类型'
+    case 'waivable':
+      return '可减免'
+    case 'rigid':
+      return '刚性年费'
+    default:
+      return '年费类型'
   }
 }
 
@@ -379,26 +410,57 @@ const toggleActions = () => {
 }
 
 const handleEdit = () => {
-  emit('edit', props.card)
+  // 导航到编辑页面，传递卡片ID
+  uni.navigateTo({
+    url: `/pages/cards/edit?id=${props.card.id}`,
+  })
   showActions.value = false
 }
 
 const handleDelete = () => {
-  emit('delete', props.card.id)
+  uni.showModal({
+    title: '确认删除',
+    content: '确定要删除这张信用卡吗？删除后无法恢复。',
+    confirmText: '删除',
+    confirmColor: '#ff4757',
+    success: (res) => {
+      if (res.confirm) {
+        // 调用删除API
+        deleteCardMutation.mutate({
+          params: {
+            card_id: props.card.id,
+          },
+        })
+      }
+    },
+  })
   showActions.value = false
 }
 
 const handleToggleActive = () => {
-  emit('toggleActive', props.card.id)
+  const newStatus = props.card.isActive ? 'frozen' : 'active'
+
+  // 调用API更新状态
+  updateCardStatusMutation.mutate({
+    params: {
+      card_id: props.card.id,
+    },
+    body: {
+      status: newStatus,
+      reason: `用户${props.card.isActive ? '停用' : '启用'}信用卡`,
+    },
+  })
   showActions.value = false
 }
 </script>
 
 <style lang="scss" scoped>
 .card-container {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   cursor: pointer;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -443,4 +505,4 @@ const handleToggleActive = () => {
 .min-h-48 {
   min-height: 12rem;
 }
-</style> 
+</style>

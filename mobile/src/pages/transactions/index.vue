@@ -32,52 +32,57 @@
     <view class="filter-section bg-white px-4 py-3 shadow-sm">
       <!-- 第一行：快速筛选 -->
       <view class="flex space-x-2 mb-3">
-        <view 
-          v-for="filter in quickFilters" 
+        <view
+          v-for="filter in quickFilters"
           :key="filter.key"
           class="filter-tag px-3 py-1 rounded-full text-sm transition-all"
-          :class="activeFilters.includes(filter.key) ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'"
+          :class="
+            activeFilters.includes(filter.key)
+              ? 'bg-blue-500 text-white'
+              : 'bg-gray-100 text-gray-600'
+          "
           @click="toggleFilter(filter.key)"
         >
           {{ filter.label }}
         </view>
       </view>
-      
+
       <!-- 第二行：下拉筛选 -->
       <view class="flex space-x-3">
-        <picker 
-          :value="cardFilterIndex" 
-          :range="cardOptions" 
+        <picker
+          :value="cardFilterIndex"
+          :range="cardOptions"
           range-key="label"
           @change="onCardFilterChange"
           class="flex-1"
         >
-          <view class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+          <view
+            class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+          >
             <text class="text-sm">{{ cardOptions[cardFilterIndex].label }}</text>
             <text class="text-gray-400 text-xs">▼</text>
           </view>
         </picker>
-        
-        <picker 
-          :value="categoryFilterIndex" 
-          :range="categoryOptions" 
+
+        <picker
+          :value="categoryFilterIndex"
+          :range="categoryOptions"
           range-key="label"
           @change="onCategoryFilterChange"
           class="flex-1"
         >
-          <view class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+          <view
+            class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+          >
             <text class="text-sm">{{ categoryOptions[categoryFilterIndex].label }}</text>
             <text class="text-gray-400 text-xs">▼</text>
           </view>
         </picker>
-        
-        <picker 
-          mode="date" 
-          :value="dateFilter" 
-          @change="onDateFilterChange"
-          class="flex-1"
-        >
-          <view class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+
+        <picker mode="date" :value="dateFilter" @change="onDateFilterChange" class="flex-1">
+          <view
+            class="filter-select flex items-center justify-between py-2 px-3 bg-gray-50 rounded"
+          >
             <text class="text-sm">{{ dateFilter || '选择日期' }}</text>
             <text class="text-gray-400 text-xs">▼</text>
           </view>
@@ -114,55 +119,80 @@
         <!-- 日期头部 -->
         <view class="date-header flex items-center justify-between py-2">
           <text class="text-gray-800 font-medium">{{ formatGroupDate(date) }}</text>
-          <text class="text-sm text-gray-500">{{ group.length }}笔 ¥{{ formatMoney(group.reduce((sum, t) => sum + t.amount, 0)) }}</text>
+          <text class="text-sm text-gray-500">
+            {{ group.length }}笔 ¥{{ formatMoney(group.reduce((sum, t) => sum + t.amount, 0)) }}
+          </text>
         </view>
-        
+
         <!-- 该日期的交易 -->
-        <view class="bg-white rounded-lg overflow-hidden shadow-sm">
-          <view 
-            v-for="(transaction, index) in group" 
+        <view class="bg-white rounded-lg overflow-hidden shadow-sm" @click.stop="closeOutside">
+          <view
+            v-for="(transaction, index) in group"
             :key="transaction.id"
-            class="transaction-item flex items-center p-4 transition-all"
             :class="{ 'border-t border-gray-100': index > 0 }"
-            @click="goToTransactionDetail(transaction.id)"
           >
-            <!-- 分类图标 -->
-            <view 
-              class="category-icon w-10 h-10 rounded-full flex items-center justify-center mr-3"
-              :style="{ backgroundColor: getCategoryColor(transaction.category) }"
-            >
-              <text class="text-white text-sm">{{ getCategoryIcon(transaction.category) }}</text>
-            </view>
-            
-            <!-- 交易信息 -->
-            <view class="transaction-info flex-1">
-              <view class="flex items-center justify-between mb-1">
-                <text class="font-medium text-gray-800">{{ transaction.merchantName }}</text>
-                <text 
-                  class="font-bold"
-                  :class="getAmountClass(transaction.transactionType)"
+            <wd-swipe-action>
+              <view
+                class="transaction-item flex items-center p-4 transition-all"
+                @click="goToTransactionDetail(transaction.id)"
+              >
+                <!-- 分类图标 -->
+                <view
+                  class="category-icon w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                  :style="{ backgroundColor: getCategoryColor(transaction.category) }"
                 >
-                  {{ transaction.transactionType === '退款' ? '+' : '-' }}¥{{ formatMoney(transaction.amount) }}
-                </text>
-              </view>
-              
-              <view class="flex items-center justify-between">
-                <view class="flex items-center space-x-2">
-                  <text class="text-xs text-gray-500">{{ transaction.category }}</text>
-                  <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ transaction.transactionType }}</text>
+                  <text class="text-white text-sm">
+                    {{ getCategoryIcon(transaction.category) }}
+                  </text>
                 </view>
-                <text class="text-xs text-gray-500">{{ formatTime(transaction.transactionDate) }}</text>
+
+                <!-- 交易信息 -->
+                <view class="transaction-info flex-1">
+                  <view class="flex items-center justify-between mb-1">
+                    <text class="font-medium text-gray-800">{{ transaction.merchantName }}</text>
+                    <text class="font-bold" :class="getAmountClass(transaction.transactionType)">
+                      {{ transaction.transactionType === '退款' ? '+' : '-' }}¥{{
+                        formatMoney(transaction.amount)
+                      }}
+                    </text>
+                  </view>
+
+                  <view class="flex items-center justify-between">
+                    <view class="flex items-center space-x-2">
+                      <text class="text-xs text-gray-500">{{ transaction.category }}</text>
+                      <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        {{ transaction.transactionType }}
+                      </text>
+                    </view>
+                    <text class="text-xs text-gray-500">
+                      {{ formatTime(transaction.transactionDate) }}
+                    </text>
+                  </view>
+
+                  <view v-if="transaction.installment > 0" class="mt-1">
+                    <text class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded">
+                      {{ transaction.installment }}期分期
+                    </text>
+                  </view>
+                </view>
+
+                <!-- 右箭头 -->
+                <text class="text-gray-300 ml-2">›</text>
               </view>
-              
-              <view v-if="transaction.installment > 0" class="mt-1">
-                <text class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded">
-                  {{ transaction.installment }}期分期
-                </text>
-              </view>
-            </view>
-            
-            <!-- 右箭头 -->
-            <text class="text-gray-300 ml-2">›</text>
+
+              <!-- 右滑操作按钮 -->
+              <template #right>
+                <view class="action">
+                  <view class="button edit-button" @click="editTransaction(transaction)">编辑</view>
+                  <view
+                    class="button delete-button"
+                    @click="confirmDeleteTransaction(transaction, date, index)"
+                  >
+                    删除
+                  </view>
+                </view>
+              </template>
+            </wd-swipe-action>
           </view>
         </view>
       </view>
@@ -180,32 +210,46 @@
     </view>
 
     <!-- 底部操作栏 -->
-    <view class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom">
+    <view
+      class="bottom-actions fixed left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom z-10"
+    >
       <view class="flex space-x-3">
-        <button class="btn-secondary flex-1" @click="exportRecords">
-          导出记录
-        </button>
-        <button class="btn-primary flex-1" @click="addTransaction">
-          添加消费
-        </button>
+        <button class="btn-secondary flex-1" @click="exportRecords">导出记录</button>
+        <button class="btn-primary flex-1" @click="addTransaction">添加消费</button>
       </view>
     </view>
 
     <!-- 底部安全区域 -->
-    <view class="h-20"></view>
+    <view class="h-20 pb-safe"></view>
   </view>
 </template>
 
 <script lang="ts" setup>
-import { transactionApi, cardApi } from '@/service/api'
-import '@/mock'
+import { getTransactionsApiV1UserTransactionsListGetQueryOptions } from '@/service/app/yonghujiaoyiguanli.vuequery'
+import { useDeleteTransactionApiV1UserTransactionsTransactionIdDeleteDeleteMutation } from '@/service/app/yonghujiaoyiguanli.vuequery'
+import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/xinyongkaguanli.vuequery'
+import { useQuery } from '@tanstack/vue-query'
+import { useToast } from 'wot-design-uni'
 
 defineOptions({
   name: 'TransactionsPage',
 })
 
+// 定义交易记录类型
+interface Transaction {
+  id: string
+  merchantName: string
+  amount: number
+  category: string
+  transactionType: string
+  transactionDate: string
+  installment: number
+  cardId: string
+  description: string
+}
+
 // 响应式数据
-const transactionList = ref<any[]>([])
+const transactionList = ref<Transaction[]>([])
 const cardList = ref<any[]>([])
 const searchKeyword = ref('')
 const activeFilters = ref<string[]>([])
@@ -228,9 +272,7 @@ const quickFilters = [
   { key: 'installment', label: '分期交易' },
 ]
 
-const cardOptions = ref([
-  { value: 'all', label: '所有卡片' }
-])
+const cardOptions = ref([{ value: 'all', label: '所有卡片' }])
 
 const categoryOptions = [
   { value: 'all', label: '所有类别' },
@@ -248,64 +290,69 @@ const categoryOptions = [
 
 // 计算属性
 const filteredTransactions = computed(() => {
-  let filtered: any[] = transactionList.value
+  let filtered: Transaction[] = transactionList.value
 
   // 搜索过滤
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter((t: any) => 
-      t.merchantName.toLowerCase().includes(keyword) ||
-      t.description.toLowerCase().includes(keyword) ||
-      t.category.toLowerCase().includes(keyword)
+    filtered = filtered.filter(
+      (t: Transaction) =>
+        t.merchantName.toLowerCase().includes(keyword) ||
+        t.description.toLowerCase().includes(keyword) ||
+        t.category.toLowerCase().includes(keyword),
     )
   }
 
   // 卡片过滤
   if (cardFilterIndex.value > 0) {
     const selectedCard = cardOptions.value[cardFilterIndex.value]
-    filtered = filtered.filter((t: any) => t.cardId === selectedCard.value)
+    filtered = filtered.filter((t: Transaction) => t.cardId === selectedCard.value)
   }
 
   // 分类过滤
   if (categoryFilterIndex.value > 0) {
     const selectedCategory = categoryOptions[categoryFilterIndex.value]
-    filtered = filtered.filter((t: any) => t.category === selectedCategory.value)
+    filtered = filtered.filter((t: Transaction) => t.category === selectedCategory.value)
   }
 
   // 日期过滤
   if (dateFilter.value) {
     const selectedDate = new Date(dateFilter.value)
-    filtered = filtered.filter((t: any) => {
+    filtered = filtered.filter((t: Transaction) => {
       const transactionDate = new Date(t.transactionDate)
       return transactionDate.toDateString() === selectedDate.toDateString()
     })
   }
 
   // 快速过滤
-  activeFilters.value.forEach(filter => {
+  activeFilters.value.forEach((filter) => {
     switch (filter) {
       case 'this_month':
         const thisMonth = new Date()
-        filtered = filtered.filter((t: any) => {
+        filtered = filtered.filter((t: Transaction) => {
           const transactionDate = new Date(t.transactionDate)
-          return transactionDate.getMonth() === thisMonth.getMonth() &&
-                 transactionDate.getFullYear() === thisMonth.getFullYear()
+          return (
+            transactionDate.getMonth() === thisMonth.getMonth() &&
+            transactionDate.getFullYear() === thisMonth.getFullYear()
+          )
         })
         break
       case 'last_month':
         const lastMonth = new Date()
         lastMonth.setMonth(lastMonth.getMonth() - 1)
-        filtered = filtered.filter((t: any) => {
+        filtered = filtered.filter((t: Transaction) => {
           const transactionDate = new Date(t.transactionDate)
-          return transactionDate.getMonth() === lastMonth.getMonth() &&
-                 transactionDate.getFullYear() === lastMonth.getFullYear()
+          return (
+            transactionDate.getMonth() === lastMonth.getMonth() &&
+            transactionDate.getFullYear() === lastMonth.getFullYear()
+          )
         })
         break
       case 'large_amount':
-        filtered = filtered.filter((t: any) => t.amount >= 1000)
+        filtered = filtered.filter((t: Transaction) => t.amount >= 1000)
         break
       case 'installment':
-        filtered = filtered.filter((t: any) => t.installment > 0)
+        filtered = filtered.filter((t: Transaction) => t.installment > 0)
         break
     }
   })
@@ -314,21 +361,25 @@ const filteredTransactions = computed(() => {
 })
 
 const groupedTransactions = computed(() => {
-  const groups = {}
-  filteredTransactions.value.forEach(transaction => {
+  const groups: Record<string, Transaction[]> = {}
+  filteredTransactions.value.forEach((transaction) => {
     const date = transaction.transactionDate.split(' ')[0] // 获取日期部分
     if (!groups[date]) {
       groups[date] = []
     }
     groups[date].push(transaction)
   })
-  
+
   // 按日期倒序排列
-  const sortedGroups = {}
-  Object.keys(groups).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).forEach(date => {
-    sortedGroups[date] = groups[date].sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
-  })
-  
+  const sortedGroups: Record<string, Transaction[]> = {}
+  Object.keys(groups)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+    .forEach((date) => {
+      sortedGroups[date] = groups[date].sort(
+        (a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime(),
+      )
+    })
+
   return sortedGroups
 })
 
@@ -337,58 +388,215 @@ const filteredTotal = computed(() => {
 })
 
 const hasFiltersActive = computed(() => {
-  return searchKeyword.value || 
-         activeFilters.value.length > 0 || 
-         cardFilterIndex.value > 0 || 
-         categoryFilterIndex.value > 0 || 
-         dateFilter.value
+  return (
+    searchKeyword.value ||
+    activeFilters.value.length > 0 ||
+    cardFilterIndex.value > 0 ||
+    categoryFilterIndex.value > 0 ||
+    dateFilter.value
+  )
 })
 
 // 页面生命周期
-onLoad(async () => {
-  await loadData()
+onLoad(() => {
+  // Vue Query会自动加载数据
 })
 
 onPullDownRefresh(async () => {
-  await loadData()
+  await refetchTransactions()
   uni.stopPullDownRefresh()
 })
 
-// 数据加载
-const loadData = async () => {
-  try {
-    loading.value = true
-    
-    const [transactionsRes, cardsRes] = await Promise.all([
-      transactionApi.getTransactions(),
-      cardApi.getCards()
-    ])
+// 构建查询参数
+const queryParams = computed(() => ({
+  page: 1,
+  page_size: 100,
+  ...(searchKeyword.value && { keyword: searchKeyword.value }),
+  ...(activeFilters.value.length > 0 && { filters: activeFilters.value.join(',') }),
+  ...(cardFilterIndex.value > 0 && { card_id: cardOptions.value[cardFilterIndex.value].value }),
+  ...(categoryFilterIndex.value > 0 && {
+    category: categoryOptions[categoryFilterIndex.value].value,
+  }),
+  ...(dateFilter.value && { date: dateFilter.value }),
+}))
 
-    if (transactionsRes.code === 200) {
-      transactionList.value = transactionsRes.data.list
-      summary.value = transactionsRes.data.summary
-    }
+// 使用Vue Query获取交易记录
+const {
+  data: transactionsData,
+  isLoading: transactionsLoading,
+  refetch: refetchTransactions,
+} = useQuery(
+  computed(() =>
+    getTransactionsApiV1UserTransactionsListGetQueryOptions({
+      params: queryParams.value,
+    }),
+  ),
+)
 
-    if (cardsRes.code === 200) {
-      // 构建卡片选项
-      cardOptions.value = [
-        { value: 'all', label: '所有卡片' },
-        ...cardsRes.data.list.map(card => ({
-          value: card.id,
-          label: `${card.bankName}${card.cardName}(${card.cardNumberLast4})`
-        }))
-      ]
+// 使用Vue Query获取信用卡列表
+const { data: creditCardsData, isLoading: cardsLoading } = useQuery({
+  ...getCreditCardsApiV1UserCardsGetQueryOptions({
+    params: {},
+  }),
+  enabled: true,
+})
+
+// 使用Vue Query删除交易
+const deleteTransactionMutation =
+  useDeleteTransactionApiV1UserTransactionsTransactionIdDeleteDeleteMutation({
+    onSuccess: (data) => {
+      console.log('=== 删除交易成功 ===')
+      console.log('返回数据:', data)
+
+      uni.showToast({
+        title: '删除成功',
+        icon: 'success',
+      })
+
+      // 重新获取数据以确保同步
+      refetchTransactions()
+    },
+    onError: (error) => {
+      console.error('删除交易失败:', error)
+      uni.showToast({
+        title: '删除失败，请重试',
+        icon: 'error',
+      })
+    },
+  })
+
+// 监听交易数据变化
+watch(
+  transactionsData,
+  (newData) => {
+    console.log('=== 交易数据变化 ===')
+    console.log('原始数据:', newData)
+    console.log('数据类型:', typeof newData)
+    console.log('是否为数组:', Array.isArray(newData))
+
+    if (newData) {
+      try {
+        // @ts-ignore - 忽略类型错误以便调试
+        let data = newData
+
+        // 检查是否有包装格式
+        // @ts-ignore
+        if (newData.success !== undefined && newData.data !== undefined) {
+          console.log('检测到包装格式，提取data字段')
+          // @ts-ignore
+          data = newData.data
+        }
+
+        console.log('提取后的数据:', data)
+        console.log('提取后数据类型:', typeof data)
+        console.log('提取后是否为数组:', Array.isArray(data))
+
+        let transactions: any[] = []
+
+        if (Array.isArray(data)) {
+          console.log('数据是直接数组格式，长度:', data.length)
+          transactions = data
+        } else if (data && typeof data === 'object') {
+          console.log('数据是对象格式，查找items/list字段')
+          // @ts-ignore
+          const items = data.items || data.list || data.transactions || []
+          console.log('找到的items:', items)
+          console.log('items长度:', Array.isArray(items) ? items.length : 'not array')
+          transactions = Array.isArray(items) ? items : []
+
+          // 处理统计数据
+          // @ts-ignore
+          if (data.summary) {
+            // @ts-ignore
+            summary.value = data.summary
+            console.log('更新统计数据:', summary.value)
+          }
+        }
+
+        console.log('最终交易数据:', transactions)
+
+        // 转换数据格式
+        transactionList.value = transactions.map((item: any) => {
+          const converted = {
+            id: item.id || Math.random().toString(),
+            merchantName: item.merchant_name || item.merchantName || '未知商户',
+            amount: Number(item.amount) || 0,
+            category: item.category || '其他',
+            transactionType: item.transaction_type || item.transactionType || '消费',
+            transactionDate:
+              item.transaction_date || item.transactionDate || new Date().toISOString(),
+            installment: Number(item.installment_months || item.installment) || 0,
+            cardId: item.card_id || item.cardId || '',
+            description: item.description || '',
+          }
+          console.log('转换项目:', item, '->', converted)
+          return converted
+        })
+
+        console.log('最终处理后的交易列表:', transactionList.value)
+        console.log('交易列表长度:', transactionList.value.length)
+      } catch (error) {
+        console.error('处理交易数据时出错:', error)
+      }
+    } else {
+      console.log('没有接收到数据')
     }
-  } catch (error) {
-    console.error('加载数据失败:', error)
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none'
-    })
-  } finally {
-    loading.value = false
-  }
-}
+  },
+  { immediate: true },
+)
+
+// 监听信用卡数据变化
+watch(
+  creditCardsData,
+  (newData) => {
+    console.log('=== 信用卡数据变化 ===')
+    console.log('原始数据:', newData)
+
+    if (newData) {
+      try {
+        // @ts-ignore
+        let data = newData
+
+        // @ts-ignore
+        if (newData.success !== undefined && newData.data !== undefined) {
+          console.log('检测到包装格式，提取data字段')
+          // @ts-ignore
+          data = newData.data
+        }
+
+        console.log('提取后的数据:', data)
+
+        let cards: any[] = []
+        if (Array.isArray(data)) {
+          console.log('数据是直接数组格式，长度:', data.length)
+          cards = data
+        } else if (data && typeof data === 'object') {
+          console.log('数据是对象格式，查找items/list字段')
+          // @ts-ignore
+          cards = data.items || data.list || []
+          console.log('找到的cards:', cards)
+        }
+
+        cardOptions.value = [
+          { value: 'all', label: '所有卡片' },
+          ...cards.map((card: any) => ({
+            value: card.id,
+            label: `${card.bank_name || card.bankName}${card.card_name || card.cardName}(${card.card_number_last4 || card.cardNumberLast4})`,
+          })),
+        ]
+
+        console.log('处理后的卡片选项:', cardOptions.value)
+      } catch (error) {
+        console.error('处理信用卡数据时出错:', error)
+      }
+    } else {
+      console.log('没有接收到信用卡数据')
+    }
+  },
+  { immediate: true },
+)
+
+// Vue Query会自动监听queryKey的变化，无需手动监听
 
 // 筛选处理
 const toggleFilter = (filterKey: string) => {
@@ -432,7 +640,7 @@ const formatGroupDate = (dateStr: string) => {
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
-  
+
   if (date.toDateString() === today.toDateString()) {
     return '今天'
   } else if (date.toDateString() === yesterday.toDateString()) {
@@ -449,32 +657,32 @@ const formatTime = (dateTimeStr: string) => {
 
 const getCategoryIcon = (category: string) => {
   const icons = {
-    '餐饮美食': '🍽️',
-    '购物消费': '🛍️',
-    '交通出行': '🚗',
-    '生活服务': '🏠',
-    '娱乐休闲': '🎮',
-    '医疗健康': '💊',
-    '教育培训': '📚',
-    '旅游度假': '✈️',
-    '数码3C': '📱',
-    '服装配饰': '👕',
+    餐饮美食: '🍽️',
+    购物消费: '🛍️',
+    交通出行: '🚗',
+    生活服务: '🏠',
+    娱乐休闲: '🎮',
+    医疗健康: '💊',
+    教育培训: '📚',
+    旅游度假: '✈️',
+    数码3C: '📱',
+    服装配饰: '👕',
   }
   return icons[category] || '💳'
 }
 
 const getCategoryColor = (category: string) => {
   const colors = {
-    '餐饮美食': '#FF6B6B',
-    '购物消费': '#4ECDC4',
-    '交通出行': '#45B7D1',
-    '生活服务': '#96CEB4',
-    '娱乐休闲': '#FECA57',
-    '医疗健康': '#FF9FF3',
-    '教育培训': '#54A0FF',
-    '旅游度假': '#5F27CD',
-    '数码3C': '#00D2D3',
-    '服装配饰': '#FF9F43',
+    餐饮美食: '#FF6B6B',
+    购物消费: '#4ECDC4',
+    交通出行: '#45B7D1',
+    生活服务: '#96CEB4',
+    娱乐休闲: '#FECA57',
+    医疗健康: '#FF9FF3',
+    教育培训: '#54A0FF',
+    旅游度假: '#5F27CD',
+    数码3C: '#00D2D3',
+    服装配饰: '#FF9F43',
   }
   return colors[category] || '#A4B0BE'
 }
@@ -495,8 +703,110 @@ const addTransaction = () => {
 const exportRecords = () => {
   uni.showToast({
     title: '功能开发中',
-    icon: 'none'
+    icon: 'none',
   })
+}
+
+// 初始化toast和队列管理
+const toast = useToast()
+
+// 关闭外部点击
+const closeOutside = () => {
+  // 这个方法用于关闭滑动操作，wd-swipe-action会自动处理
+}
+
+// 编辑交易
+const editTransaction = (transaction: Transaction) => {
+  console.log('编辑交易:', transaction)
+  uni.navigateTo({
+    url: `/pages/transactions/edit?id=${transaction.id}`,
+  })
+}
+
+// 确认删除交易
+const confirmDeleteTransaction = (transaction: Transaction, date: string, index: number) => {
+  console.log('确认删除交易:', transaction)
+
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要删除这笔"${transaction.merchantName}"的交易记录吗？`,
+    confirmText: '删除',
+    confirmColor: '#ff3b30',
+    success: (res) => {
+      if (res.confirm) {
+        deleteTransaction(transaction.id, date, index)
+      }
+    },
+  })
+}
+
+// 滑动删除相关方法
+const getSwipeOptions = (transaction: Transaction) => {
+  return [
+    {
+      text: '编辑',
+      style: {
+        backgroundColor: '#007aff',
+        color: '#ffffff',
+        fontSize: '14px',
+      },
+    },
+    {
+      text: '删除',
+      style: {
+        backgroundColor: '#ff3b30',
+        color: '#ffffff',
+        fontSize: '14px',
+      },
+    },
+  ]
+}
+
+const handleSwipeClick = (e: any, transaction: Transaction, date: string, index: number) => {
+  const { content } = e
+  console.log('滑动操作:', content.text, transaction)
+
+  if (content.text === '删除') {
+    // 显示删除确认对话框
+    uni.showModal({
+      title: '确认删除',
+      content: `确定要删除这笔"${transaction.merchantName}"的交易记录吗？`,
+      confirmText: '删除',
+      confirmColor: '#ff3b30',
+      success: (res) => {
+        if (res.confirm) {
+          deleteTransaction(transaction.id, date, index)
+        }
+      },
+    })
+  } else if (content.text === '编辑') {
+    // 跳转到编辑页面
+    uni.navigateTo({
+      url: `/pages/transactions/edit?id=${transaction.id}`,
+    })
+  }
+}
+
+const deleteTransaction = async (transactionId: string, date: string, index: number) => {
+  console.log('=== 开始删除交易 ===')
+  console.log('交易ID:', transactionId)
+  console.log('日期:', date)
+  console.log('索引:', index)
+
+  try {
+    // 调用删除API
+    deleteTransactionMutation.mutate({
+      params: {
+        transaction_id: transactionId,
+      },
+    })
+  } catch (error) {
+    console.error('删除交易时出错:', error)
+    uni.showToast({
+      title: '删除失败',
+      icon: 'error',
+    })
+  }
 }
 </script>
 
@@ -509,7 +819,7 @@ const exportRecords = () => {
 .filter-tag {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.95);
   }
@@ -518,7 +828,7 @@ const exportRecords = () => {
 .filter-select {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:active {
     background: #e5e7eb;
   }
@@ -526,7 +836,7 @@ const exportRecords = () => {
 
 .transaction-item {
   cursor: pointer;
-  
+
   &:active {
     background: #f9fafb;
   }
@@ -537,11 +847,11 @@ const exportRecords = () => {
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 12px 24px;
+  padding: 6px 12px;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
   }
@@ -552,14 +862,65 @@ const exportRecords = () => {
   color: #667eea;
   border: 1px solid #667eea;
   border-radius: 8px;
-  padding: 12px 24px;
+  padding: 6px 12px;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
-  
+
   &:active {
     transform: scale(0.98);
     background: #f8f9ff;
   }
 }
-</style> 
+
+.bottom-actions {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  /* 使用 UniApp 提供的 CSS 变量来正确定位底部操作栏 */
+  bottom: var(--window-bottom);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+  /* 为底部安全区域添加额外的高度，确保内容不被遮挡 */
+  height: calc(80px + var(--window-bottom));
+}
+
+/* wd-swipe-action 滑动删除样式 */
+.action {
+  height: 100%;
+  display: flex;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  height: 100%;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 60px;
+  transition: all 0.2s ease;
+}
+
+.edit-button {
+  background: #007aff;
+}
+
+.delete-button {
+  background: #ff3b30;
+}
+
+.button:active {
+  opacity: 0.8;
+  transform: scale(0.95);
+}
+
+/* 确保交易项的样式 */
+.transaction-item {
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+}
+</style>

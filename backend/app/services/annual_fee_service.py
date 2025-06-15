@@ -23,6 +23,7 @@ from app.models.schemas.fee_waiver import (
 )
 from app.core.exceptions.custom import ResourceNotFoundError, BusinessRuleError
 from app.core.logging.logger import app_logger as logger
+from app.utils.pagination import apply_service_pagination
 
 
 class AnnualFeeService:
@@ -46,6 +47,17 @@ class AnnualFeeService:
             
             if not card:
                 raise ResourceNotFoundError("信用卡不存在或不属于当前用户")
+            
+            # 检查是否已存在相同的规则（同一张卡的同类型规则）
+            existing_rule = self.db.query(FeeWaiverRule).filter(
+                and_(
+                    FeeWaiverRule.card_id == rule_data.card_id,
+                    FeeWaiverRule.rule_name == rule_data.rule_name
+                )
+            ).first()
+            
+            if existing_rule:
+                raise BusinessRuleError("年费规则已存在")
             
             # 创建减免规则
             rule = FeeWaiverRule(
@@ -153,8 +165,8 @@ class AnnualFeeService:
             raise
     
     def get_user_annual_fee_rules(self, user_id: UUID, page: int = 1, page_size: int = 20,
-                                 card_id: Optional[UUID] = None, fee_year: Optional[int] = None,
-                                 waiver_type: Optional[str] = None, is_active: Optional[bool] = None) -> Tuple[List[FeeWaiverRuleResponse], int]:
+                                 card_id: Optional[UUID] = None, condition_type: Optional[str] = None,
+                                 is_enabled: Optional[bool] = None) -> Tuple[List[FeeWaiverRuleResponse], int]:
         """获取用户年费规则列表（支持筛选和分页）"""
         
         query = self.db.query(FeeWaiverRule).join(CreditCard).filter(
@@ -165,23 +177,19 @@ class AnnualFeeService:
         if card_id:
             query = query.filter(FeeWaiverRule.card_id == card_id)
         
-        if fee_year:
-            query = query.filter(FeeWaiverRule.fee_year == fee_year)
+        if condition_type:
+            query = query.filter(FeeWaiverRule.condition_type == condition_type)
         
-        if waiver_type:
-            query = query.filter(FeeWaiverRule.waiver_type == waiver_type)
+        if is_enabled is not None:
+            query = query.filter(FeeWaiverRule.is_enabled == is_enabled)
         
-        if is_active is not None:
-            query = query.filter(FeeWaiverRule.is_active == is_active)
-        
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        rules = query.order_by(desc(FeeWaiverRule.fee_year), desc(FeeWaiverRule.created_at))\
-                     .offset((page - 1) * page_size)\
-                     .limit(page_size)\
-                     .all()
+        # 应用分页和排序
+        rules, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=desc(FeeWaiverRule.created_at)
+        )
         
         rule_responses = [self._to_rule_response(rule) for rule in rules]
         
@@ -346,14 +354,13 @@ class AnnualFeeService:
         if status:
             query = query.filter(AnnualFeeRecord.status == status)
         
-        # 获取总数
-        total = query.count()
-        
-        # 分页和排序
-        records = query.order_by(desc(AnnualFeeRecord.fee_year), desc(AnnualFeeRecord.created_at))\
-                       .offset((page - 1) * page_size)\
-                       .limit(page_size)\
-                       .all()
+        # 应用分页和排序
+        records, total = apply_service_pagination(
+            query,
+            page,
+            page_size,
+            order_by=[desc(AnnualFeeRecord.fee_year), desc(AnnualFeeRecord.created_at)]
+        )
         
         record_responses = [self._to_record_response(record) for record in records]
         
@@ -377,10 +384,10 @@ class AnnualFeeService:
             raise ResourceNotFoundError("年费规则不存在")
         
         # 如果是刚性年费，无法减免
-        if rule.waiver_type == 'rigid':
+        if rule.condition_type == 'rigid':
             return WaiverEvaluationResponse(
                 waiver_rule_id=rule_id,
-                waiver_type=rule.waiver_type,
+                waiver_type=rule.condition_type,
                 is_eligible=False,
                 current_progress=0,
                 required_target=0,
@@ -390,8 +397,29 @@ class AnnualFeeService:
             )
         
         # 计算当前年度的交易数据
-        year_start = datetime(rule.fee_year, 1, 1)
-        year_end = datetime(rule.fee_year, 12, 31, 23, 59, 59)
+        # 优先使用规则的有效期，如果没有则使用当前年份
+        if rule.effective_from and rule.effective_to:
+            # 使用规则的有效期范围
+            year_start = datetime.combine(rule.effective_from, datetime.min.time())
+            year_end = datetime.combine(rule.effective_to, datetime.max.time())
+        else:
+            # 如果没有有效期，查询所有年份的交易数据来确定合适的年份
+            all_transactions = self.db.query(Transaction).filter(
+                and_(
+                    Transaction.card_id == rule.card_id,
+                    Transaction.transaction_type == 'expense'
+                )
+            ).order_by(Transaction.transaction_date.desc()).limit(1).first()
+            
+            if all_transactions and all_transactions.transaction_date:
+                # 使用最近交易的年份
+                target_year = all_transactions.transaction_date.year
+            else:
+                # 如果没有交易，使用当前年份
+                target_year = datetime.now().year
+            
+            year_start = datetime(target_year, 1, 1)
+            year_end = datetime(target_year, 12, 31, 23, 59, 59)
         
         transactions = self.db.query(Transaction).filter(
             and_(
@@ -403,67 +431,67 @@ class AnnualFeeService:
         ).all()
         
         # 根据减免类型评估
-        if rule.waiver_type == 'spending_amount':
+        if rule.condition_type == 'spending_amount':
             # 刷卡金额减免
             current_spending = sum(t.amount for t in transactions)
-            required_spending = rule.waiver_condition_value
+            required_spending = rule.condition_value or Decimal('0')
             
             is_eligible = current_spending >= required_spending
             completion_percentage = (current_spending / required_spending * 100) if required_spending > 0 else 0
             
             return WaiverEvaluationResponse(
                 waiver_rule_id=rule_id,
-                waiver_type=rule.waiver_type,
+                waiver_type=rule.condition_type,
                 is_eligible=is_eligible,
                 current_progress=float(current_spending),
                 required_target=float(required_spending),
-                completion_percentage=min(completion_percentage, 100.0),
-                estimated_waiver_amount=rule.base_fee if is_eligible else Decimal('0'),
+                completion_percentage=completion_percentage,
+                estimated_waiver_amount=Decimal('300') if is_eligible else Decimal('0'),  # 假设年费300元
                 evaluation_message=f"当前消费金额: ¥{current_spending:,.2f}, 需要: ¥{required_spending:,.2f}"
             )
         
-        elif rule.waiver_type == 'transaction_count':
+        elif rule.condition_type == 'transaction_count':
             # 刷卡次数减免
             current_count = len(transactions)
-            required_count = int(rule.waiver_condition_value)
+            required_count = rule.condition_count or 0
             
             is_eligible = current_count >= required_count
             completion_percentage = (current_count / required_count * 100) if required_count > 0 else 0
             
             return WaiverEvaluationResponse(
                 waiver_rule_id=rule_id,
-                waiver_type=rule.waiver_type,
+                waiver_type=rule.condition_type,
                 is_eligible=is_eligible,
                 current_progress=current_count,
                 required_target=required_count,
-                completion_percentage=min(completion_percentage, 100.0),
-                estimated_waiver_amount=rule.base_fee if is_eligible else Decimal('0'),
+                completion_percentage=completion_percentage,
+                estimated_waiver_amount=Decimal('300') if is_eligible else Decimal('0'),
                 evaluation_message=f"当前交易次数: {current_count}次, 需要: {required_count}次"
             )
         
-        elif rule.waiver_type == 'points_redemption':
+        elif rule.condition_type == 'points_redeem':
             # 积分兑换减免
             total_points = sum(t.points_earned or 0 for t in transactions)
-            required_points = int(rule.waiver_condition_value)
+            required_points = int(rule.condition_value or 0)
             
             is_eligible = total_points >= required_points
             completion_percentage = (total_points / required_points * 100) if required_points > 0 else 0
             
             return WaiverEvaluationResponse(
                 waiver_rule_id=rule_id,
-                waiver_type=rule.waiver_type,
+                waiver_type=rule.condition_type,
                 is_eligible=is_eligible,
                 current_progress=total_points,
                 required_target=required_points,
-                completion_percentage=min(completion_percentage, 100.0),
-                estimated_waiver_amount=rule.base_fee if is_eligible else Decimal('0'),
+                completion_percentage=completion_percentage,
+                estimated_waiver_amount=Decimal('300') if is_eligible else Decimal('0'),
                 evaluation_message=f"当前积分: {total_points}分, 需要: {required_points}分"
             )
         
         else:
             return WaiverEvaluationResponse(
                 waiver_rule_id=rule_id,
-                waiver_type=rule.waiver_type,
+                waiver_type=rule.condition_type,
                 is_eligible=False,
                 current_progress=0,
                 required_target=0,
@@ -518,7 +546,7 @@ class AnnualFeeService:
         # 减免类型分布
         waiver_type_distribution = {}
         for record in records:
-            waiver_type = record.rule.waiver_type
+            waiver_type = record.rule.condition_type
             waiver_type_distribution[waiver_type] = waiver_type_distribution.get(waiver_type, 0) + 1
         
         # 即将到期的年费
@@ -559,14 +587,17 @@ class AnnualFeeService:
         return FeeWaiverRuleResponse(
             id=rule.id,
             card_id=rule.card_id,
-            fee_year=rule.fee_year,
-            base_fee=rule.base_fee,
-            waiver_type=rule.waiver_type,
-            waiver_condition_value=rule.waiver_condition_value,
-            waiver_condition_unit=rule.waiver_condition_unit,
-            points_per_yuan=rule.points_per_yuan,
-            is_active=rule.is_active,
-            notes=rule.notes,
+            rule_name=rule.rule_name,
+            condition_type=rule.condition_type,
+            condition_value=rule.condition_value,
+            condition_count=rule.condition_count,
+            condition_period=rule.condition_period,
+            logical_operator=rule.logical_operator,
+            priority=rule.priority,
+            is_enabled=rule.is_enabled,
+            effective_from=rule.effective_from,
+            effective_to=rule.effective_to,
+            description=rule.description,
             created_at=rule.created_at,
             updated_at=rule.updated_at,
             # 关联数据
@@ -577,6 +608,7 @@ class AnnualFeeService:
         """转换为年费记录响应模型"""
         return AnnualFeeRecordResponse(
             id=record.id,
+            card_id=record.card_id,
             waiver_rule_id=record.waiver_rule_id,
             fee_year=record.fee_year,
             base_fee=record.base_fee,
@@ -591,5 +623,5 @@ class AnnualFeeService:
             updated_at=record.updated_at,
             # 关联数据
             card_name=record.rule.card.card_name if record.rule and record.rule.card else None,
-            waiver_type=record.rule.waiver_type if record.rule else None
+            waiver_type=record.rule.condition_type if record.rule else None
         ) 

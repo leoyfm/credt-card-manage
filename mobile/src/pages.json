@@ -46,7 +46,7 @@
         "iconPath": "static/tabbar/example.png",
         "selectedIconPath": "static/tabbar/exampleHL.png",
         "pagePath": "pages/fees/index",
-        "text": "费用"
+        "text": "年费"
       },
       {
         "iconPath": "static/tabbar/personal.png",
@@ -59,11 +59,7 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "type": "home",
-      "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "信用卡管家"
-      }
+      "type": "home"
     },
     {
       "path": "pages/about/about",
@@ -75,11 +71,7 @@
     },
     {
       "path": "pages/auth/login",
-      "type": "page",
-      "style": {
-        "navigationBarTitleText": "登录",
-        "navigationStyle": "custom"
-      }
+      "type": "page"
     },
     {
       "path": "pages/auth/register",
@@ -95,6 +87,14 @@
       "style": {
         "navigationStyle": "custom",
         "navigationBarTitleText": "添加信用卡"
+      }
+    },
+    {
+      "path": "pages/cards/edit",
+      "type": "page",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "编辑信用卡"
       }
     },
     {
@@ -138,11 +138,21 @@
       }
     },
     {
-      "path": "pages/test-mock/index",
+      "path": "pages/transactions/add",
       "type": "page",
       "style": {
-        "navigationBarTitleText": "Mock 测试页面"
+        "navigationBarTitleText": "添加消费记录",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
       }
+    },
+    {
+      "path": "pages/transactions/detail",
+      "type": "page"
+    },
+    {
+      "path": "pages/transactions/edit",
+      "type": "page"
     },
     {
       "path": "pages/transactions/index",

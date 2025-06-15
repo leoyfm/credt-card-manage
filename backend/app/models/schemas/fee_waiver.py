@@ -249,6 +249,7 @@ class AnnualFeeRecordUpdate(BaseModel):
 class AnnualFeeRecordResponse(AnnualFeeRecordBase):
     """年费记录响应模型"""
     id: UUID = Field(..., description="记录ID")
+    card_id: UUID = Field(..., description="信用卡ID")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
     
@@ -261,6 +262,7 @@ class AnnualFeeRecordResponse(AnnualFeeRecordBase):
         json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
+                "card_id": "123e4567-e89b-12d3-a456-426614174001",
                 "waiver_rule_id": "123e4567-e89b-12d3-a456-426614174001",
                 "fee_year": 2024,
                 "base_fee": 300.00,

@@ -186,15 +186,14 @@ class StatisticsService:
         ).group_by(func.date(Transaction.transaction_date))\
          .order_by(func.date(Transaction.transaction_date)).all()
         
-        # 计算总支出
-        total_expense = sum(stat.total_amount or 0 for stat in card_stats)
+        # 计算总支出 - 修复数据类型问题
+        total_expense = float(sum(float(stat.total_amount or 0) for stat in card_stats))
         
         # 构建分类分布
         category_distribution = []
         for stat in category_stats:
             amount = float(stat.total_amount or 0)
             percentage = (amount / total_expense * 100) if total_expense > 0 else 0
-            
             category_distribution.append({
                 'category_name': stat.category_name or '未分类',
                 'transaction_count': stat.transaction_count,
@@ -208,12 +207,11 @@ class StatisticsService:
         for stat in card_stats:
             amount = float(stat.total_amount or 0)
             percentage = (amount / total_expense * 100) if total_expense > 0 else 0
-            
             card_distribution.append({
                 'card_name': stat.card_name,
                 'transaction_count': stat.transaction_count,
                 'total_amount': amount,
-                'total_points': int(stat.total_points or 0),
+                'total_points': stat.total_points or 0,
                 'total_cashback': float(stat.total_cashback or 0),
                 'percentage': round(percentage, 2)
             })
@@ -222,20 +220,24 @@ class StatisticsService:
         daily_trends = []
         for stat in daily_stats:
             daily_trends.append({
-                'date': stat.date,
+                'date': stat.date.strftime('%Y-%m-%d'),
                 'transaction_count': stat.transaction_count,
                 'total_amount': float(stat.total_amount or 0)
             })
         
+        # 排序并获取前5名
+        top_categories = sorted(category_distribution, key=lambda x: x['total_amount'], reverse=True)[:5]
+        top_cards = sorted(card_distribution, key=lambda x: x['total_amount'], reverse=True)[:5]
+        
         return {
             'period_start': start_date,
             'period_end': end_date,
-            'total_expense': float(total_expense),
-            'category_distribution': sorted(category_distribution, key=lambda x: x['total_amount'], reverse=True),
-            'card_distribution': sorted(card_distribution, key=lambda x: x['total_amount'], reverse=True),
+            'total_expense': total_expense,
+            'category_distribution': category_distribution,
+            'card_distribution': card_distribution,
             'daily_trends': daily_trends,
-            'top_categories': category_distribution[:5],
-            'top_cards': card_distribution[:3]
+            'top_categories': top_categories,
+            'top_cards': top_cards
         }
     
     def get_financial_report(self, user_id: UUID, year: Optional[int] = None) -> Dict[str, Any]:
@@ -295,8 +297,12 @@ class StatisticsService:
             func.count(AnnualFeeRecord.id).label('total_fees'),
             func.sum(AnnualFeeRecord.base_fee).label('total_base_fee'),
             func.sum(AnnualFeeRecord.actual_fee).label('total_actual_fee'),
-            func.sum(AnnualFeeRecord.waiver_amount).label('total_waived')
-        ).join(CreditCard).filter(
+            func.sum(AnnualFeeRecord.waiver_amount).label('total_waived'),
+            func.sum(case(
+                (AnnualFeeRecord.status == 'pending', 1),
+                else_=0
+            )).label('pending_fees')
+        ).join(CreditCard, AnnualFeeRecord.card_id == CreditCard.id).filter(
             and_(
                 CreditCard.user_id == user_id,
                 AnnualFeeRecord.fee_year == year
@@ -453,7 +459,7 @@ class StatisticsService:
                 (AnnualFeeRecord.status == 'pending', 1),
                 else_=0
             )).label('pending_fees')
-        ).join(AnnualFeeRecord.rule).join(CreditCard).filter(
+        ).join(CreditCard, AnnualFeeRecord.card_id == CreditCard.id).filter(
             and_(
                 CreditCard.user_id == user_id,
                 AnnualFeeRecord.fee_year == current_year
@@ -501,36 +507,47 @@ class StatisticsService:
         records_stats = self.db.query(
             func.count(ReminderRecord.id).label('total_reminders'),
             func.sum(case(
-                (ReminderRecord.status == 'pending', 1),
+                (ReminderRecord.sent_at.is_(None), 1),
                 else_=0
             )).label('pending_reminders'),
             func.sum(case(
-                (ReminderRecord.status == 'sent', 1),
+                (ReminderRecord.sent_at.isnot(None), 1),
                 else_=0
             )).label('sent_reminders'),
             func.sum(case(
-                (ReminderRecord.status == 'read', 1),
+                (and_(ReminderRecord.sent_at.isnot(None), 
+                      or_(ReminderRecord.email_sent == True, 
+                          ReminderRecord.sms_sent == True,
+                          ReminderRecord.push_sent == True,
+                          ReminderRecord.wechat_sent == True)), 1),
                 else_=0
-            )).label('read_reminders')
+            )).label('delivered_reminders')
         ).join(ReminderSetting).filter(
             and_(
                 ReminderSetting.user_id == user_id,
-                ReminderRecord.reminder_date >= seven_days_ago
+                ReminderRecord.created_at >= seven_days_ago
             )
         ).first()
         
-        sent_count = records_stats.sent_reminders if records_stats else 0
-        read_count = records_stats.read_reminders if records_stats else 0
-        read_rate = (read_count / sent_count * 100) if sent_count > 0 else 0
+        # 安全地获取统计数据，确保处理None值
+        total_settings = int(settings_stats.total_settings or 0) if settings_stats else 0
+        active_settings = int(settings_stats.active_settings or 0) if settings_stats else 0
+        
+        total_reminders = int(records_stats.total_reminders or 0) if records_stats else 0
+        pending_reminders = int(records_stats.pending_reminders or 0) if records_stats else 0
+        sent_reminders = int(records_stats.sent_reminders or 0) if records_stats else 0
+        delivered_reminders = int(records_stats.delivered_reminders or 0) if records_stats else 0
+        
+        delivery_rate = (delivered_reminders / sent_reminders * 100) if sent_reminders > 0 else 0
         
         return {
-            'total_settings': settings_stats.total_settings if settings_stats else 0,
-            'active_settings': settings_stats.active_settings if settings_stats else 0,
-            'total_reminders_7days': records_stats.total_reminders if records_stats else 0,
-            'pending_reminders': records_stats.pending_reminders if records_stats else 0,
-            'sent_reminders': sent_count,
-            'read_reminders': read_count,
-            'read_rate': round(read_rate, 2)
+            'total_settings': total_settings,
+            'active_settings': active_settings,
+            'total_reminders_7days': total_reminders,
+            'pending_reminders': pending_reminders,
+            'sent_reminders': sent_reminders,
+            'delivered_reminders': delivered_reminders,
+            'delivery_rate': round(delivery_rate, 2)
         }
     
     def _calculate_financial_health_score(self, user_id: UUID) -> Dict[str, Any]:
@@ -549,9 +566,9 @@ class StatisticsService:
         ).all()
         
         if cards:
-            total_limit = sum(card.credit_limit for card in cards)
-            total_used = sum(card.used_limit for card in cards)
-            utilization_rate = total_used / total_limit * 100
+            total_limit = sum(float(card.credit_limit) for card in cards)
+            total_used = sum(float(card.used_limit) for card in cards)
+            utilization_rate = (total_used / total_limit * 100) if total_limit > 0 else 0
             
             if utilization_rate <= 30:
                 utilization_score = 30
@@ -621,7 +638,7 @@ class StatisticsService:
         
         # 年费管理评分（20分）
         current_year = datetime.now().year
-        fee_records = self.db.query(AnnualFeeRecord).join(AnnualFeeRecord.rule).join(CreditCard).filter(
+        fee_records = self.db.query(AnnualFeeRecord).join(CreditCard, AnnualFeeRecord.card_id == CreditCard.id).filter(
             and_(
                 CreditCard.user_id == user_id,
                 AnnualFeeRecord.fee_year == current_year
@@ -629,9 +646,9 @@ class StatisticsService:
         ).all()
         
         if fee_records:
-            total_base = sum(record.base_fee for record in fee_records)
-            total_waived = sum(record.waiver_amount for record in fee_records)
-            waiver_rate = total_waived / total_base * 100 if total_base > 0 else 0
+            total_base = sum(float(record.base_fee) for record in fee_records)
+            total_waived = sum(float(record.waiver_amount) for record in fee_records)
+            waiver_rate = (total_waived / total_base * 100) if total_base > 0 else 0
             
             if waiver_rate >= 80:
                 fee_score = 20
@@ -698,57 +715,51 @@ class StatisticsService:
             'description': f'启用提醒 {active_reminders} 个'
         })
         
-        # 记录完整性评分（15分）
-        cards_with_complete_info = self.db.query(CreditCard).filter(
-            and_(
-                CreditCard.user_id == user_id,
-                CreditCard.card_name.isnot(None),
-                CreditCard.credit_limit > 0,
-                CreditCard.billing_date.isnot(None)
-            )
-        ).count()
+        # 数据完整性评分（15分）
+        data_score = 0
+        data_factors = []
         
-        total_cards = self.db.query(CreditCard).filter(CreditCard.user_id == user_id).count()
+        # 检查信用卡数据
+        if cards:
+            data_score += 5
+            data_factors.append('信用卡')
         
-        if total_cards > 0:
-            completeness_rate = cards_with_complete_info / total_cards * 100
-            
-            if completeness_rate >= 90:
-                completeness_score = 15
-                completeness_status = 'excellent'
-            elif completeness_rate >= 70:
-                completeness_score = 12
-                completeness_status = 'good'
-            elif completeness_rate >= 50:
-                completeness_score = 8
-                completeness_status = 'fair'
-            else:
-                completeness_score = 5
-                completeness_status = 'poor'
-            
-            factors.append({
-                'factor': 'data_completeness',
-                'name': '数据完整性',
-                'score': completeness_score,
-                'max_score': 15,
-                'status': completeness_status,
-                'value': round(completeness_rate, 2),
-                'description': f'信息完整度 {completeness_rate:.1f}%'
-            })
+        # 检查交易数据
+        if transaction_count > 0:
+            data_score += 5
+            data_factors.append('交易记录')
+        
+        # 检查年费数据
+        if fee_records:
+            data_score += 3
+            data_factors.append('年费记录')
+        
+        # 检查提醒数据
+        if active_reminders > 0:
+            data_score += 2
+            data_factors.append('提醒设置')
+        
+        if data_score >= 12:
+            data_status = 'excellent'
+        elif data_score >= 8:
+            data_status = 'good'
+        elif data_score >= 5:
+            data_status = 'fair'
         else:
-            completeness_score = 0
-            factors.append({
-                'factor': 'data_completeness',
-                'name': '数据完整性',
-                'score': 0,
-                'max_score': 15,
-                'status': 'no_data',
-                'value': 0,
-                'description': '无信用卡数据'
-            })
+            data_status = 'poor'
+        
+        factors.append({
+            'factor': 'data_completeness',
+            'name': '数据完整性',
+            'score': data_score,
+            'max_score': 15,
+            'status': data_status,
+            'value': len(data_factors),
+            'description': f'已完善: {", ".join(data_factors) if data_factors else "无"}'
+        })
         
         # 计算总分
-        total_score = utilization_score + activity_score + fee_score + reminder_score + completeness_score
+        total_score = sum(factor['score'] for factor in factors)
         
         # 确定等级
         if total_score >= 90:
@@ -762,21 +773,32 @@ class StatisticsService:
             level = 'good'
         elif total_score >= 60:
             grade = 'B'
-            level = 'fair'
+            level = 'good'
         elif total_score >= 50:
             grade = 'C+'
+            level = 'fair'
+        elif total_score >= 40:
+            grade = 'C'
+            level = 'fair'
+        elif total_score >= 30:
+            grade = 'D+'
+            level = 'poor'
+        elif total_score >= 20:
+            grade = 'D'
             level = 'poor'
         else:
-            grade = 'C'
+            grade = 'F'
             level = 'very_poor'
+        
+        # 生成建议
+        recommendations = self._get_health_recommendations(factors)
         
         return {
             'total_score': total_score,
-            'max_score': 100,
             'grade': grade,
             'level': level,
             'factors': factors,
-            'recommendations': self._get_health_recommendations(factors)
+            'recommendations': recommendations
         }
     
     def _analyze_trends(self, trends_list: List[Dict[str, Any]]) -> Dict[str, Any]:

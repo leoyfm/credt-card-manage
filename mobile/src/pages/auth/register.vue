@@ -10,7 +10,7 @@
 <template>
   <view class="register-page">
     <!-- 返回按钮 -->
-    <wd-navbar 
+    <wd-navbar
       title="创建账户"
       left-arrow
       fixed
@@ -34,10 +34,13 @@
 
       <!-- 步骤指示器 -->
       <view class="steps">
-        <view 
-          v-for="(step, index) in steps" 
+        <view
+          v-for="(step, index) in steps"
           :key="index"
-          :class="['step-item', { active: currentStep >= index + 1, completed: currentStep > index + 1 }]"
+          :class="[
+            'step-item',
+            { active: currentStep >= index + 1, completed: currentStep > index + 1 },
+          ]"
         >
           <view class="step-number">{{ index + 1 }}</view>
           <view class="step-text">{{ step }}</view>
@@ -55,17 +58,16 @@
             required
             :rules="[{ required: true, message: '请输入用户名' }]"
           />
-          
+
           <wd-input
             v-model="registerForm.email"
             label="邮箱"
             placeholder="请输入邮箱地址"
             clearable
             required
-            
             :rules="[{ required: true, message: '请输入邮箱地址' }]"
           />
-          
+
           <wd-input
             v-model="registerForm.password"
             label="密码"
@@ -75,7 +77,7 @@
             required
             :rules="[{ required: true, message: '请输入密码' }]"
           />
-          
+
           <wd-input
             v-model="confirmPassword"
             label="确认密码"
@@ -87,13 +89,7 @@
           />
         </view>
 
-        <wd-button
-          type="primary"
-          size="large"
-          block
-          @click="nextStep"
-          class="next-btn"
-        >
+        <wd-button type="primary" size="large" block @click="nextStep" class="next-btn">
           下一步
         </wd-button>
       </view>
@@ -109,7 +105,7 @@
             required
             :rules="[{ required: true, message: '请输入手机号' }]"
           />
-          
+
           <view class="code-input-wrapper">
             <wd-input
               v-model="registerForm.verification_code"
@@ -133,21 +129,9 @@
         </view>
 
         <view class="button-group">
-          <wd-button
-            type="info"
-            size="large"
-            @click="prevStep"
-            class="prev-btn"
-          >
-            上一步
-          </wd-button>
-          
-          <wd-button
-            type="primary"
-            size="large"
-            @click="nextStep"
-            class="next-btn"
-          >
+          <wd-button type="info" size="large" @click="prevStep" class="prev-btn">上一步</wd-button>
+
+          <wd-button type="primary" size="large" @click="nextStep" class="next-btn">
             下一步
           </wd-button>
         </view>
@@ -162,7 +146,7 @@
             placeholder="请输入昵称（可选）"
             clearable
           />
-          
+
           <wd-select-picker
             label="性别"
             v-model="registerForm.gender"
@@ -187,15 +171,8 @@
         </view>
 
         <view class="button-group">
-          <wd-button
-            type="info"
-            size="large"
-            @click="prevStep"
-            class="prev-btn"
-          >
-            上一步
-          </wd-button>
-          
+          <wd-button type="info" size="large" @click="prevStep" class="prev-btn">上一步</wd-button>
+
           <wd-button
             type="primary"
             size="large"
@@ -226,11 +203,12 @@
 import { ref, reactive, computed } from 'vue'
 import { useToast } from 'wot-design-uni'
 import { useUserStore } from '@/store/user'
-import { 
-  sendVerificationCodeApiAuthCodeSendPost,
-  verifyVerificationCodeApiAuthCodeVerifyPost
-} from '@/service/app/yonghurenzheng'
-import { CodeType, Gender } from '@/service/app/types'
+// 暂时注释掉旧的API引用，等待新的验证码API
+// import {
+//   sendVerificationCodeApiAuthCodeSendPost,
+//   verifyVerificationCodeApiAuthCodeVerifyPost
+// } from '@/service/app/yonghurenzheng'
+// import { CodeType, Gender } from '@/service/app/types'
 import type * as API from '@/service/app/types'
 
 const toast = useToast()
@@ -248,7 +226,7 @@ const registerForm = reactive({
   phone: '',
   verification_code: '',
   nickname: '',
-  gender: ''
+  gender: '',
 })
 
 const confirmPassword = ref('')
@@ -262,9 +240,9 @@ const agreePrivacy = ref(false)
 
 // 性别选项
 const genderOptions = [
-  { value: Gender.male, label: '男' },
-  { value: Gender.female, label: '女' },
-  { value: Gender.unknown, label: '保密' }
+  { value: 'male', label: '男' },
+  { value: 'female', label: '女' },
+  { value: 'unknown', label: '保密' },
 ]
 
 // 验证码按钮文字
@@ -286,7 +264,7 @@ const nextStep = async () => {
   if (!validateCurrentStep()) {
     return
   }
-  
+
   // 第二步需要验证验证码
   if (currentStep.value === 2) {
     const isCodeValid = await verifyCode()
@@ -294,7 +272,7 @@ const nextStep = async () => {
       return
     }
   }
-  
+
   if (currentStep.value < 3) {
     currentStep.value++
   }
@@ -344,7 +322,7 @@ const validateCurrentStep = () => {
         return false
       }
       return true
-      
+
     case 2:
       if (!registerForm.phone.trim()) {
         toast.error('请输入手机号')
@@ -359,14 +337,14 @@ const validateCurrentStep = () => {
         return false
       }
       return true
-      
+
     case 3:
       if (!agreePrivacy.value) {
         toast.error('请先同意用户协议和隐私政策')
         return false
       }
       return true
-      
+
     default:
       return true
   }
@@ -378,25 +356,23 @@ const sendCode = async () => {
     toast.error('请输入手机号')
     return
   }
-  
+
   if (!/^1[3-9]\d{9}$/.test(registerForm.phone)) {
     toast.error('请输入正确的手机号')
     return
   }
-  
+
   try {
     codeSending.value = true
-    
-    // 使用用户store发送验证码
-    const result = await userStore.sendVerificationCode({
-      phone_or_email: registerForm.phone.trim(),
-      code_type: CodeType.register
-    })
-    
-    if (result.success) {
+
+    // TODO: 等待新的验证码API
+    toast.error('验证码功能正在开发中')
+
+    // 暂时模拟发送成功
+    setTimeout(() => {
+      toast.success('验证码发送成功（模拟）')
       startCountdown()
-    }
-    // 错误信息已经在store中通过toast显示了
+    }, 1000)
   } catch (error: any) {
     console.error('验证码发送失败:', error)
     toast.error('验证码发送失败，请稍后重试')
@@ -409,7 +385,7 @@ const sendCode = async () => {
 const startCountdown = () => {
   codeDisabled.value = true
   codeCountdown.value = 60
-  
+
   const timer = setInterval(() => {
     codeCountdown.value--
     if (codeCountdown.value <= 0) {
@@ -422,29 +398,16 @@ const startCountdown = () => {
 // 验证验证码
 const verifyCode = async () => {
   try {
-    const requestBody: API.VerifyCodeRequest = {
-      phone_or_email: registerForm.phone.trim(),
-      code: registerForm.verification_code.trim(),
-      code_type: CodeType.register
-    }
-    
-    const response = await verifyVerificationCodeApiAuthCodeVerifyPost({
-      body: requestBody
-    })
-    
-    if (response.success && response.data) {
+    // TODO: 等待新的验证码验证API
+    if (registerForm.verification_code.trim() === '123456') {
       return true
     } else {
-      toast.error(response.message || '验证码验证失败')
+      toast.error('验证码错误（测试模式请输入123456）')
       return false
     }
   } catch (error: any) {
-    console.error('验证码验证失败:', error)
-    if (error.response?.data?.message) {
-      toast.error(error.response.data.message)
-    } else {
-      toast.error('验证码验证失败，请稍后重试')
-    }
+    console.error('验证验证码失败:', error)
+    toast.error('验证码验证失败，请稍后重试')
     return false
   }
 }
@@ -454,23 +417,21 @@ const handleRegister = async () => {
   if (!validateCurrentStep()) {
     return
   }
-  
+
   try {
     loading.value = true
-    
+
     // 构建注册请求数据
-    const registerData: API.UserRegisterRequest = {
+    const registerData: API.RegisterRequest = {
       username: registerForm.username.trim(),
       email: registerForm.email.trim(),
       password: registerForm.password.trim(),
-      phone: registerForm.phone.trim() || null,
-      nickname: registerForm.nickname.trim() || null,
-      verification_code: registerForm.verification_code.trim() || null
+      nickname: registerForm.nickname.trim() || undefined,
     }
-    
+
     // 使用用户store进行注册
     const result = await userStore.register(registerData)
-    
+
     if (result.success) {
       // 注册成功，跳转到登录页面
       setTimeout(() => {
@@ -512,19 +473,19 @@ const showAgreement = (type: 'user' | 'privacy') => {
   right: 0;
   bottom: 0;
   pointer-events: none;
-  
+
   .circle {
     position: absolute;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
-    
+
     &.circle-1 {
       width: 150px;
       height: 150px;
       top: 20%;
       right: -75px;
     }
-    
+
     &.circle-2 {
       width: 100px;
       height: 100px;
@@ -546,14 +507,14 @@ const showAgreement = (type: 'user' | 'privacy') => {
 .header {
   text-align: center;
   margin-bottom: 32px;
-  
+
   .title {
     font-size: 24px;
     font-weight: bold;
     color: #333;
     margin-bottom: 8px;
   }
-  
+
   .subtitle {
     font-size: 14px;
     color: #666;
@@ -564,12 +525,12 @@ const showAgreement = (type: 'user' | 'privacy') => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 40px;
-  
+
   .step-item {
     flex: 1;
     text-align: center;
     position: relative;
-    
+
     &:not(:last-child)::after {
       content: '';
       position: absolute;
@@ -580,12 +541,12 @@ const showAgreement = (type: 'user' | 'privacy') => {
       background: #e5e5e5;
       z-index: 1;
     }
-    
+
     &.active::after,
     &.completed::after {
       background: #4f46e5;
     }
-    
+
     .step-number {
       width: 32px;
       height: 32px;
@@ -601,22 +562,22 @@ const showAgreement = (type: 'user' | 'privacy') => {
       font-weight: bold;
       transition: all 0.3s;
     }
-    
+
     &.active .step-number {
       background: #4f46e5;
       color: white;
     }
-    
+
     &.completed .step-number {
       background: #10b981;
       color: white;
     }
-    
+
     .step-text {
       font-size: 12px;
       color: #666;
     }
-    
+
     &.active .step-text {
       color: #4f46e5;
       font-weight: bold;
@@ -627,16 +588,16 @@ const showAgreement = (type: 'user' | 'privacy') => {
 .step-content {
   .form-group {
     margin-bottom: 32px;
-    
+
     .code-input-wrapper {
       display: flex;
       align-items: end;
       gap: 12px;
-      
+
       .code-input {
         flex: 1;
       }
-      
+
       .send-code-btn {
         width: 100px;
         height: 44px;
@@ -644,38 +605,38 @@ const showAgreement = (type: 'user' | 'privacy') => {
       }
     }
   }
-  
+
   .tip-info {
     margin-bottom: 16px;
-    
+
     .tip-text {
       font-size: 12px;
       color: #999;
       text-align: center;
     }
   }
-  
+
   .privacy-agreement {
     margin-bottom: 32px;
     padding: 16px;
     background: #f8f9fa;
     border-radius: 8px;
-    
+
     .link-text {
       color: #4f46e5;
       font-weight: bold;
     }
   }
-  
+
   .button-group {
     display: flex;
     gap: 16px;
-    
+
     .prev-btn {
       flex: 1;
       height: 48px;
     }
-    
+
     .next-btn,
     .register-btn {
       flex: 2;
@@ -684,7 +645,7 @@ const showAgreement = (type: 'user' | 'privacy') => {
       border: none;
     }
   }
-  
+
   .next-btn {
     height: 48px;
     background: #4f46e5;
@@ -695,14 +656,14 @@ const showAgreement = (type: 'user' | 'privacy') => {
 .footer {
   text-align: center;
   padding: 32px;
-  
+
   .login-link {
     color: white;
-    
+
     .link-text {
       color: #ffd700;
       font-weight: bold;
     }
   }
 }
-</style> 
+</style>
