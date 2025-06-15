@@ -10,29 +10,91 @@
 
 <template>
   <view class="fees-page">
-    <!-- 顶部统计 -->
-    <view class="stats-header bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4">
-      <view class="text-center mb-4">
-        <text class="text-lg font-semibold opacity-90">本年费用支出</text>
+    <!-- 未登录状态 -->
+    <view
+      v-if="!userStore.isLoggedIn"
+      class="login-prompt bg-gradient-to-r from-purple-500 to-pink-500 text-white p-8 text-center"
+    >
+      <view
+        class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4"
+      >
+        <text class="text-3xl">💰</text>
       </view>
-      <view class="flex justify-around">
-        <view class="text-center">
-          <text class="text-2xl font-bold block">¥{{ summary.totalAnnualFees }}</text>
-          <text class="text-sm opacity-80">年费总额</text>
-        </view>
-        <view class="text-center">
-          <text class="text-2xl font-bold block">¥{{ summary.totalInterest }}</text>
-          <text class="text-sm opacity-80">利息支出</text>
-        </view>
-        <view class="text-center">
-          <text class="text-2xl font-bold block">¥{{ summary.totalOtherFees }}</text>
-          <text class="text-sm opacity-80">其他费用</text>
-        </view>
+      <text class="text-lg font-bold mb-2 block">费用管理需要登录</text>
+      <text class="text-sm opacity-80 mb-6 block">登录后查看您的年费和费用统计</text>
+      <view class="bg-white bg-opacity-20 px-6 py-3 rounded-full inline-block" @click="goToLogin">
+        <text class="text-white font-medium">立即登录</text>
       </view>
     </view>
 
+    <!-- 已登录状态 -->
+    <template v-else>
+      <!-- 加载状态 -->
+      <view
+        v-if="loading"
+        class="loading-state bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4"
+      >
+        <view class="text-center mb-4">
+          <text class="text-lg font-semibold opacity-90">加载中...</text>
+        </view>
+        <view class="flex justify-around">
+          <view class="text-center">
+            <view class="w-16 h-8 bg-white bg-opacity-20 rounded mb-2"></view>
+            <text class="text-sm opacity-80">年费总额</text>
+          </view>
+          <view class="text-center">
+            <view class="w-16 h-8 bg-white bg-opacity-20 rounded mb-2"></view>
+            <text class="text-sm opacity-80">利息支出</text>
+          </view>
+          <view class="text-center">
+            <view class="w-16 h-8 bg-white bg-opacity-20 rounded mb-2"></view>
+            <text class="text-sm opacity-80">其他费用</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 错误状态 -->
+      <view
+        v-else-if="isStatsError || isCardsError"
+        class="error-state bg-gradient-to-r from-red-500 to-pink-500 text-white p-4 text-center"
+      >
+        <text class="text-lg font-semibold mb-2 block">加载失败</text>
+        <text class="text-sm opacity-80 mb-4 block">请检查网络连接后重试</text>
+        <view
+          class="bg-white bg-opacity-20 px-6 py-3 rounded-full inline-block"
+          @click="handleRetry"
+        >
+          <text class="text-white font-medium">重新加载</text>
+        </view>
+      </view>
+
+      <!-- 顶部统计 -->
+      <view v-else class="stats-header bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4">
+        <view class="text-center mb-4">
+          <text class="text-lg font-semibold opacity-90">本年费用支出</text>
+        </view>
+        <view class="flex justify-around">
+          <view class="text-center">
+            <text class="text-2xl font-bold block">¥{{ summary.totalAnnualFees }}</text>
+            <text class="text-sm opacity-80">年费总额</text>
+          </view>
+          <view class="text-center">
+            <text class="text-2xl font-bold block">¥{{ summary.totalInterest }}</text>
+            <text class="text-sm opacity-80">利息支出</text>
+          </view>
+          <view class="text-center">
+            <text class="text-2xl font-bold block">¥{{ summary.totalOtherFees }}</text>
+            <text class="text-sm opacity-80">其他费用</text>
+          </view>
+        </view>
+      </view>
+    </template>
+
     <!-- 功能菜单 -->
-    <view class="function-menu bg-white mx-4 -mt-6 rounded-xl p-4 shadow-lg mb-4">
+    <view
+      v-if="userStore.isLoggedIn && !loading"
+      class="function-menu bg-white mx-4 -mt-6 rounded-xl p-4 shadow-lg mb-4"
+    >
       <view class="flex justify-around">
         <view class="text-center" @click="goToAnnualFeeCalc">
           <view
@@ -70,7 +132,10 @@
     </view>
 
     <!-- 筛选栏 -->
-    <view class="filter-section bg-white px-4 py-3 shadow-sm mb-4">
+    <view
+      v-if="userStore.isLoggedIn && !loading && !isStatsError && !isCardsError"
+      class="filter-section bg-white px-4 py-3 shadow-sm mb-4"
+    >
       <view class="flex space-x-2">
         <view
           v-for="filter in feeTypeFilters"
@@ -87,7 +152,10 @@
     </view>
 
     <!-- 费用列表 -->
-    <view class="fee-list px-4">
+    <view
+      v-if="userStore.isLoggedIn && !loading && !isStatsError && !isCardsError"
+      class="fee-list px-4"
+    >
       <!-- 年费卡片 -->
       <view v-if="activeFeeType === 'all' || activeFeeType === 'annual'" class="fee-section mb-6">
         <view class="section-header flex items-center justify-between mb-3">
@@ -223,7 +291,10 @@
     </view>
 
     <!-- 空状态 -->
-    <view v-if="isEmpty" class="empty-state text-center py-16">
+    <view
+      v-if="userStore.isLoggedIn && !loading && !isStatsError && !isCardsError && isEmpty"
+      class="empty-state text-center py-16"
+    >
       <text class="text-4xl mb-4 block">💸</text>
       <text class="text-gray-500 text-base mb-4 block">暂无费用记录</text>
       <text class="text-gray-400 text-sm">优秀的理财从控制费用开始</text>
@@ -235,26 +306,150 @@
 </template>
 
 <script lang="ts" setup>
-import { feeApi } from '@/service/api'
-// import '@/mock' // 暂时注释掉Mock数据引用
+import { useQuery } from '@tanstack/vue-query'
+import { useUserStore } from '@/store/user'
+import {
+  getUserStatisticsApiV1UserProfileStatisticsGetQueryOptions,
+  getCreditCardsApiV1UserCardsGetQueryOptions,
+} from '@/service/app/v1Yonghugongneng.vuequery'
+import type * as API from '@/service/app/types'
 
 defineOptions({
   name: 'FeesPage',
 })
 
-// 响应式数据
-const annualFeeList = ref<any[]>([])
-const otherFeesList = ref<any[]>([])
-const activeFeeType = ref('all')
-const loading = ref(false)
-const summary = ref({
-  totalAnnualFees: 0,
-  totalInterest: 0,
-  totalOtherFees: 0,
-  monthlyInterest: 0,
-  overdueInterest: 0,
-  nextMonthInterest: 0,
+// 获取用户状态
+const userStore = useUserStore()
+
+// 使用Vue Query获取用户统计数据
+const {
+  data: userStatsResponse,
+  isLoading: isStatsLoading,
+  isError: isStatsError,
+  refetch: refetchStats,
+} = useQuery({
+  ...getUserStatisticsApiV1UserProfileStatisticsGetQueryOptions({
+    options: undefined,
+  }),
+  enabled: computed(() => userStore.isLoggedIn),
 })
+
+// 使用Vue Query获取信用卡列表（包含年费信息）
+const {
+  data: cardsResponse,
+  isLoading: isCardsLoading,
+  isError: isCardsError,
+  refetch: refetchCards,
+} = useQuery({
+  ...getCreditCardsApiV1UserCardsGetQueryOptions({
+    params: {
+      page: 1,
+      page_size: 100, // 获取所有卡片
+    },
+    options: undefined,
+  }),
+  enabled: computed(() => userStore.isLoggedIn),
+})
+
+// 智能处理API响应数据
+const userStats = computed(() => {
+  if (!userStatsResponse.value) return null
+
+  // 智能检测响应格式
+  const response = userStatsResponse.value as any
+  if (response.data && typeof response.data === 'object') {
+    return response.data as API.UserStatisticsResponse
+  }
+  return response as API.UserStatisticsResponse
+})
+
+const creditCards = computed(() => {
+  if (!cardsResponse.value) return []
+
+  // 智能检测响应格式
+  const response = cardsResponse.value as any
+  let cardsData = []
+
+  if (response.data && Array.isArray(response.data)) {
+    cardsData = response.data
+  } else if (Array.isArray(response)) {
+    cardsData = response
+  }
+
+  return cardsData
+})
+
+// 响应式数据
+const activeFeeType = ref('all')
+const loading = computed(() => isStatsLoading.value || isCardsLoading.value)
+
+// 计算年费列表
+const annualFeeList = computed(() => {
+  return creditCards.value.map((card: any) => {
+    // 获取银行信息
+    const bankName = card.bank?.bank_name || card.bank_name || '未知银行'
+    const bankCode = bankName.substring(0, 2)
+
+    // 计算年费状态
+    let feeStatus = 'pending'
+    let waiverProgress = 0
+    let waiverCondition = '无减免条件'
+
+    if (card.fee_waivable) {
+      // 这里可以根据实际业务逻辑计算减免进度
+      waiverProgress = Math.floor(Math.random() * 100) // 临时随机值
+      waiverCondition = '年消费满10万元减免'
+
+      if (waiverProgress >= 100) {
+        feeStatus = 'waived'
+      }
+    }
+
+    return {
+      id: card.id,
+      bankName,
+      bankCode,
+      bankColor: card.bank_color || '#6366f1',
+      cardName: card.card_name,
+      cardNumberLast4: card.card_number?.slice(-4) || '****',
+      annualFee: card.annual_fee || 0,
+      status: feeStatus,
+      feeType: card.fee_waivable ? 'waivable' : 'rigid',
+      waiverCondition,
+      waiverProgress,
+      dueDate: card.fee_due_month
+        ? `2024-${card.fee_due_month.toString().padStart(2, '0')}-01`
+        : null,
+    }
+  })
+})
+
+// 计算费用摘要
+const summary = computed(() => {
+  if (!userStats.value) {
+    return {
+      totalAnnualFees: 0,
+      totalInterest: 0,
+      totalOtherFees: 0,
+      monthlyInterest: 0,
+      overdueInterest: 0,
+      nextMonthInterest: 0,
+    }
+  }
+
+  const stats = userStats.value
+  return {
+    totalAnnualFees: stats.total_annual_fees || 0,
+    totalInterest: 0, // 暂时没有利息数据
+    totalOtherFees: 0, // 暂时没有其他费用数据
+    monthlyInterest: 0,
+    overdueInterest: 0,
+    nextMonthInterest: 0,
+  }
+})
+
+// 其他费用列表（暂时为空，等待后续API）
+const otherFeesList = ref<any[]>([])
 
 // 筛选选项
 const feeTypeFilters = [
@@ -275,34 +470,24 @@ const isEmpty = computed(() => {
 
 // 页面生命周期
 onLoad(async () => {
-  await loadData()
+  // Vue Query 会自动加载数据
 })
 
 onPullDownRefresh(async () => {
-  await loadData()
+  await Promise.all([refetchStats(), refetchCards()])
   uni.stopPullDownRefresh()
 })
 
-// 数据加载
-const loadData = async () => {
-  try {
-    loading.value = true
-    const res = await feeApi.getFees()
-    if (res.code === 200) {
-      annualFeeList.value = res.data.annualFees
-      otherFeesList.value = res.data.otherFees
-      summary.value = res.data.summary
+// 监听登录状态变化
+watch(
+  () => userStore.isLoggedIn,
+  (isLoggedIn) => {
+    if (isLoggedIn) {
+      refetchStats()
+      refetchCards()
     }
-  } catch (error) {
-    console.error('加载费用数据失败:', error)
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none',
-    })
-  } finally {
-    loading.value = false
-  }
-}
+  },
+)
 
 // 筛选处理
 const setFeeTypeFilter = (feeType: string) => {
@@ -377,6 +562,14 @@ const getFeeTypeIcon = (feeType: string) => {
 }
 
 // 导航函数
+const goToLogin = () => {
+  uni.navigateTo({ url: '/pages/auth/login' })
+}
+
+const handleRetry = async () => {
+  await Promise.all([refetchStats(), refetchCards()])
+}
+
 const goToAnnualFeeDetail = (feeId: string) => {
   uni.navigateTo({ url: `/pages/fees/annual-detail?id=${feeId}` })
 }
