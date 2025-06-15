@@ -125,54 +125,74 @@
         </view>
 
         <!-- 该日期的交易 -->
-        <view class="bg-white rounded-lg overflow-hidden shadow-sm">
+        <view class="bg-white rounded-lg overflow-hidden shadow-sm" @click.stop="closeOutside">
           <view
             v-for="(transaction, index) in group"
             :key="transaction.id"
-            class="transaction-item flex items-center p-4 transition-all"
             :class="{ 'border-t border-gray-100': index > 0 }"
-            @click="goToTransactionDetail(transaction.id)"
           >
-            <!-- 分类图标 -->
-            <view
-              class="category-icon w-10 h-10 rounded-full flex items-center justify-center mr-3"
-              :style="{ backgroundColor: getCategoryColor(transaction.category) }"
-            >
-              <text class="text-white text-sm">{{ getCategoryIcon(transaction.category) }}</text>
-            </view>
-
-            <!-- 交易信息 -->
-            <view class="transaction-info flex-1">
-              <view class="flex items-center justify-between mb-1">
-                <text class="font-medium text-gray-800">{{ transaction.merchantName }}</text>
-                <text class="font-bold" :class="getAmountClass(transaction.transactionType)">
-                  {{ transaction.transactionType === '退款' ? '+' : '-' }}¥{{
-                    formatMoney(transaction.amount)
-                  }}
-                </text>
-              </view>
-
-              <view class="flex items-center justify-between">
-                <view class="flex items-center space-x-2">
-                  <text class="text-xs text-gray-500">{{ transaction.category }}</text>
-                  <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                    {{ transaction.transactionType }}
+            <wd-swipe-action>
+              <view
+                class="transaction-item flex items-center p-4 transition-all"
+                @click="goToTransactionDetail(transaction.id)"
+              >
+                <!-- 分类图标 -->
+                <view
+                  class="category-icon w-10 h-10 rounded-full flex items-center justify-center mr-3"
+                  :style="{ backgroundColor: getCategoryColor(transaction.category) }"
+                >
+                  <text class="text-white text-sm">
+                    {{ getCategoryIcon(transaction.category) }}
                   </text>
                 </view>
-                <text class="text-xs text-gray-500">
-                  {{ formatTime(transaction.transactionDate) }}
-                </text>
+
+                <!-- 交易信息 -->
+                <view class="transaction-info flex-1">
+                  <view class="flex items-center justify-between mb-1">
+                    <text class="font-medium text-gray-800">{{ transaction.merchantName }}</text>
+                    <text class="font-bold" :class="getAmountClass(transaction.transactionType)">
+                      {{ transaction.transactionType === '退款' ? '+' : '-' }}¥{{
+                        formatMoney(transaction.amount)
+                      }}
+                    </text>
+                  </view>
+
+                  <view class="flex items-center justify-between">
+                    <view class="flex items-center space-x-2">
+                      <text class="text-xs text-gray-500">{{ transaction.category }}</text>
+                      <text class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        {{ transaction.transactionType }}
+                      </text>
+                    </view>
+                    <text class="text-xs text-gray-500">
+                      {{ formatTime(transaction.transactionDate) }}
+                    </text>
+                  </view>
+
+                  <view v-if="transaction.installment > 0" class="mt-1">
+                    <text class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded">
+                      {{ transaction.installment }}期分期
+                    </text>
+                  </view>
+                </view>
+
+                <!-- 右箭头 -->
+                <text class="text-gray-300 ml-2">›</text>
               </view>
 
-              <view v-if="transaction.installment > 0" class="mt-1">
-                <text class="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded">
-                  {{ transaction.installment }}期分期
-                </text>
-              </view>
-            </view>
-
-            <!-- 右箭头 -->
-            <text class="text-gray-300 ml-2">›</text>
+              <!-- 右滑操作按钮 -->
+              <template #right>
+                <view class="action">
+                  <view class="button edit-button" @click="editTransaction(transaction)">编辑</view>
+                  <view
+                    class="button delete-button"
+                    @click="confirmDeleteTransaction(transaction, date, index)"
+                  >
+                    删除
+                  </view>
+                </view>
+              </template>
+            </wd-swipe-action>
           </view>
         </view>
       </view>
@@ -206,8 +226,10 @@
 
 <script lang="ts" setup>
 import { getTransactionsApiV1UserTransactionsListGetQueryOptions } from '@/service/app/yonghujiaoyiguanli.vuequery'
+import { useDeleteTransactionApiV1UserTransactionsTransactionIdDeleteDeleteMutation } from '@/service/app/yonghujiaoyiguanli.vuequery'
 import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/xinyongkaguanli.vuequery'
 import { useQuery } from '@tanstack/vue-query'
+import { useToast } from 'wot-design-uni'
 
 defineOptions({
   name: 'TransactionsPage',
@@ -418,6 +440,30 @@ const { data: creditCardsData, isLoading: cardsLoading } = useQuery({
   }),
   enabled: true,
 })
+
+// 使用Vue Query删除交易
+const deleteTransactionMutation =
+  useDeleteTransactionApiV1UserTransactionsTransactionIdDeleteDeleteMutation({
+    onSuccess: (data) => {
+      console.log('=== 删除交易成功 ===')
+      console.log('返回数据:', data)
+
+      uni.showToast({
+        title: '删除成功',
+        icon: 'success',
+      })
+
+      // 重新获取数据以确保同步
+      refetchTransactions()
+    },
+    onError: (error) => {
+      console.error('删除交易失败:', error)
+      uni.showToast({
+        title: '删除失败，请重试',
+        icon: 'error',
+      })
+    },
+  })
 
 // 监听交易数据变化
 watch(
@@ -660,6 +706,108 @@ const exportRecords = () => {
     icon: 'none',
   })
 }
+
+// 初始化toast和队列管理
+const toast = useToast()
+
+// 关闭外部点击
+const closeOutside = () => {
+  // 这个方法用于关闭滑动操作，wd-swipe-action会自动处理
+}
+
+// 编辑交易
+const editTransaction = (transaction: Transaction) => {
+  console.log('编辑交易:', transaction)
+  uni.navigateTo({
+    url: `/pages/transactions/edit?id=${transaction.id}`,
+  })
+}
+
+// 确认删除交易
+const confirmDeleteTransaction = (transaction: Transaction, date: string, index: number) => {
+  console.log('确认删除交易:', transaction)
+
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要删除这笔"${transaction.merchantName}"的交易记录吗？`,
+    confirmText: '删除',
+    confirmColor: '#ff3b30',
+    success: (res) => {
+      if (res.confirm) {
+        deleteTransaction(transaction.id, date, index)
+      }
+    },
+  })
+}
+
+// 滑动删除相关方法
+const getSwipeOptions = (transaction: Transaction) => {
+  return [
+    {
+      text: '编辑',
+      style: {
+        backgroundColor: '#007aff',
+        color: '#ffffff',
+        fontSize: '14px',
+      },
+    },
+    {
+      text: '删除',
+      style: {
+        backgroundColor: '#ff3b30',
+        color: '#ffffff',
+        fontSize: '14px',
+      },
+    },
+  ]
+}
+
+const handleSwipeClick = (e: any, transaction: Transaction, date: string, index: number) => {
+  const { content } = e
+  console.log('滑动操作:', content.text, transaction)
+
+  if (content.text === '删除') {
+    // 显示删除确认对话框
+    uni.showModal({
+      title: '确认删除',
+      content: `确定要删除这笔"${transaction.merchantName}"的交易记录吗？`,
+      confirmText: '删除',
+      confirmColor: '#ff3b30',
+      success: (res) => {
+        if (res.confirm) {
+          deleteTransaction(transaction.id, date, index)
+        }
+      },
+    })
+  } else if (content.text === '编辑') {
+    // 跳转到编辑页面
+    uni.navigateTo({
+      url: `/pages/transactions/edit?id=${transaction.id}`,
+    })
+  }
+}
+
+const deleteTransaction = async (transactionId: string, date: string, index: number) => {
+  console.log('=== 开始删除交易 ===')
+  console.log('交易ID:', transactionId)
+  console.log('日期:', date)
+  console.log('索引:', index)
+
+  try {
+    // 调用删除API
+    deleteTransactionMutation.mutate({
+      params: {
+        transaction_id: transactionId,
+      },
+    })
+  } catch (error) {
+    console.error('删除交易时出错:', error)
+    uni.showToast({
+      title: '删除失败',
+      icon: 'error',
+    })
+  }
+}
 </script>
 
 <style lang="scss">
@@ -736,5 +884,43 @@ const exportRecords = () => {
   padding-bottom: env(safe-area-inset-bottom);
   /* 为底部安全区域添加额外的高度，确保内容不被遮挡 */
   height: calc(80px + var(--window-bottom));
+}
+
+/* wd-swipe-action 滑动删除样式 */
+.action {
+  height: 100%;
+  display: flex;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  height: 100%;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 60px;
+  transition: all 0.2s ease;
+}
+
+.edit-button {
+  background: #007aff;
+}
+
+.delete-button {
+  background: #ff3b30;
+}
+
+.button:active {
+  opacity: 0.8;
+  transform: scale(0.95);
+}
+
+/* 确保交易项的样式 */
+.transaction-item {
+  background-color: #ffffff;
+  transition: all 0.2s ease;
 }
 </style>

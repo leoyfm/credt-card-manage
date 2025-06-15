@@ -506,5 +506,6 @@ class TransactionService:
             updated_at=transaction.updated_at,
             # 关联数据
             card_name=transaction.card.card_name if transaction.card else None,
+            card_number=transaction.card.card_number if transaction.card else None,
             category_name=transaction.category.name if transaction.category else None
         ) 

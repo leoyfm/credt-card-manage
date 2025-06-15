@@ -147,6 +147,14 @@
       }
     },
     {
+      "path": "pages/transactions/detail",
+      "type": "page"
+    },
+    {
+      "path": "pages/transactions/edit",
+      "type": "page"
+    },
+    {
       "path": "pages/transactions/index",
       "type": "page",
       "style": {
