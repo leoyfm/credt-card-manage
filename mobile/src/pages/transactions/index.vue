@@ -205,8 +205,9 @@
 </template>
 
 <script lang="ts" setup>
-import { transactionApi, cardApi } from '@/service/api'
-// import '@/mock' // 暂时注释掉Mock数据引用
+import { getTransactionsApiV1UserTransactionsListGetQueryOptions } from '@/service/app/yonghujiaoyiguanli.vuequery'
+import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/xinyongkaguanli.vuequery'
+import { useQuery } from '@tanstack/vue-query'
 
 defineOptions({
   name: 'TransactionsPage',
@@ -375,50 +376,181 @@ const hasFiltersActive = computed(() => {
 })
 
 // 页面生命周期
-onLoad(async () => {
-  await loadData()
+onLoad(() => {
+  // Vue Query会自动加载数据
 })
 
 onPullDownRefresh(async () => {
-  await loadData()
+  await refetchTransactions()
   uni.stopPullDownRefresh()
 })
 
-// 数据加载
-const loadData = async () => {
-  try {
-    loading.value = true
+// 构建查询参数
+const queryParams = computed(() => ({
+  page: 1,
+  page_size: 100,
+  ...(searchKeyword.value && { keyword: searchKeyword.value }),
+  ...(activeFilters.value.length > 0 && { filters: activeFilters.value.join(',') }),
+  ...(cardFilterIndex.value > 0 && { card_id: cardOptions.value[cardFilterIndex.value].value }),
+  ...(categoryFilterIndex.value > 0 && {
+    category: categoryOptions[categoryFilterIndex.value].value,
+  }),
+  ...(dateFilter.value && { date: dateFilter.value }),
+}))
 
-    const [transactionsRes, cardsRes] = await Promise.all([
-      transactionApi.getTransactions(),
-      cardApi.getCards(),
-    ])
+// 使用Vue Query获取交易记录
+const {
+  data: transactionsData,
+  isLoading: transactionsLoading,
+  refetch: refetchTransactions,
+} = useQuery(
+  computed(() =>
+    getTransactionsApiV1UserTransactionsListGetQueryOptions({
+      params: queryParams.value,
+    }),
+  ),
+)
 
-    if (transactionsRes.code === 200) {
-      transactionList.value = transactionsRes.data.list
-      summary.value = transactionsRes.data.summary
+// 使用Vue Query获取信用卡列表
+const { data: creditCardsData, isLoading: cardsLoading } = useQuery({
+  ...getCreditCardsApiV1UserCardsGetQueryOptions({
+    params: {},
+  }),
+  enabled: true,
+})
+
+// 监听交易数据变化
+watch(
+  transactionsData,
+  (newData) => {
+    console.log('=== 交易数据变化 ===')
+    console.log('原始数据:', newData)
+    console.log('数据类型:', typeof newData)
+    console.log('是否为数组:', Array.isArray(newData))
+
+    if (newData) {
+      try {
+        // @ts-ignore - 忽略类型错误以便调试
+        let data = newData
+
+        // 检查是否有包装格式
+        // @ts-ignore
+        if (newData.success !== undefined && newData.data !== undefined) {
+          console.log('检测到包装格式，提取data字段')
+          // @ts-ignore
+          data = newData.data
+        }
+
+        console.log('提取后的数据:', data)
+        console.log('提取后数据类型:', typeof data)
+        console.log('提取后是否为数组:', Array.isArray(data))
+
+        let transactions: any[] = []
+
+        if (Array.isArray(data)) {
+          console.log('数据是直接数组格式，长度:', data.length)
+          transactions = data
+        } else if (data && typeof data === 'object') {
+          console.log('数据是对象格式，查找items/list字段')
+          // @ts-ignore
+          const items = data.items || data.list || data.transactions || []
+          console.log('找到的items:', items)
+          console.log('items长度:', Array.isArray(items) ? items.length : 'not array')
+          transactions = Array.isArray(items) ? items : []
+
+          // 处理统计数据
+          // @ts-ignore
+          if (data.summary) {
+            // @ts-ignore
+            summary.value = data.summary
+            console.log('更新统计数据:', summary.value)
+          }
+        }
+
+        console.log('最终交易数据:', transactions)
+
+        // 转换数据格式
+        transactionList.value = transactions.map((item: any) => {
+          const converted = {
+            id: item.id || Math.random().toString(),
+            merchantName: item.merchant_name || item.merchantName || '未知商户',
+            amount: Number(item.amount) || 0,
+            category: item.category || '其他',
+            transactionType: item.transaction_type || item.transactionType || '消费',
+            transactionDate:
+              item.transaction_date || item.transactionDate || new Date().toISOString(),
+            installment: Number(item.installment_months || item.installment) || 0,
+            cardId: item.card_id || item.cardId || '',
+            description: item.description || '',
+          }
+          console.log('转换项目:', item, '->', converted)
+          return converted
+        })
+
+        console.log('最终处理后的交易列表:', transactionList.value)
+        console.log('交易列表长度:', transactionList.value.length)
+      } catch (error) {
+        console.error('处理交易数据时出错:', error)
+      }
+    } else {
+      console.log('没有接收到数据')
     }
+  },
+  { immediate: true },
+)
 
-    if (cardsRes.code === 200) {
-      // 构建卡片选项
-      cardOptions.value = [
-        { value: 'all', label: '所有卡片' },
-        ...cardsRes.data.list.map((card) => ({
-          value: card.id,
-          label: `${card.bankName}${card.cardName}(${card.cardNumberLast4})`,
-        })),
-      ]
+// 监听信用卡数据变化
+watch(
+  creditCardsData,
+  (newData) => {
+    console.log('=== 信用卡数据变化 ===')
+    console.log('原始数据:', newData)
+
+    if (newData) {
+      try {
+        // @ts-ignore
+        let data = newData
+
+        // @ts-ignore
+        if (newData.success !== undefined && newData.data !== undefined) {
+          console.log('检测到包装格式，提取data字段')
+          // @ts-ignore
+          data = newData.data
+        }
+
+        console.log('提取后的数据:', data)
+
+        let cards: any[] = []
+        if (Array.isArray(data)) {
+          console.log('数据是直接数组格式，长度:', data.length)
+          cards = data
+        } else if (data && typeof data === 'object') {
+          console.log('数据是对象格式，查找items/list字段')
+          // @ts-ignore
+          cards = data.items || data.list || []
+          console.log('找到的cards:', cards)
+        }
+
+        cardOptions.value = [
+          { value: 'all', label: '所有卡片' },
+          ...cards.map((card: any) => ({
+            value: card.id,
+            label: `${card.bank_name || card.bankName}${card.card_name || card.cardName}(${card.card_number_last4 || card.cardNumberLast4})`,
+          })),
+        ]
+
+        console.log('处理后的卡片选项:', cardOptions.value)
+      } catch (error) {
+        console.error('处理信用卡数据时出错:', error)
+      }
+    } else {
+      console.log('没有接收到信用卡数据')
     }
-  } catch (error) {
-    console.error('加载数据失败:', error)
-    uni.showToast({
-      title: '加载失败',
-      icon: 'none',
-    })
-  } finally {
-    loading.value = false
-  }
-}
+  },
+  { immediate: true },
+)
+
+// Vue Query会自动监听queryKey的变化，无需手动监听
 
 // 筛选处理
 const toggleFilter = (filterKey: string) => {

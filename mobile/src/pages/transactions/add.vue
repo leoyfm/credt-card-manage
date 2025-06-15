@@ -193,7 +193,9 @@
 <script lang="ts" setup>
 import { useToast } from 'wot-design-uni'
 import { smartGoBack } from '@/utils/navigation'
-import { transactionApi, cardApi } from '@/service/api'
+import { useCreateTransactionApiV1UserTransactionsCreatePostMutation } from '@/service/app/yonghujiaoyiguanli.vuequery'
+import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/xinyongkaguanli.vuequery'
+import { useQuery } from '@tanstack/vue-query'
 
 defineOptions({
   name: 'AddTransactionPage',
@@ -267,8 +269,7 @@ const installmentOptions: Array<{ value: number; label: string }> = [
 ]
 
 // 页面生命周期
-onLoad(async () => {
-  await loadCardOptions()
+onLoad(() => {
   initDateTime()
 })
 
@@ -287,13 +288,21 @@ const updateTransactionDate = () => {
   }
 }
 
-// 加载信用卡选项
-const loadCardOptions = async () => {
-  try {
-    const response = await cardApi.getCards()
-    if (response.success && response.data) {
+// 使用Vue Query获取信用卡列表
+const { data: creditCardsData, isLoading: cardsLoading } = useQuery(
+  getCreditCardsApiV1UserCardsGetQueryOptions({
+    params: { active_only: true },
+    options: {},
+  }),
+)
+
+// 监听信用卡数据变化，更新选项
+watch(
+  creditCardsData,
+  (newData) => {
+    if (newData?.success && newData.data) {
       // 智能处理API响应格式
-      const cards = Array.isArray(response.data) ? response.data : response.data.list || []
+      const cards = Array.isArray(newData.data) ? newData.data : newData.data.items || []
       cardOptions.value = [
         { value: '', label: '请选择信用卡' },
         ...cards.map((card: any) => ({
@@ -310,17 +319,9 @@ const loadCardOptions = async () => {
         { value: '3', label: '浦发银行AE白金卡(9012)' },
       ]
     }
-  } catch (error) {
-    console.error('加载信用卡列表失败:', error)
-    // 出错时使用临时模拟数据
-    cardOptions.value = [
-      { value: '', label: '请选择信用卡' },
-      { value: '1', label: '招商银行经典白金卡(1234)' },
-      { value: '2', label: '建设银行龙卡(5678)' },
-      { value: '3', label: '浦发银行AE白金卡(9012)' },
-    ]
-  }
-}
+  },
+  { immediate: true },
+)
 
 // 选择器事件处理
 const onCategoryChange = (e: any) => {
@@ -421,6 +422,26 @@ const validateForm = () => {
   return !Object.values(errors.value).some((error) => error !== '')
 }
 
+// 使用Vue Query mutation创建交易
+const createTransactionMutation = useCreateTransactionApiV1UserTransactionsCreatePostMutation({
+  onSuccess: (data) => {
+    submitting.value = false
+    if (data?.success) {
+      toast.success('添加成功')
+      setTimeout(() => {
+        uni.navigateBack()
+      }, 1500)
+    } else {
+      toast.error('添加失败')
+    }
+  },
+  onError: (error) => {
+    submitting.value = false
+    console.error('提交失败:', error)
+    toast.error('提交失败，请重试')
+  },
+})
+
 // 提交表单
 const submitForm = async () => {
   if (!validateForm()) {
@@ -428,39 +449,27 @@ const submitForm = async () => {
     return
   }
 
-  try {
-    submitting.value = true
+  submitting.value = true
 
-    // 构建提交数据
-    const submitData = {
-      amount: parseFloat(formData.value.amount),
-      merchantName: formData.value.merchantName.trim(),
-      category: formData.value.category,
-      cardId: formData.value.cardId,
-      transactionType: formData.value.transactionType,
-      transactionDate: formData.value.transactionDate,
-      installment: formData.value.installment,
-      description: formData.value.description.trim(),
-    }
-
-    console.log('提交数据:', submitData)
-
-    // 调用真实的API提交数据
-    const response = await transactionApi.addTransaction(submitData)
-    if (response.code === 200 || response.success) {
-      toast.success('添加成功')
-      setTimeout(() => {
-        uni.navigateBack()
-      }, 1500)
-    } else {
-      toast.error(response.message || '添加失败')
-    }
-  } catch (error) {
-    console.error('提交失败:', error)
-    toast.error('提交失败，请重试')
-  } finally {
-    submitting.value = false
+  // 构建提交数据
+  const submitData = {
+    amount: parseFloat(formData.value.amount),
+    merchant_name: formData.value.merchantName.trim(),
+    category: formData.value.category,
+    card_id: formData.value.cardId,
+    transaction_type: formData.value.transactionType,
+    transaction_date: formData.value.transactionDate,
+    installment_months: formData.value.installment,
+    description: formData.value.description.trim(),
   }
+
+  console.log('提交数据:', submitData)
+
+  // 调用Vue Query mutation
+  createTransactionMutation.mutate({
+    body: submitData,
+    options: {},
+  })
 }
 
 // 返回

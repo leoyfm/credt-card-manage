@@ -83,6 +83,21 @@ export type ApiPagedResponseReminderSettingResponse_ = {
   timestamp: string;
 };
 
+export type ApiPagedResponseTransactionResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据列表 */
+  data?: TransactionResponse[];
+  /** 分页信息 */
+  pagination: PaginationInfo;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
 export type ApiResponse = {
   /** Success 操作是否成功 */
   success?: boolean;
@@ -105,6 +120,19 @@ export type ApiResponseBool_ = {
   message?: string;
   /** Data 响应数据 */
   data?: boolean | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseCategoryStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: CategoryStatisticsResponse | null;
   /** Timestamp 响应时间戳 */
   timestamp: string;
 };
@@ -161,6 +189,19 @@ export type ApiResponseListStr_ = {
   timestamp: string;
 };
 
+export type ApiResponseListTransactionCategoryResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** Data 响应数据 */
+  data?: TransactionCategoryResponse[] | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
 export type ApiResponseListWechatBindingResponse_ = {
   /** Success 操作是否成功 */
   success?: boolean;
@@ -183,6 +224,19 @@ export type ApiResponseMarkAllReadResponse_ = {
   message?: string;
   /** 响应数据 */
   data?: MarkAllReadResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseMonthlyTrendResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: MonthlyTrendResponse | null;
   /** Timestamp 响应时间戳 */
   timestamp: string;
 };
@@ -248,6 +302,32 @@ export type ApiResponseReminderStatisticsResponse_ = {
   message?: string;
   /** 响应数据 */
   data?: ReminderStatisticsResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseTransactionResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: TransactionResponse | null;
+  /** Timestamp 响应时间戳 */
+  timestamp: string;
+};
+
+export type ApiResponseTransactionStatisticsResponse_ = {
+  /** Success 操作是否成功 */
+  success?: boolean;
+  /** Code 响应状态码 */
+  code?: number;
+  /** Message 响应消息 */
+  message?: string;
+  /** 响应数据 */
+  data?: TransactionStatisticsResponse | null;
   /** Timestamp 响应时间戳 */
   timestamp: string;
 };
@@ -343,6 +423,21 @@ export type AuthResponse = {
   refresh_token: string;
   /** Token Type 令牌类型 */
   token_type?: string;
+};
+
+export type CategoryStatisticsResponse = {
+  /** Period Start 统计开始时间 */
+  period_start: string;
+  /** Period End 统计结束时间 */
+  period_end: string;
+  /** Total Categories 分类总数 */
+  total_categories: number;
+  /** Total Expense 总支出 */
+  total_expense: number;
+  /** Category Distribution 分类分布 */
+  category_distribution: Record<string, unknown>[];
+  /** Top Categories 前5大分类 */
+  top_categories: Record<string, unknown>[];
 };
 
 export type ChangePasswordRequest = {
@@ -466,6 +561,11 @@ export type deleteReminderSettingApiV1UserRemindersSettingsSettingIdDeleteParams
     setting_id: string;
   };
 
+export type deleteTransactionApiV1UserTransactionsTransactionIdDeleteDeleteParams =
+  {
+    transaction_id: string;
+  };
+
 export type deleteUserApiV1AdminUsersUserIdDeleteDeleteParams = {
   /** 用户ID */
   user_id: string;
@@ -485,6 +585,14 @@ export type getCardTrendsApiV1AdminCardsTrendsGetParams = {
   /** 分析月数，1-24个月 */
   months?: number;
 };
+
+export type getCategoryStatisticsApiV1UserTransactionsStatisticsCategoriesGetParams =
+  {
+    /** 开始日期，默认30天前 */
+    start_date?: string | null;
+    /** 结束日期，默认今天 */
+    end_date?: string | null;
+  };
 
 export type getCreditCardApiV1UserCardsCardIdGetParams = {
   /** 信用卡ID */
@@ -519,6 +627,12 @@ export type getLoginLogsApiV1UserProfileLoginLogsGetParams = {
   page?: number;
   page_size?: number;
 };
+
+export type getMonthlyTrendsApiV1UserTransactionsStatisticsMonthlyTrendsGetParams =
+  {
+    /** 分析月数，最多24个月 */
+    months?: number;
+  };
 
 export type getRecentRemindersApiV1UserRemindersRecentGetParams = {
   /** 返回数量限制，最大50 */
@@ -589,6 +703,38 @@ export type getSmartRecommendationsApiV1UserRecommendationsSmartGetParams = {
   /** 是否包含历史推荐 */
   include_history?: boolean;
 };
+
+export type getTransactionDetailsApiV1UserTransactionsTransactionIdDetailsGetParams =
+  {
+    transaction_id: string;
+  };
+
+export type getTransactionsApiV1UserTransactionsListGetParams = {
+  /** 页码，从1开始 */
+  page?: number;
+  /** 每页数量，最大100 */
+  page_size?: number;
+  /** 信用卡ID筛选 */
+  card_id?: string | null;
+  /** 分类ID筛选 */
+  category_id?: string | null;
+  /** 交易类型筛选 */
+  transaction_type?: string | null;
+  /** 开始日期 */
+  start_date?: string | null;
+  /** 结束日期 */
+  end_date?: string | null;
+  /** 关键词搜索（描述、商户、地点、备注） */
+  keyword?: string | null;
+};
+
+export type getTransactionStatisticsApiV1UserTransactionsStatisticsOverviewGetParams =
+  {
+    /** 开始日期，默认30天前 */
+    start_date?: string | null;
+    /** 结束日期，默认今天 */
+    end_date?: string | null;
+  };
 
 export type getUpcomingRemindersApiV1UserRemindersUpcomingGetParams = {
   /** 查看未来天数，最大30天 */
@@ -671,6 +817,17 @@ export type markReminderAsReadApiV1UserRemindersRecordsRecordIdReadPostParams =
     /** 提醒记录ID */
     record_id: string;
   };
+
+export type MonthlyTrendResponse = {
+  /** Analysis Period 分析周期 */
+  analysis_period: string;
+  /** Monthly Trends 月度趋势数据 */
+  monthly_trends: Record<string, unknown>[];
+  /** Expense Trend 支出趋势 */
+  expense_trend: string;
+  /** Total Months 分析月数 */
+  total_months: number;
+};
 
 export type PaginationInfo = {
   /** Current Page 当前页码 */
@@ -865,6 +1022,143 @@ export type TokenResponse = {
   token_type?: string;
 };
 
+export type TransactionCategoryResponse = {
+  /** Id 分类ID */
+  id: string;
+  /** Name 分类名称 */
+  name: string;
+  /** Icon 图标 */
+  icon?: string | null;
+  /** Color 颜色 */
+  color?: string | null;
+  /** Parent Id 父分类ID */
+  parent_id?: string | null;
+  /** Is System 是否系统分类 */
+  is_system: boolean;
+};
+
+export type TransactionCreate = {
+  /** Card Id 信用卡ID */
+  card_id: string;
+  /** Category Id 交易分类ID */
+  category_id?: string | null;
+  /** Transaction Type 交易类型 */
+  transaction_type: string;
+  /** Amount 交易金额 */
+  amount: number | string;
+  /** Currency 货币类型 */
+  currency?: string | null;
+  /** Description 交易描述 */
+  description?: string | null;
+  /** Merchant Name 商户名称 */
+  merchant_name?: string | null;
+  /** Merchant Category 商户类别 */
+  merchant_category?: string | null;
+  /** Location 交易地点 */
+  location?: string | null;
+  /** Transaction Date 交易时间 */
+  transaction_date?: string | null;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Tags 标签 */
+  tags?: string[] | null;
+};
+
+export type TransactionResponse = {
+  /** Id 交易ID */
+  id: string;
+  /** Card Id 信用卡ID */
+  card_id: string;
+  /** Category Id 交易分类ID */
+  category_id?: string | null;
+  /** Transaction Type 交易类型 */
+  transaction_type: string;
+  /** Amount 交易金额 */
+  amount: string;
+  /** Currency 货币类型 */
+  currency: string;
+  /** Description 交易描述 */
+  description?: string | null;
+  /** Merchant Name 商户名称 */
+  merchant_name?: string | null;
+  /** Merchant Category 商户类别 */
+  merchant_category?: string | null;
+  /** Location 交易地点 */
+  location?: string | null;
+  /** Points Earned 获得积分 */
+  points_earned?: number;
+  /** Cashback Earned 获得返现 */
+  cashback_earned?: string;
+  /** Status 状态 */
+  status: string;
+  /** Transaction Date 交易时间 */
+  transaction_date?: string | null;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Tags 标签 */
+  tags?: string[];
+  /** Created At 创建时间 */
+  created_at: string;
+  /** Updated At 更新时间 */
+  updated_at: string;
+  /** Card Name 信用卡名称 */
+  card_name?: string | null;
+  /** Category Name 分类名称 */
+  category_name?: string | null;
+};
+
+export type TransactionStatisticsResponse = {
+  /** Period Start 统计开始时间 */
+  period_start: string;
+  /** Period End 统计结束时间 */
+  period_end: string;
+  /** Total Transactions 交易总笔数 */
+  total_transactions: number;
+  /** Total Expense 总支出 */
+  total_expense: number;
+  /** Total Income 总收入 */
+  total_income: number;
+  /** Net Amount 净额 */
+  net_amount: number;
+  /** Average Transaction 平均交易额 */
+  average_transaction: number;
+  /** Total Points Earned 总获得积分 */
+  total_points_earned: number;
+  /** Total Cashback Earned 总获得返现 */
+  total_cashback_earned: number;
+  /** Type Distribution 类型分布 */
+  type_distribution: Record<string, unknown>;
+  /** Monthly Trends 月度趋势 */
+  monthly_trends: Record<string, unknown>[];
+};
+
+export type TransactionUpdate = {
+  /** Card Id 信用卡ID */
+  card_id?: string | null;
+  /** Category Id 交易分类ID */
+  category_id?: string | null;
+  /** Transaction Type 交易类型 */
+  transaction_type?: string | null;
+  /** Amount 交易金额 */
+  amount?: number | string | null;
+  /** Currency 货币类型 */
+  currency?: string | null;
+  /** Description 交易描述 */
+  description?: string | null;
+  /** Merchant Name 商户名称 */
+  merchant_name?: string | null;
+  /** Merchant Category 商户类别 */
+  merchant_category?: string | null;
+  /** Location 交易地点 */
+  location?: string | null;
+  /** Transaction Date 交易时间 */
+  transaction_date?: string | null;
+  /** Notes 备注 */
+  notes?: string | null;
+  /** Tags 标签 */
+  tags?: string[] | null;
+};
+
 export type UnreadRemindersCountResponse = {
   /** Total Unread 未读提醒总数 */
   total_unread: number;
@@ -908,6 +1202,11 @@ export type updateReminderSettingApiV1UserRemindersSettingsSettingIdPutParams =
   {
     /** 提醒设置ID */
     setting_id: string;
+  };
+
+export type updateTransactionApiV1UserTransactionsTransactionIdUpdatePutParams =
+  {
+    transaction_id: string;
   };
 
 export type updateUserPermissionsApiV1AdminUsersUserIdPermissionsPutParams = {
