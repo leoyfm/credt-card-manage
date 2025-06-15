@@ -43,9 +43,80 @@
     <view class="px-4 pb-32">
       <view class="flex items-center justify-between mb-4">
         <text class="text-lg font-semibold text-gray-800">我的信用卡</text>
-        <text class="text-sm text-blue-600" @click="handleViewAll">查看全部</text>
+        <text
+          v-if="userStore.isLoggedIn && creditCards.length > 0"
+          class="text-sm text-blue-600"
+          @click="handleViewAll"
+        >
+          查看全部
+        </text>
       </view>
-      <view class="space-y-3">
+
+      <!-- 未登录状态 -->
+      <view v-if="!userStore.isLoggedIn" class="text-center py-8">
+        <text class="text-gray-500 text-sm">请先登录查看您的信用卡</text>
+        <view class="mt-4">
+          <view class="bg-blue-600 text-white rounded-lg px-6 py-3 inline-block" @click="goToLogin">
+            <text class="text-sm">立即登录</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 已登录 - 加载状态 -->
+      <view v-else-if="userStore.isLoggedIn && isCardsLoading" class="space-y-3">
+        <view v-for="i in 3" :key="i" class="bg-white rounded-xl p-4 animate-pulse">
+          <view class="flex items-center justify-between mb-3">
+            <view class="w-16 h-4 bg-gray-200 rounded"></view>
+            <view class="w-12 h-4 bg-gray-200 rounded"></view>
+          </view>
+          <view class="w-32 h-6 bg-gray-200 rounded mb-2"></view>
+          <view class="w-24 h-4 bg-gray-200 rounded mb-4"></view>
+          <view class="flex justify-between">
+            <view class="w-20 h-4 bg-gray-200 rounded"></view>
+            <view class="w-20 h-4 bg-gray-200 rounded"></view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 已登录 - 错误状态 -->
+      <view
+        v-else-if="userStore.isLoggedIn && isCardsError && !isCardsLoading"
+        class="text-center py-8"
+      >
+        <text class="text-gray-500 text-sm">信用卡数据加载失败</text>
+        <view class="mt-4">
+          <view
+            class="bg-blue-600 text-white rounded-lg px-6 py-3 inline-block"
+            @click="refetchCards"
+          >
+            <text class="text-sm">重新加载</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 已登录 - 空状态 -->
+      <view
+        v-else-if="
+          userStore.isLoggedIn && !isCardsLoading && !isCardsError && creditCards.length === 0
+        "
+        class="text-center py-8"
+      >
+        <text class="text-gray-500 text-sm">您还没有添加信用卡</text>
+        <view class="mt-4">
+          <view
+            class="bg-blue-600 text-white rounded-lg px-6 py-3 inline-block"
+            @click="handleAddCard"
+          >
+            <text class="text-sm">添加信用卡</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 已登录 - 信用卡列表 -->
+      <view
+        v-else-if="userStore.isLoggedIn && !isCardsLoading && creditCards.length > 0"
+        class="space-y-3"
+      >
         <CreditCard
           v-for="(card, index) in creditCards"
           :key="card.id"
@@ -62,12 +133,16 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+import { useUserStore } from '@/store/user'
+import { getCreditCardsApiV1UserCardsGetQueryOptions } from '@/service/app/v1Yonghugongneng.vuequery'
 import CreditCard from '@/components/CreditCard.vue'
 import FeeOverview from '@/components/FeeOverview.vue'
 import TodayRecommendation from '@/components/TodayRecommendation.vue'
 import HeaderSection from '@/components/HeaderSection.vue'
 import type { CreditCard as CreditCardType } from '@/types/card'
+import type * as API from '@/service/app/types'
 
 // 获取屏幕边界到安全区域距离
 let safeAreaInsets: any = null
@@ -89,117 +164,130 @@ try {
 }
 // #endif
 
-// 演示数据
-const creditCards = ref<CreditCardType[]>([
-  {
-    id: '1',
-    bankName: '招商银行',
-    bankCode: '招',
-    bankColor: '#DC2626',
-    cardName: '全币种国际卡',
-    cardType: 'visa',
-    cardNumberLast4: '8888',
-    creditLimit: 500000,
-    usedAmount: 125000,
-    availableAmount: 375000,
-    isActive: true,
-    annualFeeStatus: 'paid',
-    feeType: 'waivable',
-    waiverProgress: 75,
-    annualFee: 680,
-    dueDate: 15,
+// 获取用户状态
+const userStore = useUserStore()
+
+// 使用Vue Query获取信用卡列表 - 只有在已登录时才启用
+const {
+  data: creditCardsResponse,
+  isLoading: isCardsLoading,
+  isError: isCardsError,
+  refetch: refetchCards,
+} = useQuery({
+  ...getCreditCardsApiV1UserCardsGetQueryOptions({
+    params: {
+      page: 1,
+      page_size: 20,
+    },
+  }),
+  enabled: computed(() => userStore.isLoggedIn), // 只有在已登录时才启用查询
+})
+
+// 监听用户登录状态变化，登录成功后自动刷新数据
+watch(
+  () => userStore.isLoggedIn,
+  (newValue, oldValue) => {
+    console.log('首页用户登录状态变化:', { oldValue, newValue })
+    if (newValue && !oldValue) {
+      // 从未登录变为已登录，刷新信用卡数据
+      console.log('用户登录成功，刷新首页信用卡数据')
+      setTimeout(() => {
+        refetchCards()
+      }, 100) // 稍微延迟确保token已设置
+    }
   },
-  {
-    id: '2',
-    bankName: '工商银行',
-    bankCode: '工',
-    bankColor: '#DC2626',
-    cardName: '宇宙星座卡',
-    cardType: 'mastercard',
-    cardNumberLast4: '6666',
-    creditLimit: 300000,
-    usedAmount: 45000,
-    availableAmount: 255000,
-    isActive: true,
-    annualFeeStatus: 'waived',
-    feeType: 'waivable',
-    waiverProgress: 100,
-    annualFee: 580,
-    dueDate: 8,
-  },
-  {
-    id: '3',
-    bankName: '建设银行',
-    bankCode: '建',
-    bankColor: '#2563EB',
-    cardName: '龙卡信用卡',
-    cardType: 'unionpay',
-    cardNumberLast4: '9999',
-    creditLimit: 200000,
-    usedAmount: 110000,
-    availableAmount: 90000,
-    isActive: true,
-    annualFeeStatus: 'pending',
-    feeType: 'waivable',
-    waiverProgress: 45,
-    annualFee: 480,
-    dueDate: 20,
-  },
-  {
-    id: '4',
-    bankName: '中国银行',
-    bankCode: '中',
-    bankColor: '#DC2626',
-    cardName: '长城环球通卡',
-    cardType: 'visa',
-    cardNumberLast4: '7777',
-    creditLimit: 150000,
-    usedAmount: 30000,
-    availableAmount: 120000,
-    isActive: true,
-    annualFeeStatus: 'waived',
-    feeType: 'waivable',
-    waiverProgress: 100,
-    annualFee: 360,
-    dueDate: 25,
-  },
-  {
-    id: '5',
-    bankName: '交通银行',
-    bankCode: '交',
-    bankColor: '#2563EB',
-    cardName: '沃尔玛信用卡',
-    cardType: 'mastercard',
-    cardNumberLast4: '5555',
-    creditLimit: 100000,
-    usedAmount: 80000,
-    availableAmount: 20000,
-    isActive: true,
-    annualFeeStatus: 'overdue',
-    feeType: 'rigid',
-    waiverProgress: 0,
-    annualFee: 200,
-    dueDate: 10,
-  },
-  {
-    id: '6',
-    bankName: '光大银行',
-    bankCode: '光',
-    bankColor: '#7C3AED',
-    cardName: '阳光信用卡',
-    cardType: 'unionpay',
-    cardNumberLast4: '4444',
-    creditLimit: 80000,
-    usedAmount: 26400,
-    availableAmount: 53600,
-    isActive: true,
-    annualFeeStatus: 'pending',
-    feeType: 'waivable',
-    waiverProgress: 67,
-    annualFee: 300,
-    dueDate: 18,
-  },
-])
+  { immediate: false },
+)
+
+// 计算属性 - 从API响应中提取信用卡列表
+const creditCards = computed(() => {
+  console.log('creditCardsResponse', creditCardsResponse.value)
+
+  // 检查响应数据结构
+  let cardsData = null
+  if (creditCardsResponse.value) {
+    // 如果是包装格式 {data: [...]}
+    if (creditCardsResponse.value.data && Array.isArray(creditCardsResponse.value.data)) {
+      cardsData = creditCardsResponse.value.data
+    }
+    // 如果是直接的数组格式 [...]
+    else if (Array.isArray(creditCardsResponse.value)) {
+      cardsData = creditCardsResponse.value
+    }
+  }
+
+  if (!cardsData || !Array.isArray(cardsData)) {
+    console.log('没有找到有效的信用卡数据')
+    return []
+  }
+
+  console.log('找到信用卡数据，数量:', cardsData.length)
+
+  // 将API数据转换为组件需要的格式
+  return (cardsData as any[]).map((apiCard: any) => {
+    // 根据API返回的数据结构转换为CreditCardType格式
+    const bankName = apiCard.bank?.bank_name || apiCard.bank_name || '未知银行'
+    const card: CreditCardType = {
+      id: apiCard.id || '',
+      bankName: bankName,
+      bankCode: bankName.charAt(0),
+      bankColor: getBankColor(bankName),
+      cardName: apiCard.card_name || '信用卡',
+      cardType: apiCard.card_network?.toLowerCase() || 'unionpay',
+      cardNumberLast4: apiCard.card_number ? apiCard.card_number.slice(-4) : '****',
+      creditLimit: Number(apiCard.credit_limit) || 0,
+      usedAmount: Number(apiCard.used_limit) || 0,
+      availableAmount: Number(apiCard.available_limit) || 0,
+      isActive: apiCard.status === 'active',
+      annualFeeStatus: getAnnualFeeStatus(apiCard),
+      feeType: apiCard.fee_waivable ? 'waivable' : 'rigid',
+      waiverProgress: 0, // 需要根据实际业务逻辑计算
+      annualFee: Number(apiCard.annual_fee) || 0,
+      dueDate: apiCard.due_date || 15,
+    }
+    return card
+  })
+})
+
+// 调试用计算属性 - 显示当前状态
+const debugInfo = computed(() => {
+  const info = {
+    isLoggedIn: userStore.isLoggedIn,
+    isCardsLoading: isCardsLoading.value,
+    isCardsError: isCardsError.value,
+    creditCardsLength: creditCards.value.length,
+    hasResponse: !!creditCardsResponse.value,
+    responseData: creditCardsResponse.value?.data,
+  }
+  console.log('首页状态调试信息:', info)
+  return info
+})
+
+// 工具函数 - 根据银行名称获取颜色
+const getBankColor = (bankName: string) => {
+  const colorMap: Record<string, string> = {
+    招商银行: '#DC2626',
+    工商银行: '#DC2626',
+    建设银行: '#2563EB',
+    中国银行: '#DC2626',
+    交通银行: '#2563EB',
+    光大银行: '#7C3AED',
+    浦发银行: '#059669',
+    民生银行: '#7C2D12',
+    中信银行: '#DC2626',
+    平安银行: '#EA580C',
+  }
+  return colorMap[bankName] || '#6B7280'
+}
+
+// 工具函数 - 获取年费状态
+const getAnnualFeeStatus = (apiCard: any) => {
+  // 根据API返回的年费相关字段判断状态
+  if (apiCard.annual_fee === 0) return 'waived'
+  if (apiCard.fee_paid) return 'paid'
+  if (apiCard.fee_overdue) return 'overdue'
+  return 'pending'
+}
 
 // 计算属性
 const pendingFeeCards = computed(
@@ -293,6 +381,13 @@ const handleRecommendationClick = (card: CreditCardType) => {
   uni.showToast({
     title: `推荐使用${card.bankName}${card.cardName}`,
     icon: 'success',
+  })
+}
+
+const goToLogin = () => {
+  console.log('Go to login clicked')
+  uni.navigateTo({
+    url: '/pages/auth/login',
   })
 }
 
