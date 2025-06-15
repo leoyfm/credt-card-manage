@@ -127,16 +127,13 @@
 
       <!-- 底部操作栏 -->
       <view
-        class="bottom-actions fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom"
+        class="bottom-actions fixed left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 safe-area-inset-bottom z-10"
       >
-        <view class="flex space-x-3">
-          <button class="btn-secondary flex-1" @click="importCards">批量导入</button>
-          <button class="btn-primary flex-1" @click="addCard">添加卡片</button>
-        </view>
+        <button class="btn-primary w-full" @click="addCard">添加卡片</button>
       </view>
 
       <!-- 底部安全区域 -->
-      <view class="h-20"></view>
+      <view class="h-20 pb-safe"></view>
     </template>
 
     <!-- Toast 组件 -->
@@ -484,13 +481,6 @@ const addCard = () => {
   uni.navigateTo({ url: '/pages/cards/add' })
 }
 
-const importCards = () => {
-  uni.showToast({
-    title: '功能开发中',
-    icon: 'none',
-  })
-}
-
 // 编辑、删除、状态切换功能已移至 CreditCard 组件中
 </script>
 
@@ -694,5 +684,18 @@ const importCards = () => {
   height: 32px;
   background: linear-gradient(to bottom, transparent, #cbd5e1, transparent);
   margin: 0 16px;
+}
+
+.bottom-actions {
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  /* 使用 UniApp 提供的 CSS 变量来正确定位底部操作栏 */
+  bottom: var(--window-bottom);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+  /* 为底部安全区域添加额外的高度，确保内容不被遮挡 */
+  height: calc(80px + var(--window-bottom));
 }
 </style>
