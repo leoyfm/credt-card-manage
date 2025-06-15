@@ -543,7 +543,7 @@ const addCard = () => {
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 12px 24px;
+  padding: 6px 12px;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s ease;
